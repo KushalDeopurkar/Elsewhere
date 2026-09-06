@@ -69,7 +69,7 @@ def test_get_by_id_found(service, mock_supabase):
     mock_execute = MagicMock()
     mock_execute.data = {"id": "uuid-1", "title": "Test Event"}
     (
-        mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value
+        mock_supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
     ) = mock_execute
 
     result = service.get_by_id("uuid-1")
@@ -82,7 +82,7 @@ def test_get_by_id_not_found(service, mock_supabase):
     mock_execute = MagicMock()
     mock_execute.data = None
     (
-        mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value
+        mock_supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
     ) = mock_execute
 
     result = service.get_by_id("missing-id")

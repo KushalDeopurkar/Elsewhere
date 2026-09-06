@@ -58,7 +58,7 @@ class EventService:
             self.client.table("events")
             .select("*, ST_Y(coords::geometry) as lat, ST_X(coords::geometry) as lng")
             .eq("id", event_id)
-            .single()
+            .maybe_single()
             .execute()
         )
         return result.data
