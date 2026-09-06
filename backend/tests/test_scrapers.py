@@ -1,5 +1,4 @@
 import pytest
-from datetime import datetime, timezone
 from app.scrapers.eventbrite import EventbriteScraper
 
 

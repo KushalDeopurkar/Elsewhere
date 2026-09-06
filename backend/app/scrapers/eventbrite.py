@@ -1,5 +1,5 @@
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime
 
 from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
@@ -36,7 +36,10 @@ class EventbriteScraper(BaseScraper):
         events: list[EventCreate] = []
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(
+                timeout=30.0,
+                transport=httpx.AsyncHTTPTransport(retries=3),
+            ) as client:
                 resp = await client.get(
                     f"{BASE_URL}/events/search/",
                     params={
