@@ -31,7 +31,7 @@
   --color-border-hover: oklch(0.8 0.02 195);
 
   /* Semantic */
-  --color-success: oklch(0.6 0.14 155);
+  --color-success: oklch(0.42 0.12 155);
   --color-success-light: oklch(0.93 0.04 155);
   --color-error: oklch(0.55 0.18 25);
   --color-error-light: oklch(0.93 0.04 25);
@@ -73,7 +73,7 @@
     --color-border: oklch(0.33 0.012 195);
     --color-border-hover: oklch(0.44 0.02 195);
 
-    --color-success: oklch(0.7 0.13 155);
+    --color-success: oklch(0.76 0.12 155);
     --color-success-light: oklch(0.28 0.05 155);
     --color-error: oklch(0.68 0.16 25);
     --color-error-light: oklch(0.3 0.06 25);
@@ -393,7 +393,7 @@ p {
    ========================================================================== */
 .event-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 1.25rem;
   align-items: start;
 }
