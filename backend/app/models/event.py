@@ -58,7 +58,7 @@ class EventCreate(BaseModel):
 
 
 class EventResponse(BaseModel):
-    """Returned by API endpoints."""
+    """Returned by list/search API endpoints. Excludes internal columns."""
     id: UUID
     title: str
     description: str | None = None
@@ -79,6 +79,13 @@ class EventResponse(BaseModel):
     source: str
     distance_km: float | None = None
     relevance: float | None = None
+
+
+class EventDetailResponse(EventResponse):
+    """Returned by get-by-id endpoint. Adds timestamps."""
+    source_id: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class EventSearchParams(BaseModel):

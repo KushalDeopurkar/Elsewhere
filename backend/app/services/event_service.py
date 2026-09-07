@@ -53,15 +53,12 @@ class EventService:
         return result.data or []
 
     def get_by_id(self, event_id: str) -> dict | None:
-        """Get single event by UUID."""
-        result = (
-            self.client.table("events")
-            .select("*, ST_Y(coords::geometry) as lat, ST_X(coords::geometry) as lng")
-            .eq("id", event_id)
-            .maybe_single()
-            .execute()
-        )
-        return result.data
+        """Get single event by UUID via RPC (extracts lat/lng from coords)."""
+        result = self.client.rpc(
+            "get_event_by_id", {"p_id": event_id}
+        ).execute()
+        rows = result.data or []
+        return rows[0] if rows else None
 
     def get_in_bounds(
         self,

@@ -2,16 +2,31 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.database import get_supabase
-from app.models.event import EventCategory, EventSearchParams
+from app.database import get_supabase, get_supabase_service
+from app.models.event import (
+    EventCategory,
+    EventDetailResponse,
+    EventResponse,
+    EventSearchParams,
+)
 from app.models.schemas import ApiResponse, Meta
+from app.scrapers.eventbrite import EventbriteScraper
 from app.services.event_service import EventService
+from app.services.ingestion_service import IngestionService
 
 router = APIRouter()
 
 
 def get_event_service() -> EventService:
     return EventService(get_supabase())
+
+
+def get_ingestion_service() -> IngestionService:
+    # Ingestion writes events, so use the service-role client to bypass RLS
+    event_service = EventService(get_supabase_service())
+    scrapers = [EventbriteScraper()]
+    # WebScraper instances can be added here with ScraperConfig for each target site
+    return IngestionService(event_service=event_service, scrapers=scrapers)
 
 
 @router.get("/search")
@@ -40,7 +55,7 @@ def search_events(
     )
     results = service.search(params)
     return ApiResponse(
-        data=results,
+        data=[EventResponse.model_validate(r) for r in results],
         meta=Meta(limit=limit, offset=offset),
     )
 
@@ -65,7 +80,8 @@ def map_events(
         category=category.value if category else None,
         max_results=max_results,
     )
-    return ApiResponse(data=results)
+    # Map events return a subset of fields; EventResponse handles missing fields via defaults
+    return ApiResponse(data=[EventResponse.model_validate(r) for r in results])
 
 
 @router.get("/{event_id}")
@@ -76,4 +92,17 @@ def get_event(
     event = service.get_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    return ApiResponse(data=event)
+    return ApiResponse(data=EventDetailResponse.model_validate(event))
+
+
+@router.post("/ingest")
+async def ingest_events(
+    city: str | None = Query(default=None),
+    service: IngestionService = Depends(get_ingestion_service),
+):
+    """Trigger a scrape-and-upsert run for all registered scrapers."""
+    results = await service.run_all(city=city)
+    total = sum(results.values())
+    return ApiResponse(
+        data={"scrapers": results, "total_upserted": total},
+    )

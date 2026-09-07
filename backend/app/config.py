@@ -4,7 +4,8 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     supabase_url: str
-    supabase_key: str
+    supabase_key: str  # anon key — used for read-only operations
+    supabase_service_role_key: str = ""  # service role key — used for writes (bypasses RLS)
     eventbrite_token: str = ""
     scrape_interval_minutes: int = 60
     default_search_radius_km: float = 25.0

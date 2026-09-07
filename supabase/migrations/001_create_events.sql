@@ -35,6 +35,28 @@ CREATE TABLE events (
     CONSTRAINT unique_source_event UNIQUE (source, source_id)
 );
 
+-- Row-Level Security
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+
+-- Anon users can read events
+CREATE POLICY "events_select_anon" ON events
+    FOR SELECT
+    TO anon
+    USING (true);
+
+-- Authenticated users can read events
+CREATE POLICY "events_select_authenticated" ON events
+    FOR SELECT
+    TO authenticated
+    USING (true);
+
+-- Service role has full access (used by backend for inserts/updates)
+CREATE POLICY "events_all_service_role" ON events
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+
 -- Indexes
 CREATE INDEX idx_events_start_time ON events (start_time);
 CREATE INDEX idx_events_category ON events (category);
@@ -150,6 +172,47 @@ BEGIN
         e.start_time ASC
     LIMIT search_events.page_limit
     OFFSET search_events.page_offset;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RPC: get single event by ID (extracts lat/lng from coords)
+CREATE OR REPLACE FUNCTION get_event_by_id(p_id UUID)
+RETURNS TABLE (
+    id UUID,
+    title TEXT,
+    description TEXT,
+    category event_category,
+    start_time TIMESTAMPTZ,
+    end_time TIMESTAMPTZ,
+    location_name TEXT,
+    address TEXT,
+    city TEXT,
+    country TEXT,
+    lat DOUBLE PRECISION,
+    lng DOUBLE PRECISION,
+    image_url TEXT,
+    url TEXT,
+    price_min NUMERIC,
+    price_max NUMERIC,
+    is_free BOOLEAN,
+    source TEXT,
+    source_id TEXT,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        e.id, e.title, e.description, e.category,
+        e.start_time, e.end_time, e.location_name,
+        e.address, e.city, e.country,
+        ST_Y(e.coords::geometry) AS lat,
+        ST_X(e.coords::geometry) AS lng,
+        e.image_url, e.url, e.price_min, e.price_max,
+        e.is_free, e.source, e.source_id,
+        e.created_at, e.updated_at
+    FROM events e
+    WHERE e.id = get_event_by_id.p_id;
 END;
 $$ LANGUAGE plpgsql;
 

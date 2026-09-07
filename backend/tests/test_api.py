@@ -113,6 +113,7 @@ def test_map_events(client, mock_event_service):
             "lat": 19.08,
             "lng": 72.88,
             "is_free": False,
+            "source": "eventbrite",
         }
     ]
 

@@ -66,24 +66,20 @@ def test_search_calls_rpc(service, mock_supabase):
 
 
 def test_get_by_id_found(service, mock_supabase):
-    mock_execute = MagicMock()
-    mock_execute.data = {"id": "uuid-1", "title": "Test Event"}
-    (
-        mock_supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
-    ) = mock_execute
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = [{"id": "uuid-1", "title": "Test Event"}]
+    mock_supabase.rpc.return_value = mock_rpc
 
     result = service.get_by_id("uuid-1")
 
     assert result == {"id": "uuid-1", "title": "Test Event"}
-    mock_supabase.table.assert_called_with("events")
+    mock_supabase.rpc.assert_called_with("get_event_by_id", {"p_id": "uuid-1"})
 
 
 def test_get_by_id_not_found(service, mock_supabase):
-    mock_execute = MagicMock()
-    mock_execute.data = None
-    (
-        mock_supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
-    ) = mock_execute
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
 
     result = service.get_by_id("missing-id")
 
