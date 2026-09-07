@@ -96,16 +96,19 @@ export default function EventMap({
 }: EventMapProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const fetchEvents = useCallback(async (b: MapBounds, cat: EventCategory | null) => {
     setLoading(true);
+    setError(null);
     try {
       const data = await getMapEvents(b, cat || undefined);
       setEvents(data);
     } catch (err) {
       console.error("Failed to fetch map events:", err);
+      setError(err instanceof Error ? err.message : "Failed to load events");
     } finally {
       setLoading(false);
       setHasLoadedOnce(true);
@@ -182,9 +185,21 @@ export default function EventMap({
         </div>
       )}
 
-      {!loading && hasLoadedOnce && markers.length === 0 && (
+      {!loading && !error && hasLoadedOnce && markers.length === 0 && (
         <div className="map-status-pill map-status-pill-muted" role="status">
           No events in this area
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="map-status-pill map-status-pill-error" role="alert">
+          Could not load events
+          <button
+            className="map-retry-btn"
+            onClick={() => bounds && fetchEvents(bounds, category)}
+          >
+            Retry
+          </button>
         </div>
       )}
     </div>

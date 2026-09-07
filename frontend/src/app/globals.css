@@ -791,6 +791,26 @@ p {
   color: var(--color-ink-muted);
 }
 
+.map-status-pill-error {
+  border-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.map-status-pill-error .map-retry-btn {
+  margin-left: 0.25rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: var(--color-error);
+  color: var(--color-primary-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: opacity var(--duration-micro) var(--ease-out-expo);
+}
+
+.map-status-pill-error .map-retry-btn:hover {
+  opacity: 0.85;
+}
+
 @keyframes map-pill-in {
   from {
     opacity: 0;
@@ -902,7 +922,11 @@ p {
   gap: 0.45rem;
 }
 
-/* Zoom control */
+/* Zoom control — pushed below the floating filter bar (~60px tall + margin) */
+.leaflet-top.leaflet-left {
+  top: 4rem;
+}
+
 .leaflet-control-zoom {
   border: 1px solid var(--color-border);
   border-radius: 8px;
