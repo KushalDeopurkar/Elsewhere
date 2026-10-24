@@ -1,59 +1,77 @@
 import Link from "next/link";
+import { MapPin, Clock } from "@phosphor-icons/react/ssr";
 import { Event, CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatEventDate } from "@/lib/formatDate";
+import { formatDatePlate, formatWhen } from "@/lib/formatDate";
+import { priceBadge } from "@/lib/money";
 
-export default function EventCard({ event }: { event: Event }) {
-  const cat = CATEGORIES.find((c) => c.value === event.category);
-  const colors = getCategoryColor(event.category);
+/**
+ * Images come from arbitrary scraped hosts, so these are plain <img> rather
+ * than next/image: a dead remote host degrades to an empty tile instead of
+ * failing the optimizer. Layout shift is handled by aspect-ratio in CSS.
+ */
+export default function EventCard({
+  event,
+  priority = false,
+}: {
+  event: Event;
+  priority?: boolean;
+}) {
+  const meta = CATEGORIES.find((c) => c.value === event.category);
+  const hue = getCategoryColor(event.category);
+  const plate = formatDatePlate(event.start_time);
+  const price = priceBadge(event);
 
   return (
-    <Link href={`/events/${event.id}`} className="event-card" aria-label={event.title}>
-      {event.image_url ? (
-        <div className="event-card-image-wrap">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+    <article className="card">
+      <div className="card-media">
+        {event.image_url && (
           <img
             src={event.image_url}
             alt=""
-            className="event-card-image"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            decoding="async"
           />
+        )}
+        <div className="card-date">
+          <span className="card-date-day mono">{plate.day}</span>
+          <span className="card-date-mon">{plate.month}</span>
         </div>
-      ) : (
-        <div className="event-card-strip" style={{ background: colors.accent }} />
-      )}
-      <div className="event-card-body">
-        <div className="event-card-badges">
-          <span className="badge badge-category" style={{ "--cat-bg": colors.bg, "--cat-text": colors.text } as React.CSSProperties}>
-            <span aria-hidden="true">{cat?.emoji}</span>
-            {cat?.label || event.category}
-          </span>
-          {event.is_free && <span className="badge badge-free">Free</span>}
-        </div>
+        <span className={`card-price mono${event.is_free ? " is-free" : ""}`}>
+          {price}
+        </span>
+      </div>
 
-        <h3 className="event-card-title">{event.title}</h3>
+      <div className="card-body">
+        <p
+          className="card-kicker"
+          style={{ "--cat-hue": hue.color } as React.CSSProperties}
+        >
+          {meta?.label ?? event.category}
+        </p>
 
-        <p className="event-card-date">{formatEventDate(event.start_time)}</p>
+        <h3 className="card-title">
+          <Link href={`/events/${event.id}`} className="card-link">
+            {event.title}
+          </Link>
+        </h3>
+
+        <p className="card-time">
+          <Clock size={14} weight="bold" style={{ verticalAlign: "-2px" }} />{" "}
+          {formatWhen(event.start_time)}
+        </p>
 
         {event.location_name && (
-          <p className="event-card-location">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" className="flex-shrink-0">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-              />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>{event.location_name}</span>
+          <p className="card-foot">
+            <MapPin size={14} weight="fill" />
+            <span>
+              {event.location_name}
+              {event.city ? `, ${event.city}` : ""}
+            </span>
           </p>
         )}
-
-        {event.distance_km != null && (
-          <p className="event-card-distance">{event.distance_km.toFixed(1)} km away</p>
-        )}
       </div>
-    </Link>
+    </article>
   );
 }

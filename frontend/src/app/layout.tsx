@@ -1,32 +1,30 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import "@fontsource-variable/inter";
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 import "./globals.css";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "EventEngine — What's happening near you",
-  description: "Search and discover events happening around you.",
+  title: "Pulse - what is on near you tonight",
+  description:
+    "Gigs, comedy, food pop-ups and night treks across Mumbai, Bengaluru and Delhi, gathered from across the web and mapped.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const viewport: Viewport = {
+  themeColor: "#181411",
+  colorScheme: "dark",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
-        <nav className="site-nav">
-          <div className="container-page site-nav-inner">
-            <Link href="/" className="brand">
-              EventEngine
-            </Link>
-            <div className="nav-links">
-              <Link href="/" className="nav-link">
-                Browse
-              </Link>
-              <Link href="/map" className="nav-link">
-                Map
-              </Link>
-            </div>
-          </div>
-        </nav>
+        <Nav />
         <main>{children}</main>
       </body>
     </html>

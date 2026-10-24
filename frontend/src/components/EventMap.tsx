@@ -1,207 +1,211 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import Link from "next/link";
-import { CATEGORIES, Event, EventCategory } from "@/lib/types";
-import { getMapEvents, MapBounds } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
+import { Event } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatEventDate } from "@/lib/formatDate";
+import { MAP_STYLE, DEFAULT_VIEW } from "@/lib/mapStyle";
+import type { MapBounds } from "@/lib/api";
 
-const BOUNDS_DEBOUNCE_MS = 300;
+// Must be set before the first Map is constructed. See
+// scripts/copy-maplibre-worker.mjs for why the worker is served from public/.
+setWorkerUrl("/maplibre-gl-worker.mjs");
 
-/**
- * Custom teardrop pin markers built from an inline SVG string, colored per
- * category. Avoids any dependency on unpkg.com (or any other CDN) for the
- * default Leaflet marker images. One icon is built per category and cached,
- * since react-leaflet re-renders markers frequently while panning.
- */
-const markerIconCache = new Map<EventCategory, L.DivIcon>();
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function getMarkerIcon(category: EventCategory): L.DivIcon {
-  const cached = markerIconCache.get(category);
-  if (cached) return cached;
-
-  const { accent } = getCategoryColor(category);
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
-      <path d="M14 0C6.27 0 0 6.27 0 14c0 9.5 12.15 21.85 13.06 22.78a1.33 1.33 0 0 0 1.88 0C15.85 35.85 28 23.5 28 14 28 6.27 21.73 0 14 0z" fill="${accent}"/>
-      <circle cx="14" cy="14" r="8.5" fill="white"/>
-      <circle cx="14" cy="14" r="4.5" fill="${accent}"/>
-    </svg>`;
-
-  const icon = L.divIcon({
-    html: svg,
-    className: "map-marker-icon",
-    iconSize: [28, 38],
-    iconAnchor: [14, 36],
-    popupAnchor: [0, -30],
-  });
-
-  markerIconCache.set(category, icon);
-  return icon;
+export interface MapHandle {
+  flyToEvent: (event: Event) => void;
 }
 
-/** Reports the map's current bounds on mount and on every (debounced) pan/zoom. */
-function MapController({ onBoundsChange }: { onBoundsChange: (bounds: MapBounds) => void }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+export default function EventMap({
+  events,
+  selectedId,
+  onSelect,
+  onBoundsChange,
+  onReady,
+  onError,
+}: {
+  events: Event[];
+  selectedId: string | null;
+  onSelect: (event: Event) => void;
+  onBoundsChange: (bounds: MapBounds) => void;
+  onReady?: (handle: MapHandle) => void;
+  onError?: (message: string) => void;
+}) {
+  const container = useRef<HTMLDivElement>(null);
+  const map = useRef<MapLibreMap | null>(null);
+  const markers = useRef(new Map<string, Marker>());
+  const didLoad = useRef(false);
+  const [loaded, setLoaded] = useState(false);
 
-  const emitBounds = useCallback(
-    (map: L.Map) => {
-      const b = map.getBounds();
-      onBoundsChange({
+  // Callbacks are held in refs so the map is built exactly once; re-creating
+  // a GL context on every parent render would thrash the GPU.
+  const cb = useRef({ onSelect, onBoundsChange, onReady, onError });
+  useEffect(() => {
+    cb.current = { onSelect, onBoundsChange, onReady, onError };
+  });
+
+  useEffect(() => {
+    if (!container.current || map.current) return;
+
+    const instance = new MapLibreMap({
+      container: container.current,
+      style: MAP_STYLE,
+      ...DEFAULT_VIEW,
+      attributionControl: { compact: true },
+      maxPitch: 70,
+    });
+
+    map.current = instance;
+
+    const reportBounds = () => {
+      const b = instance.getBounds();
+      cb.current.onBoundsChange({
         south: b.getSouth(),
         west: b.getWest(),
         north: b.getNorth(),
         east: b.getEast(),
       });
-    },
-    [onBoundsChange]
-  );
-
-  const map = useMapEvents({
-    moveend: () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => emitBounds(map), BOUNDS_DEBOUNCE_MS);
-    },
-  });
-
-  useEffect(() => {
-    // Seed the initial fetch — moveend never fires for the map's starting position.
-    emitBounds(map);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
 
-  return null;
-}
+    instance.on("load", () => {
+      didLoad.current = true;
+      setLoaded(true);
+      reportBounds();
+      cb.current.onReady?.({
+        flyToEvent: (event) => {
+          if (event.lat == null || event.lng == null) return;
+          instance.flyTo({
+            center: [event.lng, event.lat],
+            zoom: Math.max(instance.getZoom(), 15.5),
+            pitch: 58,
+            duration: prefersReducedMotion() ? 0 : 1200,
+            essential: true,
+          });
+        },
+      });
+    });
 
-function hasCoords(event: Event): event is Event & { lat: number; lng: number } {
-  return event.lat != null && event.lng != null;
-}
+    instance.on("moveend", reportBounds);
 
-interface EventMapProps {
-  center?: [number, number];
-  zoom?: number;
-  category?: EventCategory | null;
-}
+    instance.on("error", (e: { error?: { message?: string } }) => {
+      // Once the style is up, a single bad tile or missing glyph range is not
+      // worth blanking a working map for. Only a map that never loaded at all
+      // gets the error panel.
+      if (didLoad.current) {
+        console.warn("[map]", e?.error?.message ?? e);
+        return;
+      }
+      cb.current.onError?.(e?.error?.message ?? "The map failed to load.");
+    });
 
-export default function EventMap({
-  center = [19.076, 72.8777], // Mumbai default
-  zoom = 12,
-  category = null,
-}: EventMapProps) {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [bounds, setBounds] = useState<MapBounds | null>(null);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+    // A silent hang (no error event, no load) should still resolve to a state
+    // the viewer can act on rather than an empty dark rectangle.
+    const stall = setTimeout(() => {
+      if (!didLoad.current) {
+        cb.current.onError?.("The map took too long to load.");
+      }
+    }, 15000);
 
-  const fetchEvents = useCallback(async (b: MapBounds, cat: EventCategory | null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getMapEvents(b, cat || undefined);
-      setEvents(data);
-    } catch (err) {
-      console.error("Failed to fetch map events:", err);
-      setError(err instanceof Error ? err.message : "Failed to load events");
-    } finally {
-      setLoading(false);
-      setHasLoadedOnce(true);
-    }
+    const pins = markers.current;
+
+    return () => {
+      clearTimeout(stall);
+      pins.forEach((pin) => pin.remove());
+      pins.clear();
+      instance.remove();
+      map.current = null;
+    };
   }, []);
 
-  const handleBoundsChange = useCallback(
-    (b: MapBounds) => {
-      setBounds(b);
-      fetchEvents(b, category);
-    },
-    [fetchEvents, category]
-  );
-
+  // Reconcile markers against the event list: add what is new, drop what is
+  // gone, and leave untouched pins alone so they do not flicker on refetch.
   useEffect(() => {
-    // Re-fetch for the current viewport whenever the category filter changes;
-    // fetchEvents owns its own loading/data state (see useEvents.ts for the
-    // same established pattern).
-    if (bounds) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchEvents(bounds, category);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+    const instance = map.current;
+    if (!instance || !loaded) return;
 
-  const markers = useMemo(() => events.filter(hasCoords), [events]);
+    const wanted = new Set<string>();
+
+    for (const event of events) {
+      if (event.lat == null || event.lng == null) continue;
+      wanted.add(event.id);
+      if (markers.current.has(event.id)) continue;
+
+      const hue = getCategoryColor(event.category);
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "pin pin-cat";
+      el.style.setProperty("--pin-hue", hue.color);
+      el.style.setProperty("--pin-halo", hue.halo);
+      el.setAttribute("aria-label", event.title);
+      el.innerHTML =
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+        '<circle cx="12" cy="12" r="5"/></svg>';
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        cb.current.onSelect(event);
+      });
+
+      markers.current.set(
+        event.id,
+        new Marker({ element: el })
+          .setLngLat([event.lng, event.lat])
+          .addTo(instance),
+      );
+    }
+
+    for (const [id, marker] of markers.current) {
+      if (!wanted.has(id)) {
+        marker.remove();
+        markers.current.delete(id);
+      }
+    }
+  }, [events, loaded]);
+
+  // Active pin styling lives outside the reconcile pass so selecting an event
+  // never rebuilds markers.
+  useEffect(() => {
+    for (const [id, marker] of markers.current) {
+      marker.getElement().classList.toggle("is-active", id === selectedId);
+    }
+  }, [selectedId, events]);
+
+  const nudge = useCallback((delta: number) => {
+    map.current?.easeTo({
+      zoom: (map.current?.getZoom() ?? DEFAULT_VIEW.zoom) + delta,
+      duration: prefersReducedMotion() ? 0 : 300,
+    });
+  }, []);
+
+  const reset = useCallback(() => {
+    map.current?.easeTo({
+      ...DEFAULT_VIEW,
+      duration: prefersReducedMotion() ? 0 : 900,
+    });
+  }, []);
 
   return (
-    <div className="map-canvas">
-      <MapContainer center={center} zoom={zoom} className="map-leaflet-root" scrollWheelZoom>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapController onBoundsChange={handleBoundsChange} />
-
-        {markers.map((event) => {
-          const cat = CATEGORIES.find((c) => c.value === event.category);
-          const colors = getCategoryColor(event.category);
-          return (
-            <Marker
-              key={event.id}
-              position={[event.lat, event.lng]}
-              icon={getMarkerIcon(event.category)}
-            >
-              <Popup className="map-popup" minWidth={220} maxWidth={260}>
-                <div className="map-popup-body">
-                  <span
-                    className="badge badge-category"
-                    style={{ "--cat-bg": colors.bg, "--cat-text": colors.text } as React.CSSProperties}
-                  >
-                    <span aria-hidden="true">{cat?.emoji}</span>
-                    {cat?.label || event.category}
-                  </span>
-                  <p className="map-popup-title">{event.title}</p>
-                  <p className="map-popup-date">{formatEventDate(event.start_time)}</p>
-                  {event.location_name && (
-                    <p className="map-popup-location">{event.location_name}</p>
-                  )}
-                  <Link href={`/events/${event.id}`} className="map-popup-link">
-                    View details <span aria-hidden="true">&rarr;</span>
-                  </Link>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
-
-      {loading && (
-        <div className="map-status-pill" role="status" aria-live="polite">
-          <span className="map-status-spinner" aria-hidden="true" />
-          Loading events&hellip;
-        </div>
-      )}
-
-      {!loading && !error && hasLoadedOnce && markers.length === 0 && (
-        <div className="map-status-pill map-status-pill-muted" role="status">
-          No events in this area
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="map-status-pill map-status-pill-error" role="alert">
-          Could not load events
-          <button
-            className="map-retry-btn"
-            onClick={() => bounds && fetchEvents(bounds, category)}
-          >
-            Retry
-          </button>
-        </div>
-      )}
-    </div>
+    <>
+      <div ref={container} className="map-canvas" />
+      <div className="map-tools">
+        <button type="button" className="map-tool" onClick={() => nudge(1)} aria-label="Zoom in">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+        <button type="button" className="map-tool" onClick={() => nudge(-1)} aria-label="Zoom out">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+        <button type="button" className="map-tool" onClick={reset} aria-label="Reset the view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
+          </svg>
+        </button>
+      </div>
+    </>
   );
 }

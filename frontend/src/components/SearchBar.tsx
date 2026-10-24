@@ -1,48 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { MagnifyingGlass, X } from "@phosphor-icons/react/ssr";
 
-interface SearchBarProps {
-  onSearch: (query: string) => void;
-  initialQuery?: string;
-}
-
-export default function SearchBar({ onSearch, initialQuery = "" }: SearchBarProps) {
-  const [query, setQuery] = useState(initialQuery);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(query);
-  };
-
+export default function SearchBar({
+  value,
+  onChange,
+  onSubmit,
+  placeholder = "Gigs, comedy, food, anything",
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onSubmit?: () => void;
+  placeholder?: string;
+}) {
   return (
-    <form onSubmit={handleSubmit} className="search-form" role="search">
+    <form
+      className="search"
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit?.();
+      }}
+    >
       <div className="search-shell">
-        <svg
-          className="search-icon"
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
+        <MagnifyingGlass size={19} weight="bold" className="search-icon" />
         <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search events, venues, or keywords..."
+          type="search"
           className="search-input"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
           aria-label="Search events"
+          enterKeyHint="search"
         />
-        <button type="submit" className="search-submit">
+        {value && (
+          <button
+            type="button"
+            className="map-tool"
+            style={{ width: "2rem", height: "2rem", borderRadius: "999px" }}
+            onClick={() => onChange("")}
+            aria-label="Clear search"
+          >
+            <X size={14} weight="bold" />
+          </button>
+        )}
+        <button type="submit" className="btn btn-primary">
           Search
         </button>
       </div>

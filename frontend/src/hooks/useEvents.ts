@@ -1,49 +1,59 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Event, SearchParams } from "@/lib/types";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { searchEvents } from "@/lib/api";
+import { Event, SearchParams } from "@/lib/types";
 
-export function useEvents(initialParams?: SearchParams) {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [params, setParams] = useState<SearchParams>(initialParams || {});
+interface State {
+  events: Event[];
+  loading: boolean;
+  error: string | null;
+  isSample: boolean;
+}
 
-  const fetchEvents = useCallback(async (searchParams: SearchParams) => {
-    setLoading(true);
-    setError(null);
+export function useEvents(initial: SearchParams = {}) {
+  const [state, setState] = useState<State>({
+    events: [],
+    loading: true,
+    error: null,
+    isSample: false,
+  });
+
+  // Held in a ref so run() stays stable and retry() can replay the last query.
+  const params = useRef<SearchParams>(initial);
+  // Guards against an earlier, slower request overwriting a later one.
+  const requestId = useRef(0);
+
+  const run = useCallback(async (next: SearchParams) => {
+    params.current = next;
+    const id = ++requestId.current;
+    setState((s) => ({ ...s, loading: true, error: null }));
+
     try {
-      const data = await searchEvents(searchParams);
-      setEvents(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to fetch events");
-    } finally {
-      setLoading(false);
+      const { events, isSample } = await searchEvents(next);
+      if (id !== requestId.current) return;
+      setState({ events, loading: false, error: null, isSample });
+    } catch (err) {
+      if (id !== requestId.current) return;
+      setState({
+        events: [],
+        loading: false,
+        error: err instanceof Error ? err.message : "Something went wrong",
+        isSample: false,
+      });
     }
   }, []);
 
   useEffect(() => {
-    // Standard "params changed -> refetch" effect; fetchEvents owns its
-    // own loading/error/data state for this hook's callers.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchEvents(params);
-  }, [params, fetchEvents]);
+    run(params.current);
+  }, [run]);
 
-  const search = useCallback((newParams: Partial<SearchParams>) => {
-    setParams((prev) => ({ ...prev, ...newParams, offset: 0 }));
-  }, []);
+  const search = useCallback(
+    (patch: SearchParams) => run({ ...params.current, ...patch }),
+    [run],
+  );
 
-  const loadMore = useCallback(() => {
-    setParams((prev) => ({
-      ...prev,
-      offset: (prev.offset || 0) + (prev.limit || 50),
-    }));
-  }, []);
+  const retry = useCallback(() => run(params.current), [run]);
 
-  const retry = useCallback(() => {
-    fetchEvents(params);
-  }, [fetchEvents, params]);
-
-  return { events, loading, error, search, loadMore, retry, params };
+  return { ...state, search, retry };
 }
