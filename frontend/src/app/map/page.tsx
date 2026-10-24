@@ -112,7 +112,7 @@ export default function MapPage() {
         {isSample && !mapError && (
           <span className="sample-note" style={{ alignSelf: "flex-start" }}>
             <Sparkle size={13} weight="fill" />
-            Sample data, the API is not connected
+            Demo data, the live API is not connected
           </span>
         )}
 

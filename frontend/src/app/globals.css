@@ -1130,7 +1130,13 @@ p {
   padding: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
+  /* The chip list scrolls. Fading the trailing edge says so, instead of
+     leaving a chip sheared off against the window edge. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  padding-right: 2rem;
 }
+
 
 .map-count {
   flex-shrink: 0;
@@ -1200,7 +1206,8 @@ p {
 /* Floating detail card for the selected pin, bottom-left on desktop. */
 .map-peek {
   margin-top: auto;
-  width: min(22rem, 100%);
+  /* Leaves room for the control rail on the right at phone widths. */
+  width: min(22rem, calc(100% - 3.25rem));
   border-radius: var(--r-card);
   overflow: hidden;
   background: oklch(0.225 0.010 70 / 0.94);
@@ -1248,11 +1255,20 @@ p {
 .map-tools {
   position: absolute;
   right: 1rem;
-  bottom: 1rem;
+  /* Clears the attribution strip along the bottom edge. */
+  bottom: 2.25rem;
   z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  /* One grouped toolbar rather than five separate floating chips: fewer
+     edges in the corner, and the controls read as belonging together. */
+  border-radius: var(--r-control);
+  overflow: hidden;
+  background: oklch(0.195 0.009 70 / 0.82);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--line);
+  box-shadow: var(--lift-2);
 }
 
 .map-tool {
@@ -1260,20 +1276,21 @@ p {
   height: 2.4rem;
   display: grid;
   place-items: center;
-  border-radius: var(--r-control);
-  background: oklch(0.195 0.009 70 / 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--line);
+  background: none;
+  border: none;
   color: var(--text-mid);
   transition:
     color var(--t-hover) var(--ease),
-    border-color var(--t-hover) var(--ease);
+    background-color var(--t-hover) var(--ease);
+}
+
+.map-tool + .map-tool {
+  border-top: 1px solid var(--line-soft);
 }
 
 .map-tool:hover {
   color: var(--marigold);
-  border-color: var(--line-strong);
+  background: oklch(0.82 0.16 78 / 0.1);
 }
 
 .maplibregl-ctrl-attrib {
@@ -1471,6 +1488,5 @@ p {
 
 .map-tool-tilt.is-on {
   color: var(--marigold);
-  border-color: oklch(0.82 0.16 78 / 0.45);
   background: var(--marigold-wash);
 }
