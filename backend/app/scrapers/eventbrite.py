@@ -36,7 +36,6 @@ class EventbriteScraper(BaseScraper):
         self, city: Optional[str] = None, **kwargs
     ) -> List[EventCreate]:
         self._log(f"Scraping events for city={city}")
-        print(f"[EVENTBRITE] Scraping city={city}, token={self.token[:8]}...")
         events: List[EventCreate] = []
 
         try:
@@ -56,14 +55,12 @@ class EventbriteScraper(BaseScraper):
                 data = resp.json()
         except httpx.HTTPStatusError as e:
             self._log(f"HTTP {e.response.status_code}: {e.response.text[:500]}")
-            print(f"[EVENTBRITE] HTTP {e.response.status_code}: {e.response.text[:300]}")
             return []
         except httpx.HTTPError as e:
             self._log(f"HTTP error: {e}")
-            print(f"[EVENTBRITE] Connection error: {e}")
             return []
         except Exception as e:
-            print(f"[EVENTBRITE] Unexpected error: {e}")
+            self._log(f"Unexpected error: {e}")
             return []
 
         for raw in data.get("events", []):
@@ -74,7 +71,6 @@ class EventbriteScraper(BaseScraper):
                 continue
 
         self._log(f"Scraped {len(events)} events")
-        print(f"[EVENTBRITE] Scraped {len(events)} events")
         return events
 
     def _parse_event(self, raw: dict) -> EventCreate:

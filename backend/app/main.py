@@ -64,10 +64,14 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    # A wildcard origin and credentials are mutually exclusive per the CORS spec —
+    # browsers reject the pair outright. This API is unauthenticated, so it needs no
+    # credentials when serving every origin. Narrowing cors_origins re-enables them.
+    allow_credentials = "*" not in settings.cors_origins
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_credentials=allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )
