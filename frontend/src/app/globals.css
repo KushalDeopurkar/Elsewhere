@@ -1458,3 +1458,19 @@ p {
   color: var(--text-hi);
   border-color: var(--marigold);
 }
+
+.map-tool-compass svg {
+  transition: transform var(--t-hover) var(--ease);
+}
+
+.map-tool-tilt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.map-tool-tilt.is-on {
+  color: var(--marigold);
+  border-color: oklch(0.82 0.16 78 / 0.45);
+  background: var(--marigold-wash);
+}

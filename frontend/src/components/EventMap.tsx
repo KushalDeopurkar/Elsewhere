@@ -46,6 +46,8 @@ export default function EventMap({
   const didLoad = useRef(false);
   const triedFallback = useRef(false);
   const [loaded, setLoaded] = useState(false);
+  const [bearing, setBearing] = useState(DEFAULT_VIEW.bearing);
+  const [pitch, setPitch] = useState(DEFAULT_VIEW.pitch);
 
   // Callbacks are held in refs so the map is built exactly once; re-creating
   // a GL context on every parent render would thrash the GPU.
@@ -103,6 +105,15 @@ export default function EventMap({
     });
 
     instance.on("moveend", reportBounds);
+
+    // Mirror the camera into React so the compass points the right way and
+    // the 2D/3D switch shows the current state.
+    const syncCamera = () => {
+      setBearing(instance.getBearing());
+      setPitch(instance.getPitch());
+    };
+    instance.on("rotate", syncCamera);
+    instance.on("pitch", syncCamera);
 
     instance.on("error", (e: { error?: { message?: string } }) => {
       // Once the style is up, a single bad tile or missing glyph range is not
@@ -233,6 +244,24 @@ export default function EventMap({
     });
   }, []);
 
+  const rotateNorth = useCallback(() => {
+    map.current?.easeTo({
+      bearing: 0,
+      duration: prefersReducedMotion() ? 0 : 500,
+    });
+  }, []);
+
+  /** Flip between a flat map and the tilted 3D view. */
+  const toggleTilt = useCallback(() => {
+    const m = map.current;
+    if (!m) return;
+    const flat = m.getPitch() <= 5;
+    m.easeTo({
+      pitch: flat ? DEFAULT_VIEW.pitch : 0,
+      duration: prefersReducedMotion() ? 0 : 600,
+    });
+  }, []);
+
   const reset = useCallback(() => {
     map.current?.easeTo({
       ...DEFAULT_VIEW,
@@ -244,17 +273,69 @@ export default function EventMap({
     <>
       <div ref={container} className="map-canvas" />
       <div className="map-tools">
-        <button type="button" className="map-tool" onClick={() => nudge(1)} aria-label="Zoom in">
+        <button
+          type="button"
+          className="map-tool"
+          onClick={() => nudge(1)}
+          aria-label="Zoom in"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
-        <button type="button" className="map-tool" onClick={() => nudge(-1)} aria-label="Zoom out">
+        <button
+          type="button"
+          className="map-tool"
+          onClick={() => nudge(-1)}
+          aria-label="Zoom out"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M5 12h14" />
           </svg>
         </button>
-        <button type="button" className="map-tool" onClick={reset} aria-label="Reset the view">
+
+        <button
+          type="button"
+          className="map-tool map-tool-compass"
+          onClick={rotateNorth}
+          aria-label={
+            Math.round(bearing) === 0
+              ? "Map points north"
+              : "Point the map north"
+          }
+          title="Point north"
+        >
+          {/* Needle turns with the camera, so the control doubles as a
+              readout of which way the map is facing. */}
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            style={{ transform: `rotate(${-bearing}deg)` }}
+            aria-hidden="true"
+          >
+            <path d="M12 3 L15.4 13 L12 11 L8.6 13 Z" fill="currentColor" />
+            <path d="M12 21 L8.6 13 L12 15 L15.4 13 Z" fill="currentColor" opacity="0.35" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          className={`map-tool map-tool-tilt${pitch > 5 ? " is-on" : ""}`}
+          onClick={toggleTilt}
+          aria-pressed={pitch > 5}
+          aria-label={pitch > 5 ? "Switch to a flat map" : "Tilt the map into 3D"}
+          title={pitch > 5 ? "Flat view" : "3D view"}
+        >
+          <span className="mono">{pitch > 5 ? "3D" : "2D"}</span>
+        </button>
+
+        <button
+          type="button"
+          className="map-tool"
+          onClick={reset}
+          aria-label="Reset the view"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
           </svg>
