@@ -1,7 +1,11 @@
+from __future__ import annotations
+from typing import Optional
+
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.config import get_settings
 from app.database import get_supabase, get_supabase_service
 from app.models.event import (
     EventCategory,
@@ -24,20 +28,21 @@ def get_event_service() -> EventService:
 def get_ingestion_service() -> IngestionService:
     # Ingestion writes events, so use the service-role client to bypass RLS
     event_service = EventService(get_supabase_service())
-    scrapers = [EventbriteScraper()]
+    settings = get_settings()
+    scrapers = [EventbriteScraper(token=settings.eventbrite_token)]
     # WebScraper instances can be added here with ScraperConfig for each target site
     return IngestionService(event_service=event_service, scrapers=scrapers)
 
 
 @router.get("/search")
 def search_events(
-    q: str | None = None,
-    category: EventCategory | None = None,
-    lat: float | None = None,
-    lng: float | None = None,
+    q: Optional[str] = None,
+    category: Optional[EventCategory] = None,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
     radius_km: float = 25.0,
-    from_time: datetime | None = None,
-    to_time: datetime | None = None,
+    from_time: Optional[datetime] = None,
+    to_time: Optional[datetime] = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     service: EventService = Depends(get_event_service),
@@ -66,8 +71,8 @@ def map_events(
     west: float = Query(...),
     north: float = Query(...),
     east: float = Query(...),
-    from_time: datetime | None = None,
-    category: EventCategory | None = None,
+    from_time: Optional[datetime] = None,
+    category: Optional[EventCategory] = None,
     max_results: int = Query(default=200, ge=1, le=500),
     service: EventService = Depends(get_event_service),
 ):
@@ -97,7 +102,7 @@ def get_event(
 
 @router.post("/ingest")
 async def ingest_events(
-    city: str | None = Query(default=None),
+    city: Optional[str] = Query(default=None),
     service: IngestionService = Depends(get_ingestion_service),
 ):
     """Trigger a scrape-and-upsert run for all registered scrapers."""

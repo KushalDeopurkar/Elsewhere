@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import Optional, List
+
 from abc import ABC, abstractmethod
 import logging
 
@@ -13,8 +16,8 @@ class BaseScraper(ABC):
 
     @abstractmethod
     async def scrape(
-        self, city: str | None = None, **kwargs
-    ) -> list[EventCreate]:
+        self, city: Optional[str] = None, **kwargs
+    ) -> List[EventCreate]:
         """Fetch and normalize events from this source.
 
         Args:

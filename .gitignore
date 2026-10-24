@@ -1,7 +1,12 @@
 .venv/
+venv/
 __pycache__/
 *.pyc
 .env
+backend.env
 .pytest_cache/
 node_modules/
 .next/
+*.command
+seed_events.json
+.vercel/

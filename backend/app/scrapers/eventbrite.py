@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import Optional, List, Dict
+
 import httpx
 from datetime import datetime
 
@@ -5,7 +8,7 @@ from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
 
 # Eventbrite category_id → our category
-CATEGORY_MAP: dict[str, EventCategory] = {
+CATEGORY_MAP: Dict[str, EventCategory] = {
     "101": EventCategory.BUSINESS,
     "102": EventCategory.TECH,
     "103": EventCategory.MUSIC,
@@ -30,14 +33,16 @@ class EventbriteScraper(BaseScraper):
         self.token = token
 
     async def scrape(
-        self, city: str | None = None, **kwargs
-    ) -> list[EventCreate]:
+        self, city: Optional[str] = None, **kwargs
+    ) -> List[EventCreate]:
         self._log(f"Scraping events for city={city}")
-        events: list[EventCreate] = []
+        print(f"[EVENTBRITE] Scraping city={city}, token={self.token[:8]}...")
+        events: List[EventCreate] = []
 
         try:
             async with httpx.AsyncClient(
                 timeout=30.0,
+                headers={"Authorization": f"Bearer {self.token}"},
                 transport=httpx.AsyncHTTPTransport(retries=3),
             ) as client:
                 resp = await client.get(
@@ -45,13 +50,20 @@ class EventbriteScraper(BaseScraper):
                     params={
                         "location.address": city or "Mumbai",
                         "expand": "venue",
-                        "token": self.token,
                     },
                 )
                 resp.raise_for_status()
                 data = resp.json()
+        except httpx.HTTPStatusError as e:
+            self._log(f"HTTP {e.response.status_code}: {e.response.text[:500]}")
+            print(f"[EVENTBRITE] HTTP {e.response.status_code}: {e.response.text[:300]}")
+            return []
         except httpx.HTTPError as e:
             self._log(f"HTTP error: {e}")
+            print(f"[EVENTBRITE] Connection error: {e}")
+            return []
+        except Exception as e:
+            print(f"[EVENTBRITE] Unexpected error: {e}")
             return []
 
         for raw in data.get("events", []):
@@ -62,6 +74,7 @@ class EventbriteScraper(BaseScraper):
                 continue
 
         self._log(f"Scraped {len(events)} events")
+        print(f"[EVENTBRITE] Scraped {len(events)} events")
         return events
 
     def _parse_event(self, raw: dict) -> EventCreate:

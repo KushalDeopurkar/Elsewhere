@@ -1,6 +1,7 @@
 import { ApiResponse, Event, SearchParams } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+const API_BASE = typeof window === "undefined" ? `${BACKEND_URL}/api` : "/api";
 
 export async function searchEvents(params: SearchParams): Promise<Event[]> {
   const searchParams = new URLSearchParams();

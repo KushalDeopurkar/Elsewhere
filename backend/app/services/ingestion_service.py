@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import List, Dict, Optional
+
 import logging
 
 from app.scrapers.base import BaseScraper
@@ -10,18 +13,18 @@ class IngestionService:
     """Orchestrates running all scrapers and upserting results."""
 
     def __init__(
-        self, event_service: EventService, scrapers: list[BaseScraper]
+        self, event_service: EventService, scrapers: List[BaseScraper]
     ):
         self.event_service = event_service
         self.scrapers = scrapers
 
-    async def run_all(self, city: str | None = None) -> dict[str, int]:
+    async def run_all(self, city: Optional[str] = None) -> Dict[str, int]:
         """Run every registered scraper, upsert results.
 
         Returns:
             Dict mapping scraper name -> count of upserted events.
         """
-        results: dict[str, int] = {}
+        results: Dict[str, int] = {}
 
         for scraper in self.scrapers:
             try:

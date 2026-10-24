@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager
@@ -20,7 +22,8 @@ async def scheduled_ingest() -> None:
     """Background job: run all scrapers and upsert results."""
     try:
         event_service = EventService(get_supabase_service())
-        scrapers = [EventbriteScraper()]
+        settings = get_settings()
+        scrapers = [EventbriteScraper(token=settings.eventbrite_token)]
         ingestion = IngestionService(event_service=event_service, scrapers=scrapers)
         results = await ingestion.run_all()
         total = sum(results.values())

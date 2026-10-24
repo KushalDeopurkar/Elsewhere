@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import Optional, List, Dict
+
 import logging
 from datetime import datetime, timezone
 
@@ -12,7 +15,7 @@ class EventService:
     def __init__(self, client: Client):
         self.client = client
 
-    def upsert_events(self, events: list[EventCreate]) -> int:
+    def upsert_events(self, events: List[EventCreate]) -> int:
         """Insert or update events. Returns count of upserted rows."""
         if not events:
             return 0
@@ -29,7 +32,7 @@ class EventService:
         logger.info(f"Upserted {count} events")
         return count
 
-    def search(self, params: EventSearchParams) -> list[dict]:
+    def search(self, params: EventSearchParams) -> List[Dict]:
         """Full-text + geo search via the search_events RPC.
 
         NOTE: the search_events RPC's geo input parameters are named
@@ -52,7 +55,7 @@ class EventService:
         result = self.client.rpc("search_events", rpc_params).execute()
         return result.data or []
 
-    def get_by_id(self, event_id: str) -> dict | None:
+    def get_by_id(self, event_id: str) -> Optional[Dict]:
         """Get single event by UUID via RPC (extracts lat/lng from coords)."""
         result = self.client.rpc(
             "get_event_by_id", {"p_id": event_id}
@@ -66,10 +69,10 @@ class EventService:
         west: float,
         north: float,
         east: float,
-        from_time: datetime | None = None,
-        category: str | None = None,
+        from_time: Optional[datetime] = None,
+        category: Optional[str] = None,
         max_results: int = 200,
-    ) -> list[dict]:
+    ) -> List[Dict]:
         """Get events within a map bounding box via events_in_bounds RPC."""
         result = self.client.rpc(
             "events_in_bounds",

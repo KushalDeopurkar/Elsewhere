@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import Optional, List
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import md5
@@ -17,15 +20,15 @@ class ScraperConfig:
     container_selector: str
     title_selector: str
     date_selector: str
-    description_selector: str | None = None
-    venue_selector: str | None = None
-    link_selector: str | None = None
+    description_selector: Optional[str] = None
+    venue_selector: Optional[str] = None
+    link_selector: Optional[str] = None
     link_attr: str = "href"
-    image_selector: str | None = None
+    image_selector: Optional[str] = None
     image_attr: str = "src"
     base_url: str = ""
     default_category: str = "other"
-    default_city: str | None = None
+    default_city: Optional[str] = None
 
 
 class WebScraper(BaseScraper):
@@ -35,7 +38,7 @@ class WebScraper(BaseScraper):
         self.config = config
         self.name = config.name
 
-    async def scrape(self, city: str | None = None, **kwargs) -> list[EventCreate]:
+    async def scrape(self, city: Optional[str] = None, **kwargs) -> List[EventCreate]:
         self._log(f"Scraping {self.config.url}")
 
         try:
@@ -52,10 +55,10 @@ class WebScraper(BaseScraper):
 
         return self._parse_html(html)
 
-    def _parse_html(self, html: str) -> list[EventCreate]:
+    def _parse_html(self, html: str) -> List[EventCreate]:
         soup = BeautifulSoup(html, "lxml")
         containers = soup.select(self.config.container_selector)
-        events: list[EventCreate] = []
+        events: List[EventCreate] = []
 
         for container in containers:
             try:
