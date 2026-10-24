@@ -4,7 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
 import { Event } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { MAP_STYLE, DEFAULT_VIEW } from "@/lib/mapStyle";
+import {
+  STYLE_URL,
+  FALLBACK_STYLE_URL,
+  DEFAULT_VIEW,
+  applyDarkTheme,
+  add3DBuildings,
+} from "@/lib/mapTheme";
 import type { MapBounds } from "@/lib/api";
 
 // Must be set before the first Map is constructed. See
@@ -38,6 +44,7 @@ export default function EventMap({
   const map = useRef<MapLibreMap | null>(null);
   const markers = useRef(new Map<string, Marker>());
   const didLoad = useRef(false);
+  const triedFallback = useRef(false);
   const [loaded, setLoaded] = useState(false);
 
   // Callbacks are held in refs so the map is built exactly once; re-creating
@@ -52,7 +59,7 @@ export default function EventMap({
 
     const instance = new MapLibreMap({
       container: container.current,
-      style: MAP_STYLE,
+      style: STYLE_URL,
       ...DEFAULT_VIEW,
       attributionControl: { compact: true },
       maxPitch: 70,
@@ -69,6 +76,13 @@ export default function EventMap({
         east: b.getEast(),
       });
     };
+
+    // Fires for the initial style and again after any setStyle, so the
+    // fallback basemap is themed exactly like the primary one.
+    instance.on("style.load", () => {
+      applyDarkTheme(instance);
+      add3DBuildings(instance);
+    });
 
     instance.on("load", () => {
       didLoad.current = true;
@@ -98,16 +112,48 @@ export default function EventMap({
         console.warn("[map]", e?.error?.message ?? e);
         return;
       }
-      cb.current.onError?.(e?.error?.message ?? "The map failed to load.");
+
+      // The primary basemap never came up. Swap providers once before
+      // telling the viewer the map is unavailable.
+      if (!triedFallback.current) {
+        triedFallback.current = true;
+        console.warn(
+          `[map] ${STYLE_URL} failed, falling back to ${FALLBACK_STYLE_URL}`,
+          e?.error?.message ?? e,
+        );
+        try {
+          instance.setStyle(FALLBACK_STYLE_URL);
+          return;
+        } catch {
+          // Fall through to the error panel below.
+        }
+      }
+
+      cb.current.onError?.(
+        e?.error?.message ?? "The basemap could not be loaded.",
+      );
     });
 
     // A silent hang (no error event, no load) should still resolve to a state
     // the viewer can act on rather than an empty dark rectangle.
     const stall = setTimeout(() => {
-      if (!didLoad.current) {
-        cb.current.onError?.("The map took too long to load.");
+      if (didLoad.current) return;
+      if (!triedFallback.current) {
+        triedFallback.current = true;
+        try {
+          instance.setStyle(FALLBACK_STYLE_URL);
+          setTimeout(() => {
+            if (!didLoad.current) {
+              cb.current.onError?.("The map took too long to load.");
+            }
+          }, 10000);
+          return;
+        } catch {
+          // Fall through.
+        }
       }
-    }, 15000);
+      cb.current.onError?.("The map took too long to load.");
+    }, 10000);
 
     const pins = markers.current;
 

@@ -81,8 +81,9 @@ export default function MapPage() {
             <WarningCircle size={30} weight="duotone" className="panel-icon" />
             <p className="panel-title">The basemap did not load</p>
             <p className="panel-body">
-              Map tiles come from openfreemap.org. Check the network can reach
-              it, or point NEXT_PUBLIC_MAP_TILES at another OpenMapTiles source.
+              Both basemap providers were unreachable. The browser console
+              names the URLs that failed. To use a different provider, set
+              NEXT_PUBLIC_MAP_STYLE to any MapLibre style URL.
             </p>
             <div className="panel-actions">
               <button
