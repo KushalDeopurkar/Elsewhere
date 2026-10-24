@@ -184,6 +184,6 @@ export function add3DBuildings(map: MapLibreMap): boolean {
 export const DEFAULT_VIEW = {
   center: [72.8777, 19.076] as [number, number],
   zoom: 12.2,
-  pitch: 55,
+  pitch: 35,
   bearing: -18,
 };

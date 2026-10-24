@@ -94,7 +94,7 @@ export default function EventMap({
           instance.flyTo({
             center: [event.lng, event.lat],
             zoom: Math.max(instance.getZoom(), 15.5),
-            pitch: 58,
+            pitch: 45,
             duration: prefersReducedMotion() ? 0 : 1200,
             essential: true,
           });
@@ -180,6 +180,12 @@ export default function EventMap({
       if (markers.current.has(event.id)) continue;
 
       const hue = getCategoryColor(event.category);
+
+      // MapLibre owns the marker element: it sets position and transform on
+      // it every frame to keep the pin pinned. Styling that element directly
+      // fights it, so the button goes inside a wrapper we never touch.
+      const wrapper = document.createElement("div");
+
       const el = document.createElement("button");
       el.type = "button";
       el.className = "pin pin-cat";
@@ -193,10 +199,11 @@ export default function EventMap({
         ev.stopPropagation();
         cb.current.onSelect(event);
       });
+      wrapper.appendChild(el);
 
       markers.current.set(
         event.id,
-        new Marker({ element: el })
+        new Marker({ element: wrapper, anchor: "bottom" })
           .setLngLat([event.lng, event.lat])
           .addTo(instance),
       );
@@ -214,7 +221,8 @@ export default function EventMap({
   // never rebuilds markers.
   useEffect(() => {
     for (const [id, marker] of markers.current) {
-      marker.getElement().classList.toggle("is-active", id === selectedId);
+      const pin = marker.getElement().querySelector(".pin");
+      pin?.classList.toggle("is-active", id === selectedId);
     }
   }, [selectedId, events]);
 

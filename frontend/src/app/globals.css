@@ -1145,10 +1145,16 @@ p {
 }
 
 /* Marker. A marigold pin with a soft halo so it reads against dark terrain. */
+/* Lives inside a wrapper that MapLibre positions. Never style the marker
+   element itself: MapLibre writes position and transform to it each frame,
+   and overriding either makes pins drift away from their venue on pan. */
 .pin {
   position: relative;
   width: 2rem;
-  height: 2rem;
+  /* Extra height is the tail. The marker is anchored bottom, so the tail tip
+     lands on the venue and the pin reads as planted rather than floating. */
+  height: 2.5rem;
+  padding-bottom: 0.5rem;
   display: grid;
   place-items: center;
   border-radius: var(--r-pill);
@@ -1162,9 +1168,25 @@ p {
   transition: transform var(--t-hover) var(--ease);
 }
 
+.pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.08rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: inherit;
+  border-radius: 0 0 2px 0;
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 1px 1px 0 oklch(0.195 0.009 70 / 0.5);
+  z-index: -1;
+}
+
 .pin:hover,
 .pin.is-active {
-  transform: scale(1.18);
+  /* Scale from the tip so the anchor point does not move on hover. */
+  transform: scale(1.16);
+  transform-origin: bottom center;
   z-index: var(--z-raised);
 }
 
