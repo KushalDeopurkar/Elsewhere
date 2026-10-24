@@ -1,0 +1,71 @@
+name: Scrape Events
+
+on:
+  schedule:
+    # Run every 6 hours (free tier friendly)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Which scraper to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - allevents
+          - insider
+          - meetup
+      city:
+        description: 'Specific city to scrape (optional)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Dry run (no DB writes)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run scrapers
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          cd backend
+          SOURCE="${{ github.event.inputs.source || 'all' }}"
+          CITY="${{ github.event.inputs.city || '' }}"
+          DRY="${{ github.event.inputs.dry_run || 'false' }}"
+          
+          CMD="python run_scrapers.py --source $SOURCE"
+          
+          if [ -n "$CITY" ]; then
+            CMD="$CMD --city $CITY"
+          fi
+          
+          if [ "$DRY" = "true" ]; then
+            CMD="$CMD --dry-run"
+          fi
+          
+          echo "Running: $CMD"
+          $CMD

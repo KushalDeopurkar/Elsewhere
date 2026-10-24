@@ -12,24 +12,33 @@ from app.config import get_settings
 from app.api.events import router as events_router
 from app.database import get_supabase_service
 from app.scrapers.allevents import AllEventsScraper
-from app.scrapers.eventbrite import EventbriteScraper
+from app.scrapers.insider import InsiderScraper
 from app.scrapers.meetup import MeetupScraper
+from app.scrapers.eventbrite import EventbriteScraper
 from app.services.event_service import EventService
 from app.services.ingestion_service import IngestionService
 
 logger = logging.getLogger(__name__)
 
 
+def _build_scrapers():
+    """Create all registered scraper instances."""
+    settings = get_settings()
+    scrapers = [
+        AllEventsScraper(delay=1.0, categories=["all"]),
+        InsiderScraper(delay=1.5),
+        MeetupScraper(delay=2.0),
+    ]
+    if settings.eventbrite_token:
+        scrapers.append(EventbriteScraper(token=settings.eventbrite_token))
+    return scrapers
+
+
 async def scheduled_ingest() -> None:
     """Background job: run all scrapers and upsert results."""
     try:
         event_service = EventService(get_supabase_service())
-        settings = get_settings()
-        scrapers = [AllEventsScraper(), MeetupScraper()]
-        # Eventbrite needs a token, and its search endpoint appears to be
-        # retired — only run it when one is actually configured.
-        if settings.eventbrite_token:
-            scrapers.append(EventbriteScraper(token=settings.eventbrite_token))
+        scrapers = _build_scrapers()
         ingestion = IngestionService(event_service=event_service, scrapers=scrapers)
         results = await ingestion.run_all()
         total = sum(results.values())
@@ -67,17 +76,13 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="Event Discovery Engine",
-        version="0.1.0",
+        version="0.2.0",
         lifespan=lifespan,
     )
-    # A wildcard origin and credentials are mutually exclusive per the CORS spec —
-    # browsers reject the pair outright. This API is unauthenticated, so it needs no
-    # credentials when serving every origin. Narrowing cors_origins re-enables them.
-    allow_credentials = "*" not in settings.cors_origins
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_credentials=allow_credentials,
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )

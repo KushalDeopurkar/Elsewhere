@@ -5,25 +5,30 @@ embedded in city pages. No API key required.
 Usage:
     from app.scrapers.allevents import AllEventsScraper
     scraper = AllEventsScraper()
-    events = await scraper.scrape()              # every configured city
-    events = await scraper.scrape(city="pune")   # one city
+    events = await scraper.scrape()          # all cities, 'all' category
+    events = await scraper.scrape(city="mumbai")
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
-from datetime import datetime, timezone
+import ssl
+import urllib.request
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict
 from hashlib import md5
-
-import httpx
 
 from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
 
-# Major Indian cities for scraping
+logger = logging.getLogger(__name__)
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+# Major Indian cities
 INDIAN_CITIES = [
     "mumbai", "delhi", "bangalore", "hyderabad", "chennai",
     "kolkata", "pune", "ahmedabad", "jaipur", "lucknow",
@@ -33,24 +38,15 @@ INDIAN_CITIES = [
     "noida", "gurgaon", "navi-mumbai", "thane",
 ]
 
-# Category paths to try on AllEvents.in
+# Category paths on AllEvents.in
 CATEGORY_PATHS = [
-    "all",          # default — mixed events
-    "music",
-    "comedy",
-    "food-and-drink",
-    "arts",
-    "sports",
-    "workshops",
-    "business",
-    "health-and-wellness",
-    "nightlife",
-    "kids",
-    "outdoor",
+    "all", "music", "comedy", "food-and-drink", "arts",
+    "sports", "workshops", "business", "health-and-wellness",
+    "nightlife", "kids", "outdoor",
 ]
 
-# Map AllEvents categories to our categories
-CATEGORY_MAP = {
+CATEGORY_MAP: Dict[str, str] = {
+    "all": "community",
     "music": "music",
     "comedy": "arts",
     "food-and-drink": "food",
@@ -66,125 +62,93 @@ CATEGORY_MAP = {
 
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 )
-
-HEADERS = {
-    "User-Agent": USER_AGENT,
-    "Accept": "text/html,application/xhtml+xml,*/*",
-    "Accept-Language": "en-US,en;q=0.9",
-}
 
 
 class AllEventsScraper(BaseScraper):
-    """Scrapes allevents.in city pages for Schema.org Event markup."""
+    """Scrapes AllEvents.in using Schema.org LD+JSON embedded in HTML pages."""
 
     name = "allevents"
 
-    def __init__(self, delay: float = 1.5):
+    def __init__(self, delay: float = 1.0, categories: List[str] = None):
         self.delay = delay
+        self.categories = categories or ["all"]
+        self.ctx = ssl.create_default_context()
         self._seen_urls: set = set()
 
-    async def scrape(
-        self, city: Optional[str] = None, **kwargs
-    ) -> List[EventCreate]:
-        """Scrape one city, or every configured city when city is None.
-
-        Accepts an optional `categories` keyword; defaults to ["all"], the
-        broadest listing page.
-        """
-        cities = [self._normalize_city(city)] if city else list(INDIAN_CITIES)
-        categories = kwargs.get("categories") or ["all"]
-
-        # Reset per run so a reused instance does not dedup itself to nothing.
-        self._seen_urls = set()
+    async def scrape(self, city: Optional[str] = None, **kwargs) -> List[EventCreate]:
+        """Scrape AllEvents.in for Indian cities."""
+        cities = [city] if city else INDIAN_CITIES
         all_events: List[EventCreate] = []
 
-        async with httpx.AsyncClient(
-            timeout=30.0,
-            headers=HEADERS,
-            follow_redirects=True,
-            transport=httpx.AsyncHTTPTransport(retries=3),
-        ) as client:
-            for c in cities:
-                try:
-                    all_events.extend(
-                        await self._scrape_city(client, c, categories)
-                    )
-                except Exception as e:
-                    self._log(f"Error scraping {c}: {e}")
-                    continue
+        for c in cities:
+            try:
+                city_events = await self._scrape_city(c)
+                all_events.extend(city_events)
+                self._log(f"{c}: {len(city_events)} events (total: {len(all_events)})")
+            except Exception as e:
+                self._log(f"Error scraping {c}: {e}")
+                continue
 
-        self._log(f"Scraped {len(all_events)} events from {len(cities)} cities")
+        self._log(f"Finished: {len(all_events)} events from {len(cities)} cities")
         return all_events
 
-    @staticmethod
-    def _normalize_city(city: str) -> str:
-        """Turn a display name like 'Navi Mumbai' into an URL slug."""
-        return city.strip().lower().replace(" ", "-")
-
-    async def _scrape_city(
-        self, client: httpx.AsyncClient, city: str, categories: List[str]
-    ) -> List[EventCreate]:
-        """Scrape events for a single city across categories."""
+    async def _scrape_city(self, city: str) -> List[EventCreate]:
         events: List[EventCreate] = []
-        for cat in categories:
+        for cat in self.categories:
             url = f"https://allevents.in/{city}/{cat}"
-            self._log(f"Scraping {url}")
-
-            html = await self._fetch(client, url)
+            html = await self._fetch(url)
             if not html:
                 continue
 
             raw_events = self._extract_ld_json_events(html)
-            self._log(f"Found {len(raw_events)} events in {city}/{cat}")
-
             for raw in raw_events:
-                event = self._parse_event(raw, category_hint=cat)
+                event = self._parse_event(raw, city_hint=city, category_hint=cat)
                 if event:
                     events.append(event)
 
             await asyncio.sleep(self.delay)
-
-        self._log(f"Total for {city}: {len(events)} events")
         return events
 
-    async def _fetch(
-        self, client: httpx.AsyncClient, url: str
-    ) -> Optional[str]:
-        """Fetch a URL and return the HTML content."""
+    async def _fetch(self, url: str) -> Optional[str]:
+        headers = {
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
         try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            return resp.text
-        except httpx.HTTPError as e:
-            self._log(f"Failed to fetch {url}: {e}")
+            req = urllib.request.Request(url, headers=headers)
+            loop = asyncio.get_event_loop()
+            resp = await loop.run_in_executor(
+                None,
+                lambda: urllib.request.urlopen(req, context=self.ctx, timeout=20),
+            )
+            return resp.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            logger.warning(f"Failed to fetch {url}: {e}")
             return None
 
     def _extract_ld_json_events(self, html: str) -> List[Dict]:
-        """Extract Event objects from Schema.org LD+JSON blocks."""
         events = []
         blocks = re.findall(
             r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
-            html,
-            re.DOTALL,
+            html, re.DOTALL,
         )
         for block in blocks:
             try:
                 data = json.loads(block)
-                if isinstance(data, list):
-                    for item in data:
-                        if isinstance(item, dict) and item.get("@type") == "Event":
-                            events.append(item)
-                elif isinstance(data, dict):
-                    if data.get("@type") == "Event":
-                        events.append(data)
+                items = data if isinstance(data, list) else [data]
+                for item in items:
+                    if isinstance(item, dict) and item.get("@type") == "Event":
+                        events.append(item)
             except json.JSONDecodeError:
                 continue
         return events
 
-    def _parse_event(self, raw: Dict, category_hint: str = "all") -> Optional[EventCreate]:
-        """Convert a Schema.org Event dict to our EventCreate model."""
+    def _parse_event(
+        self, raw: Dict, city_hint: str = "", category_hint: str = "all"
+    ) -> Optional[EventCreate]:
         try:
             name = raw.get("name", "").strip()
             if not name:
@@ -195,52 +159,44 @@ class AllEventsScraper(BaseScraper):
                 return None
             self._seen_urls.add(url)
 
-            # Source ID from URL or hash
             source_id = url.split("/")[-1] if url else md5(name.encode()).hexdigest()[:16]
 
             # Location
             location = raw.get("location", {})
+            if isinstance(location, str):
+                location = {"name": location}
             venue = location.get("name", "") if isinstance(location, dict) else ""
             address_obj = location.get("address", {}) if isinstance(location, dict) else {}
+            if isinstance(address_obj, str):
+                address_obj = {"streetAddress": address_obj}
             address = address_obj.get("streetAddress", "") if isinstance(address_obj, dict) else ""
-            city = address_obj.get("addressLocality", "") if isinstance(address_obj, dict) else ""
+            city = address_obj.get("addressLocality", city_hint) if isinstance(address_obj, dict) else city_hint
 
             # Coordinates
             geo = location.get("geo", {}) if isinstance(location, dict) else {}
             lat = float(geo.get("latitude", 0)) if geo.get("latitude") else None
             lng = float(geo.get("longitude", 0)) if geo.get("longitude") else None
 
+            # Don't skip events without coords — use city fallback
             if not lat or not lng:
-                return None  # Skip events without coordinates
+                lat, lng = _city_coords(city_hint)
 
             # Dates
-            start_str = raw.get("startDate", "")
-            end_str = raw.get("endDate", "")
-
-            start_time = self._parse_date(start_str)
-            end_time = self._parse_date(end_str) if end_str else None
-
+            start_time = self._parse_date(raw.get("startDate", ""))
+            end_time = self._parse_date(raw.get("endDate", "")) if raw.get("endDate") else None
             if not start_time:
                 return None
-
-            # Skip past events
-            if start_time < datetime.now(timezone.utc):
-                pass  # Keep them — they might be today
 
             # Price
             offers = raw.get("offers", [])
             if isinstance(offers, dict):
                 offers = [offers]
-
-            price_min = None
-            price_max = None
-            is_free = True
-
+            price_min, price_max, is_free = None, None, True
             for offer in (offers or []):
                 if isinstance(offer, dict):
-                    low = offer.get("lowPrice")
+                    low = offer.get("lowPrice") or offer.get("price")
                     high = offer.get("highPrice")
-                    if low and str(low) != "free":
+                    if low and str(low).lower() not in ("free", "0"):
                         try:
                             price_min = float(low)
                             is_free = False
@@ -253,7 +209,7 @@ class AllEventsScraper(BaseScraper):
                         except (ValueError, TypeError):
                             pass
 
-            # Category mapping
+            # Category
             category = CATEGORY_MAP.get(category_hint, "community")
 
             # Image
@@ -263,15 +219,21 @@ class AllEventsScraper(BaseScraper):
             if isinstance(image, dict):
                 image = image.get("url", "")
 
+            # Description
+            description = raw.get("description", "")
+            if len(description) > 2000:
+                description = description[:1997] + "..."
+
             return EventCreate(
                 source="allevents",
                 source_id=f"ae-{source_id}",
                 title=name,
-                description="",  # Not in LD+JSON; could fetch detail page later
+                description=description or "",
                 start_time=start_time,
                 end_time=end_time,
                 location_name=venue,
-                address=f"{address}, {city}".strip(", ") if address else city,
+                address=f"{address}, {city}".strip(", ") if address else (city or ""),
+                city=city.title() if city else None,
                 lat=lat,
                 lng=lng,
                 category=EventCategory(category),
@@ -283,14 +245,12 @@ class AllEventsScraper(BaseScraper):
                 image_url=image,
             )
         except Exception as e:
-            self._log(f"Failed to parse event: {e}")
+            logger.warning(f"Failed to parse allevents event: {e}")
             return None
 
     def _parse_date(self, date_str: str) -> Optional[datetime]:
-        """Parse various date formats from AllEvents."""
         if not date_str:
             return None
-        # Try common formats
         for fmt in [
             "%Y-%m-%dT%H:%M:%S%z",
             "%Y-%m-%dT%H:%M:%S",
@@ -298,12 +258,35 @@ class AllEventsScraper(BaseScraper):
             "%Y-%m-%d",
         ]:
             try:
-                dt = datetime.strptime(date_str[:len("2026-01-01T00:00:00+05:30")], fmt)
+                dt = datetime.strptime(date_str[:30], fmt)
                 if dt.tzinfo is None:
-                    # Assume IST
-                    from datetime import timedelta
-                    dt = dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+                    dt = dt.replace(tzinfo=IST)
                 return dt
             except ValueError:
                 continue
         return None
+
+
+# Fallback city coordinates for events without geo data
+_CITY_COORDS: Dict[str, tuple] = {
+    "mumbai": (19.076, 72.878), "delhi": (28.614, 77.209),
+    "bangalore": (12.972, 77.595), "hyderabad": (17.385, 78.487),
+    "chennai": (13.083, 80.271), "kolkata": (22.573, 88.364),
+    "pune": (18.520, 73.857), "ahmedabad": (23.023, 72.571),
+    "jaipur": (26.912, 75.787), "lucknow": (26.847, 80.947),
+    "chandigarh": (30.733, 76.779), "kochi": (9.932, 76.267),
+    "goa": (15.300, 73.914), "indore": (22.720, 75.858),
+    "bhopal": (23.260, 77.413), "nagpur": (21.146, 79.089),
+    "vadodara": (22.310, 73.192), "coimbatore": (11.017, 76.956),
+    "visakhapatnam": (17.687, 83.218), "thiruvananthapuram": (8.525, 76.936),
+    "guwahati": (26.144, 91.736), "dehradun": (30.317, 78.032),
+    "mysore": (12.296, 76.639), "udaipur": (24.586, 73.713),
+    "jodhpur": (26.239, 73.025), "noida": (28.535, 77.391),
+    "gurgaon": (28.459, 77.027), "navi-mumbai": (19.033, 73.030),
+    "thane": (19.218, 72.978),
+}
+
+
+def _city_coords(city_slug: str) -> tuple:
+    """Return (lat, lng) for a city slug, or Mumbai as default."""
+    return _CITY_COORDS.get(city_slug.lower(), (19.076, 72.878))

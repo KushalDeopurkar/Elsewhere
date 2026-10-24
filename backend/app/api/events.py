@@ -14,9 +14,6 @@ from app.models.event import (
     EventSearchParams,
 )
 from app.models.schemas import ApiResponse, Meta
-from app.scrapers.allevents import AllEventsScraper
-from app.scrapers.eventbrite import EventbriteScraper
-from app.scrapers.meetup import MeetupScraper
 from app.services.event_service import EventService
 from app.services.ingestion_service import IngestionService
 
@@ -29,11 +26,18 @@ def get_event_service() -> EventService:
 
 def get_ingestion_service() -> IngestionService:
     # Ingestion writes events, so use the service-role client to bypass RLS
+    from app.scrapers.allevents import AllEventsScraper
+    from app.scrapers.insider import InsiderScraper
+    from app.scrapers.meetup import MeetupScraper
+    from app.scrapers.eventbrite import EventbriteScraper
+
     event_service = EventService(get_supabase_service())
     settings = get_settings()
-    scrapers = [AllEventsScraper(), MeetupScraper()]
-    # Eventbrite needs a token, and its search endpoint appears to be retired
-    # so only run it when one is actually configured.
+    scrapers = [
+        AllEventsScraper(delay=1.0, categories=["all"]),
+        InsiderScraper(delay=1.5),
+        MeetupScraper(delay=2.0),
+    ]
     if settings.eventbrite_token:
         scrapers.append(EventbriteScraper(token=settings.eventbrite_token))
     return IngestionService(event_service=event_service, scrapers=scrapers)
