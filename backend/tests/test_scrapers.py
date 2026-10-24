@@ -1,5 +1,11 @@
+import json
+
 import pytest
+
+from app.models.event import EventCategory
+from app.scrapers.allevents import AllEventsScraper
 from app.scrapers.eventbrite import EventbriteScraper
+from app.scrapers.meetup import MeetupScraper
 from app.scrapers.web_scraper import WebScraper, ScraperConfig
 
 
@@ -230,3 +236,235 @@ async def test_web_scraper_skips_container_missing_required_fields(httpx_mock):
 
     assert len(events) == 1
     assert events[0].title == "Good Event"
+
+
+# ─── AllEvents.in ──────────────────────────────────────────────────────────
+
+ALLEVENTS_HTML = """
+<html><head>
+<script type="application/ld+json">
+{
+  "@type": "Event",
+  "name": "Sunburn Arena Mumbai",
+  "url": "https://allevents.in/mumbai/sunburn-arena/80001",
+  "startDate": "2026-11-15T19:00:00+05:30",
+  "endDate": "2026-11-15T23:00:00+05:30",
+  "location": {
+    "name": "NSCI Dome",
+    "address": {
+      "streetAddress": "Lal Bahadur Shastri Marg",
+      "addressLocality": "Mumbai"
+    },
+    "geo": {"latitude": "19.0330", "longitude": "72.8296"}
+  },
+  "offers": {"lowPrice": "999", "highPrice": "4999"},
+  "image": "https://img.allevents.in/sunburn.jpg"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@type": "Event",
+  "name": "Event With No Coordinates",
+  "url": "https://allevents.in/mumbai/no-coords/80002",
+  "startDate": "2026-11-16T10:00:00+05:30",
+  "location": {"name": "Somewhere", "address": {"addressLocality": "Mumbai"}}
+}
+</script>
+<script type="application/ld+json">
+{"@type": "WebSite", "name": "Not an event"}
+</script>
+</head><body></body></html>
+"""
+
+
+@pytest.mark.asyncio
+async def test_allevents_scraper_parses_events(httpx_mock):
+    httpx_mock.add_response(
+        url="https://allevents.in/mumbai/all",
+        text=ALLEVENTS_HTML,
+    )
+
+    scraper = AllEventsScraper(delay=0)
+    events = await scraper.scrape(city="mumbai")
+
+    # The no-coordinates event and the non-Event block are both skipped.
+    assert len(events) == 1
+
+    e = events[0]
+    assert e.title == "Sunburn Arena Mumbai"
+    assert e.source == "allevents"
+    assert e.source_id == "ae-80001"
+    assert e.lat == pytest.approx(19.0330)
+    assert e.lng == pytest.approx(72.8296)
+    assert e.location_name == "NSCI Dome"
+    assert e.address == "Lal Bahadur Shastri Marg, Mumbai"
+    assert e.country == "IN"
+    assert e.is_free is False
+    assert e.price_min == pytest.approx(999.0)
+    assert e.price_max == pytest.approx(4999.0)
+    assert e.start_time.isoformat() == "2026-11-15T19:00:00+05:30"
+    assert e.end_time.isoformat() == "2026-11-15T23:00:00+05:30"
+
+
+@pytest.mark.asyncio
+async def test_allevents_scraper_normalizes_city_name(httpx_mock):
+    httpx_mock.add_response(
+        url="https://allevents.in/navi-mumbai/all",
+        text=ALLEVENTS_HTML,
+    )
+
+    scraper = AllEventsScraper(delay=0)
+    events = await scraper.scrape(city="Navi Mumbai")
+
+    assert len(events) == 1
+
+
+@pytest.mark.asyncio
+async def test_allevents_scraper_dedups_repeated_urls(httpx_mock):
+    doubled = ALLEVENTS_HTML + ALLEVENTS_HTML
+    httpx_mock.add_response(url="https://allevents.in/pune/all", text=doubled)
+
+    scraper = AllEventsScraper(delay=0)
+    events = await scraper.scrape(city="pune")
+
+    assert len(events) == 1
+
+
+@pytest.mark.asyncio
+async def test_allevents_scraper_handles_page_without_markup(httpx_mock):
+    httpx_mock.add_response(
+        url="https://allevents.in/mumbai/all",
+        text="<html><body>No structured data here</body></html>",
+    )
+
+    scraper = AllEventsScraper(delay=0)
+    assert await scraper.scrape(city="mumbai") == []
+
+
+@pytest.mark.asyncio
+async def test_allevents_scraper_handles_http_error(httpx_mock):
+    httpx_mock.add_response(url="https://allevents.in/mumbai/all", status_code=503)
+
+    scraper = AllEventsScraper(delay=0)
+    assert await scraper.scrape(city="mumbai") == []
+
+
+# ─── Meetup.com ────────────────────────────────────────────────────────────
+
+MEETUP_APOLLO_STATE = {
+    "Event:ev-1": {
+        "id": "ev-1",
+        "title": "Mumbai Python Meetup",
+        "dateTime": "2026-11-20T18:30:00+05:30",
+        "eventUrl": "https://www.meetup.com/mumbai-python/events/ev-1/",
+        "description": "Monthly Python talks",
+        "eventType": "PHYSICAL",
+        "venue": {"__ref": "Venue:v-1"},
+        "featuredEventPhoto": {"__ref": "Photo:p-1"},
+        "group": {"__ref": "Group:g-1"},
+    },
+    "Event:ev-2": {
+        "id": "ev-2",
+        "title": "Remote Only Session",
+        "dateTime": "2026-11-21T18:30:00+05:30",
+        "eventUrl": "https://www.meetup.com/mumbai-python/events/ev-2/",
+        "eventType": "ONLINE",
+    },
+    "Venue:v-1": {
+        "name": "WeWork BKC",
+        "lat": 19.0650,
+        "lng": 72.8690,
+        "address": "Bandra Kurla Complex",
+        "city": "Mumbai",
+    },
+    "Photo:p-1": {"highResUrl": "https://img.meetup.com/p1.jpg"},
+    "Group:g-1": {"name": "Mumbai Python User Group"},
+}
+
+MEETUP_URL = (
+    "https://www.meetup.com/find/?location=in--mumbai&source=EVENTS"
+    "&categoryId=546&distance=fiftyMiles"
+)
+
+
+def _meetup_html(apollo_state) -> str:
+    payload = {"props": {"pageProps": {"__APOLLO_STATE__": apollo_state}}}
+    return (
+        '<html><body><script id="__NEXT_DATA__" type="application/json">'
+        + json.dumps(payload)
+        + "</script></body></html>"
+    )
+
+
+@pytest.mark.asyncio
+async def test_meetup_scraper_parses_events(httpx_mock):
+    httpx_mock.add_response(url=MEETUP_URL, text=_meetup_html(MEETUP_APOLLO_STATE))
+
+    scraper = MeetupScraper(delay=0)
+    events = await scraper.scrape(city="mumbai", category_ids=[546])
+
+    # The ONLINE event is skipped — this is a local discovery app.
+    assert len(events) == 1
+
+    e = events[0]
+    assert e.title == "Mumbai Python Meetup"
+    assert e.source == "meetup"
+    assert e.source_id == "mu-ev-1"
+    assert e.category == EventCategory.TECH
+    assert e.location_name == "WeWork BKC"
+    assert e.lat == pytest.approx(19.0650)
+    assert e.lng == pytest.approx(72.8690)
+    assert e.address == "Bandra Kurla Complex, Mumbai"
+    assert e.image_url == "https://img.meetup.com/p1.jpg"
+    assert e.country == "IN"
+    assert e.is_free is True
+
+
+@pytest.mark.asyncio
+async def test_meetup_scraper_falls_back_to_city_coords(httpx_mock):
+    """An event whose venue carries no coordinates inherits the city's."""
+    state = {
+        "Event:ev-3": {
+            "id": "ev-3",
+            "title": "Venue Without Coords",
+            "dateTime": "2026-11-22T18:30:00+05:30",
+            "eventUrl": "https://www.meetup.com/g/events/ev-3/",
+            "eventType": "PHYSICAL",
+            "group": {"__ref": "Group:g-1"},
+        },
+        "Group:g-1": {"name": "Mumbai Python User Group"},
+    }
+    httpx_mock.add_response(url=MEETUP_URL, text=_meetup_html(state))
+
+    scraper = MeetupScraper(delay=0)
+    events = await scraper.scrape(city="mumbai", category_ids=[546])
+
+    assert len(events) == 1
+    # Falls back to the configured coordinates for in--mumbai.
+    assert events[0].lat == pytest.approx(19.076)
+    assert events[0].lng == pytest.approx(72.878)
+    # And to the group name when the venue has none.
+    assert events[0].location_name == "Mumbai Python User Group"
+
+
+@pytest.mark.asyncio
+async def test_meetup_scraper_skips_unknown_city(httpx_mock):
+    """An unconfigured city makes no HTTP request at all."""
+    scraper = MeetupScraper(delay=0)
+    assert await scraper.scrape(city="Atlantis") == []
+
+
+@pytest.mark.asyncio
+async def test_meetup_scraper_handles_page_without_next_data(httpx_mock):
+    httpx_mock.add_response(url=MEETUP_URL, text="<html><body>nothing</body></html>")
+
+    scraper = MeetupScraper(delay=0)
+    assert await scraper.scrape(city="mumbai", category_ids=[546]) == []
+
+
+@pytest.mark.asyncio
+async def test_meetup_scraper_handles_http_error(httpx_mock):
+    httpx_mock.add_response(url=MEETUP_URL, status_code=429)
+
+    scraper = MeetupScraper(delay=0)
+    assert await scraper.scrape(city="mumbai", category_ids=[546]) == []

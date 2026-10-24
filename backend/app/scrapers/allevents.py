@@ -5,24 +5,23 @@ embedded in city pages. No API key required.
 Usage:
     from app.scrapers.allevents import AllEventsScraper
     scraper = AllEventsScraper()
-    events = scraper.scrape_all_cities()  # returns list of EventCreate
+    events = await scraper.scrape()              # every configured city
+    events = await scraper.scrape(city="pune")   # one city
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
-import logging
 import re
-import ssl
-import time
-import urllib.request
 from datetime import datetime, timezone
 from typing import List, Optional, Dict
 from hashlib import md5
 
-from app.models.event import EventCreate, EventCategory
+import httpx
 
-logger = logging.getLogger(__name__)
+from app.models.event import EventCreate, EventCategory
+from app.scrapers.base import BaseScraper
 
 # Major Indian cities for scraping
 INDIAN_CITIES = [
@@ -70,26 +69,96 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
+HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 
-class AllEventsScraper:
+
+class AllEventsScraper(BaseScraper):
+    """Scrapes allevents.in city pages for Schema.org Event markup."""
+
+    name = "allevents"
+
     def __init__(self, delay: float = 1.5):
         self.delay = delay
-        self.ctx = ssl.create_default_context()
         self._seen_urls: set = set()
 
-    def _fetch(self, url: str) -> Optional[str]:
+    async def scrape(
+        self, city: Optional[str] = None, **kwargs
+    ) -> List[EventCreate]:
+        """Scrape one city, or every configured city when city is None.
+
+        Accepts an optional `categories` keyword; defaults to ["all"], the
+        broadest listing page.
+        """
+        cities = [self._normalize_city(city)] if city else list(INDIAN_CITIES)
+        categories = kwargs.get("categories") or ["all"]
+
+        # Reset per run so a reused instance does not dedup itself to nothing.
+        self._seen_urls = set()
+        all_events: List[EventCreate] = []
+
+        async with httpx.AsyncClient(
+            timeout=30.0,
+            headers=HEADERS,
+            follow_redirects=True,
+            transport=httpx.AsyncHTTPTransport(retries=3),
+        ) as client:
+            for c in cities:
+                try:
+                    all_events.extend(
+                        await self._scrape_city(client, c, categories)
+                    )
+                except Exception as e:
+                    self._log(f"Error scraping {c}: {e}")
+                    continue
+
+        self._log(f"Scraped {len(all_events)} events from {len(cities)} cities")
+        return all_events
+
+    @staticmethod
+    def _normalize_city(city: str) -> str:
+        """Turn a display name like 'Navi Mumbai' into an URL slug."""
+        return city.strip().lower().replace(" ", "-")
+
+    async def _scrape_city(
+        self, client: httpx.AsyncClient, city: str, categories: List[str]
+    ) -> List[EventCreate]:
+        """Scrape events for a single city across categories."""
+        events: List[EventCreate] = []
+        for cat in categories:
+            url = f"https://allevents.in/{city}/{cat}"
+            self._log(f"Scraping {url}")
+
+            html = await self._fetch(client, url)
+            if not html:
+                continue
+
+            raw_events = self._extract_ld_json_events(html)
+            self._log(f"Found {len(raw_events)} events in {city}/{cat}")
+
+            for raw in raw_events:
+                event = self._parse_event(raw, category_hint=cat)
+                if event:
+                    events.append(event)
+
+            await asyncio.sleep(self.delay)
+
+        self._log(f"Total for {city}: {len(events)} events")
+        return events
+
+    async def _fetch(
+        self, client: httpx.AsyncClient, url: str
+    ) -> Optional[str]:
         """Fetch a URL and return the HTML content."""
-        headers = {
-            "User-Agent": USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,*/*",
-            "Accept-Language": "en-US,en;q=0.9",
-        }
         try:
-            req = urllib.request.Request(url, headers=headers)
-            resp = urllib.request.urlopen(req, context=self.ctx, timeout=20)
-            return resp.read().decode("utf-8", errors="replace")
-        except Exception as e:
-            logger.warning(f"Failed to fetch {url}: {e}")
+            resp = await client.get(url)
+            resp.raise_for_status()
+            return resp.text
+        except httpx.HTTPError as e:
+            self._log(f"Failed to fetch {url}: {e}")
             return None
 
     def _extract_ld_json_events(self, html: str) -> List[Dict]:
@@ -214,7 +283,7 @@ class AllEventsScraper:
                 image_url=image,
             )
         except Exception as e:
-            logger.warning(f"Failed to parse event: {e}")
+            self._log(f"Failed to parse event: {e}")
             return None
 
     def _parse_date(self, date_str: str) -> Optional[datetime]:
@@ -238,50 +307,3 @@ class AllEventsScraper:
             except ValueError:
                 continue
         return None
-
-    def scrape_city(self, city: str, categories: List[str] = None) -> List[EventCreate]:
-        """Scrape events for a single city across categories."""
-        if categories is None:
-            categories = ["all"]  # Start with 'all' to get the broadest coverage
-
-        events = []
-        for cat in categories:
-            url = f"https://allevents.in/{city}/{cat}"
-            logger.info(f"Scraping {url}")
-
-            html = self._fetch(url)
-            if not html:
-                continue
-
-            raw_events = self._extract_ld_json_events(html)
-            logger.info(f"  Found {len(raw_events)} events in {city}/{cat}")
-
-            for raw in raw_events:
-                event = self._parse_event(raw, category_hint=cat)
-                if event:
-                    events.append(event)
-
-            time.sleep(self.delay)
-
-        logger.info(f"Total for {city}: {len(events)} events")
-        return events
-
-    def scrape_all_cities(self, cities: List[str] = None, categories: List[str] = None) -> List[EventCreate]:
-        """Scrape all configured Indian cities."""
-        if cities is None:
-            cities = INDIAN_CITIES
-        if categories is None:
-            categories = ["all"]  # Use 'all' for initial scrape
-
-        all_events = []
-        for city in cities:
-            try:
-                city_events = self.scrape_city(city, categories)
-                all_events.extend(city_events)
-                logger.info(f"Running total: {len(all_events)} events")
-            except Exception as e:
-                logger.error(f"Error scraping {city}: {e}")
-                continue
-
-        logger.info(f"Grand total: {len(all_events)} events from {len(cities)} cities")
-        return all_events

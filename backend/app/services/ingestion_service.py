@@ -27,13 +27,17 @@ class IngestionService:
         results: Dict[str, int] = {}
 
         for scraper in self.scrapers:
+            # Resolved outside the try: reading it inside the handler would let
+            # a scraper missing the attribute abort the whole run instead of
+            # just its own turn.
+            name = getattr(scraper, "name", type(scraper).__name__)
             try:
-                logger.info(f"Running scraper: {scraper.name}")
+                logger.info(f"Running scraper: {name}")
                 events = await scraper.scrape(city=city)
                 count = self.event_service.upsert_events(events)
-                results[scraper.name] = count
+                results[name] = count
             except Exception as e:
-                logger.error(f"Scraper {scraper.name} failed: {e}")
-                results[scraper.name] = 0
+                logger.error(f"Scraper {name} failed: {e}")
+                results[name] = 0
 
         return results

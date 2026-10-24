@@ -5,23 +5,22 @@ city search result pages. No API key required.
 Usage:
     from app.scrapers.meetup import MeetupScraper
     scraper = MeetupScraper()
-    events = scraper.scrape_all_cities()
+    events = await scraper.scrape()               # every configured city
+    events = await scraper.scrape(city="mumbai")  # one city
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
-import logging
 import re
-import ssl
-import time
-import urllib.request
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict
 
-from app.models.event import EventCreate, EventCategory
+import httpx
 
-logger = logging.getLogger(__name__)
+from app.models.event import EventCreate, EventCategory
+from app.scrapers.base import BaseScraper
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -94,25 +93,84 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
+HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 
-class MeetupScraper:
+# Look up a city entry by its bare name, e.g. "mumbai" -> ("in--mumbai", ...).
+MEETUP_CITY_INDEX = {
+    slug.split("--")[-1]: (slug, lat, lng) for slug, lat, lng in MEETUP_CITIES
+}
+
+
+class MeetupScraper(BaseScraper):
+    """Scrapes meetup.com search pages via their embedded Apollo cache."""
+
+    name = "meetup"
+
     def __init__(self, delay: float = 2.0):
         self.delay = delay
-        self.ctx = ssl.create_default_context()
         self._seen_ids: set = set()
 
-    def _fetch(self, url: str) -> Optional[str]:
-        headers = {
-            "User-Agent": USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,*/*",
-            "Accept-Language": "en-US,en;q=0.9",
-        }
+    async def scrape(
+        self, city: Optional[str] = None, **kwargs
+    ) -> List[EventCreate]:
+        """Scrape one city, or every configured city when city is None.
+
+        Accepts an optional `category_ids` keyword; defaults to the top
+        categories used by _scrape_city.
+        """
+        cities = self._resolve_cities(city)
+        category_ids = kwargs.get("category_ids")
+
+        # Reset per run so a reused instance does not dedup itself to nothing.
+        self._seen_ids = set()
+        all_events: List[EventCreate] = []
+
+        async with httpx.AsyncClient(
+            timeout=30.0,
+            headers=HEADERS,
+            follow_redirects=True,
+            transport=httpx.AsyncHTTPTransport(retries=3),
+        ) as client:
+            for city_slug, lat, lng in cities:
+                try:
+                    all_events.extend(
+                        await self._scrape_city(
+                            client, city_slug, lat, lng, category_ids
+                        )
+                    )
+                except Exception as e:
+                    self._log(f"Error scraping {city_slug}: {e}")
+                    continue
+
+        self._log(f"Scraped {len(all_events)} events from {len(cities)} cities")
+        return all_events
+
+    def _resolve_cities(self, city: Optional[str]) -> List[tuple]:
+        """Map a city name onto configured (slug, lat, lng) entries."""
+        if not city:
+            return list(MEETUP_CITIES)
+        key = city.strip().lower().replace(" ", "-")
+        if key.startswith("in--"):
+            key = key[len("in--"):]
+        entry = MEETUP_CITY_INDEX.get(key)
+        if entry is None:
+            self._log(f"No Meetup city slug configured for {city!r} — skipping")
+            return []
+        return [entry]
+
+    async def _fetch(
+        self, client: httpx.AsyncClient, url: str
+    ) -> Optional[str]:
         try:
-            req = urllib.request.Request(url, headers=headers)
-            resp = urllib.request.urlopen(req, context=self.ctx, timeout=20)
-            return resp.read().decode("utf-8", errors="replace")
-        except Exception as e:
-            logger.warning(f"Failed to fetch {url}: {e}")
+            resp = await client.get(url)
+            resp.raise_for_status()
+            return resp.text
+        except httpx.HTTPError as e:
+            self._log(f"Failed to fetch {url}: {e}")
             return None
 
     def _extract_apollo_events(self, html: str) -> List[Dict]:
@@ -266,12 +324,12 @@ class MeetupScraper:
                 image_url=image_url,
             )
         except Exception as e:
-            logger.warning(f"Failed to parse meetup event: {e}")
+            self._log(f"Failed to parse meetup event: {e}")
             return None
 
-    def scrape_city(
-        self, city_slug: str, city_lat: float, city_lng: float,
-        category_ids: List[int] = None,
+    async def _scrape_city(
+        self, client: httpx.AsyncClient, city_slug: str, city_lat: float,
+        city_lng: float, category_ids: List[int] = None,
     ) -> List[EventCreate]:
         """Scrape events for one city across category IDs."""
         if category_ids is None:
@@ -284,41 +342,21 @@ class MeetupScraper:
                 f"?location={city_slug}&source=EVENTS"
                 f"&categoryId={cat_id}&distance=fiftyMiles"
             )
-            logger.info(f"Scraping {url}")
+            self._log(f"Scraping {url}")
 
-            html = self._fetch(url)
+            html = await self._fetch(client, url)
             if not html:
                 continue
 
             raw_events = self._extract_apollo_events(html)
-            logger.info(f"  Found {len(raw_events)} events for {city_slug} cat={cat_id}")
+            self._log(f"  Found {len(raw_events)} events for {city_slug} cat={cat_id}")
 
             for raw in raw_events:
                 event = self._parse_event(raw, city_lat, city_lng, cat_id)
                 if event:
                     events.append(event)
 
-            time.sleep(self.delay)
+            await asyncio.sleep(self.delay)
 
-        logger.info(f"Total for {city_slug}: {len(events)} events")
+        self._log(f"Total for {city_slug}: {len(events)} events")
         return events
-
-    def scrape_all_cities(
-        self, cities: List[tuple] = None, category_ids: List[int] = None,
-    ) -> List[EventCreate]:
-        """Scrape all configured Indian cities."""
-        if cities is None:
-            cities = MEETUP_CITIES
-
-        all_events = []
-        for city_slug, lat, lng in cities:
-            try:
-                city_events = self.scrape_city(city_slug, lat, lng, category_ids)
-                all_events.extend(city_events)
-                logger.info(f"Running total: {len(all_events)} events")
-            except Exception as e:
-                logger.error(f"Error scraping {city_slug}: {e}")
-                continue
-
-        logger.info(f"Grand total: {len(all_events)} events from {len(cities)} cities")
-        return all_events

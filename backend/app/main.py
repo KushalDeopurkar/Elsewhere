@@ -11,7 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.api.events import router as events_router
 from app.database import get_supabase_service
+from app.scrapers.allevents import AllEventsScraper
 from app.scrapers.eventbrite import EventbriteScraper
+from app.scrapers.meetup import MeetupScraper
 from app.services.event_service import EventService
 from app.services.ingestion_service import IngestionService
 
@@ -23,7 +25,11 @@ async def scheduled_ingest() -> None:
     try:
         event_service = EventService(get_supabase_service())
         settings = get_settings()
-        scrapers = [EventbriteScraper(token=settings.eventbrite_token)]
+        scrapers = [AllEventsScraper(), MeetupScraper()]
+        # Eventbrite needs a token, and its search endpoint appears to be
+        # retired — only run it when one is actually configured.
+        if settings.eventbrite_token:
+            scrapers.append(EventbriteScraper(token=settings.eventbrite_token))
         ingestion = IngestionService(event_service=event_service, scrapers=scrapers)
         results = await ingestion.run_all()
         total = sum(results.values())
