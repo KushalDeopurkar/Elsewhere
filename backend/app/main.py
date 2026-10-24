@@ -12,7 +12,7 @@ from app.config import get_settings
 from app.api.events import router as events_router
 from app.database import get_supabase_service
 from app.scrapers.allevents import AllEventsScraper
-from app.scrapers.insider import InsiderScraper
+from app.scrapers.district import DistrictScraper
 from app.scrapers.meetup import MeetupScraper
 from app.scrapers.eventbrite import EventbriteScraper
 from app.services.event_service import EventService
@@ -26,7 +26,7 @@ def _build_scrapers():
     settings = get_settings()
     scrapers = [
         AllEventsScraper(delay=1.0, categories=["all"]),
-        InsiderScraper(delay=1.5),
+        DistrictScraper(delay=1.5),
         MeetupScraper(delay=2.0),
     ]
     if settings.eventbrite_token:

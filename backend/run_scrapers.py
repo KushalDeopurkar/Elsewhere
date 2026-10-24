@@ -26,7 +26,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.scrapers.allevents import AllEventsScraper
-from app.scrapers.insider import InsiderScraper
+from app.scrapers.district import DistrictScraper
 from app.scrapers.meetup import MeetupScraper
 
 logging.basicConfig(
@@ -49,7 +49,7 @@ async def run_scraper(scraper, city=None):
 
 async def main():
     parser = argparse.ArgumentParser(description="Run event scrapers")
-    parser.add_argument("--source", choices=["allevents", "insider", "meetup", "all"],
+    parser.add_argument("--source", choices=["allevents", "district", "insider", "meetup", "all"],
                         default="all", help="Which scraper to run")
     parser.add_argument("--city", default=None, help="Scrape only this city")
     parser.add_argument("--dry-run", action="store_true",
@@ -60,8 +60,8 @@ async def main():
     scrapers = []
     if args.source in ("all", "allevents"):
         scrapers.append(AllEventsScraper(delay=1.0, categories=["all"]))
-    if args.source in ("all", "insider"):
-        scrapers.append(InsiderScraper(delay=1.5))
+    if args.source in ("all", "district"):
+        scrapers.append(DistrictScraper(delay=1.5))
     if args.source in ("all", "meetup"):
         scrapers.append(MeetupScraper(delay=2.0))
 

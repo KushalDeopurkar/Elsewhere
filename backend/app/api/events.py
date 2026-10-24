@@ -27,7 +27,7 @@ def get_event_service() -> EventService:
 def get_ingestion_service() -> IngestionService:
     # Ingestion writes events, so use the service-role client to bypass RLS
     from app.scrapers.allevents import AllEventsScraper
-    from app.scrapers.insider import InsiderScraper
+    from app.scrapers.district import DistrictScraper
     from app.scrapers.meetup import MeetupScraper
     from app.scrapers.eventbrite import EventbriteScraper
 
@@ -35,7 +35,7 @@ def get_ingestion_service() -> IngestionService:
     settings = get_settings()
     scrapers = [
         AllEventsScraper(delay=1.0, categories=["all"]),
-        InsiderScraper(delay=1.5),
+        DistrictScraper(delay=1.5),
         MeetupScraper(delay=2.0),
     ]
     if settings.eventbrite_token:
