@@ -17,7 +17,7 @@ export default function Nav() {
       <div className="shell nav-inner">
         <Link href="/" className="brand">
           <BrandMark className="brand-mark" />
-          Pulse
+          EventEngine
         </Link>
         <div className="nav-links">
           {LINKS.map((link) => (

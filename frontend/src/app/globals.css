@@ -1310,3 +1310,129 @@ p {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   Intent discovery
+   ========================================================================== */
+.intent-bar {
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--r-card);
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+}
+
+.intent-bar .sample-note {
+  display: inline-flex;
+}
+
+.intent-read {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-low);
+}
+
+.intent-plain {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.intent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.intent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.7rem;
+  border-radius: var(--r-pill);
+  background: var(--marigold-wash);
+  border: 1px solid oklch(0.82 0.16 78 / 0.35);
+  color: var(--text-hi);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.intent-chip-kind {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--marigold);
+}
+
+.intent-chip button {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--r-pill);
+  background: oklch(0.82 0.16 78 / 0.22);
+  color: var(--text-hi);
+  transition: background-color var(--t-hover) var(--ease);
+}
+
+.intent-chip button:hover {
+  background: var(--marigold);
+  color: var(--on-marigold);
+}
+
+.intent-note {
+  margin-top: 0.7rem;
+  font-size: 0.75rem;
+  color: var(--text-low);
+}
+
+.reason-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reason {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--r-pill);
+  background: var(--ink-800);
+  border: 1px solid var(--line-soft);
+  color: var(--text-mid);
+}
+
+.prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+}
+
+.prompt {
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--r-pill);
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--text-low);
+  font-size: 0.8125rem;
+  text-align: left;
+  transition: color var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+}
+
+.prompt:hover {
+  color: var(--text-hi);
+  border-color: var(--marigold);
+}

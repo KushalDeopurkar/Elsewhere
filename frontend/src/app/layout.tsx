@@ -6,9 +6,9 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Pulse - what is on near you tonight",
+  title: "EventEngine - discover what is happening",
   description:
-    "Gigs, comedy, food pop-ups and night treks across Mumbai, Bengaluru and Delhi, gathered from across the web and mapped.",
+    "Hackathons, workshops, matches, exhibitions and meetups across every category, gathered from across the web and mapped.",
 };
 
 export const viewport: Viewport = {

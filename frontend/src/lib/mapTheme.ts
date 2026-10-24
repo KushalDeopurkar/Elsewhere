@@ -143,7 +143,7 @@ export function add3DBuildings(map: MapLibreMap): boolean {
   for (const sourceLayer of BUILDING_SOURCE_LAYERS) {
     try {
       map.addLayer({
-        id: "pulse-buildings-3d",
+        id: "ee-buildings-3d",
         type: "fill-extrusion",
         source,
         "source-layer": sourceLayer,
