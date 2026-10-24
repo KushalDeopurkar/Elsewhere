@@ -46,7 +46,8 @@ MOCK_EVENTBRITE_RESPONSE = {
 @pytest.mark.asyncio
 async def test_eventbrite_scraper_parses_events(httpx_mock):
     httpx_mock.add_response(
-        url="https://www.eventbriteapi.com/v3/events/search/?location.address=Mumbai&expand=venue&token=test-token",
+        url="https://www.eventbriteapi.com/v3/events/search/?location.address=Mumbai&expand=venue",
+        match_headers={"Authorization": "Bearer test-token"},
         json=MOCK_EVENTBRITE_RESPONSE,
     )
 
@@ -75,7 +76,8 @@ async def test_eventbrite_scraper_parses_events(httpx_mock):
 @pytest.mark.asyncio
 async def test_eventbrite_scraper_handles_empty_response(httpx_mock):
     httpx_mock.add_response(
-        url="https://www.eventbriteapi.com/v3/events/search/?location.address=Mumbai&expand=venue&token=test-token",
+        url="https://www.eventbriteapi.com/v3/events/search/?location.address=Mumbai&expand=venue",
+        match_headers={"Authorization": "Bearer test-token"},
         json={"events": [], "pagination": {"has_more_items": False}},
     )
 
@@ -88,7 +90,8 @@ async def test_eventbrite_scraper_handles_empty_response(httpx_mock):
 @pytest.mark.asyncio
 async def test_eventbrite_scraper_handles_api_error(httpx_mock):
     httpx_mock.add_response(
-        url="https://www.eventbriteapi.com/v3/events/search/?location.address=Mumbai&expand=venue&token=test-token",
+        url="https://www.eventbriteapi.com/v3/events/search/?location.address=Mumbai&expand=venue",
+        match_headers={"Authorization": "Bearer test-token"},
         status_code=401,
     )
 
