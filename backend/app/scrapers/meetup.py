@@ -21,6 +21,7 @@ import httpx
 
 from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
+from app.scrapers.classify import classify
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -296,8 +297,15 @@ class MeetupScraper(BaseScraper):
             photo = raw.get("_photo", {})
             image_url = photo.get("highResUrl") or photo.get("baseUrl") or ""
 
-            # Category
-            category = MEETUP_CATEGORY_MAP.get(category_id, "community")
+            # Category: the topic id is a decent signal, but ids outside the
+            # map all collapse into one bucket, so fall back to the text.
+            mapped = MEETUP_CATEGORY_MAP.get(category_id)
+            category = classify(
+                title,
+                description,
+                fallback=EventCategory.COMMUNITY,
+                hint=EventCategory(mapped) if mapped else None,
+            )
 
             # Event type
             event_type = raw.get("eventType", "PHYSICAL")
@@ -315,7 +323,7 @@ class MeetupScraper(BaseScraper):
                 address=f"{address}, {city}".strip(", ") if address else city,
                 lat=float(lat),
                 lng=float(lng),
-                category=EventCategory(category),
+                category=category,
                 is_free=is_free,
                 price_min=price_min,
                 price_max=None,

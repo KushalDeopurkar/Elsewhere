@@ -22,6 +22,7 @@ import httpx
 
 from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
+from app.scrapers.classify import classify
 
 # Major Indian cities for scraping
 INDIAN_CITIES = [
@@ -253,8 +254,16 @@ class AllEventsScraper(BaseScraper):
                         except (ValueError, TypeError):
                             pass
 
-            # Category mapping
-            category = CATEGORY_MAP.get(category_hint, "community")
+            # The crawl path is usually "all", which says nothing about the
+            # event, so the category comes from the event's own words and the
+            # path is only a tie-breaker.
+            hinted = CATEGORY_MAP.get(category_hint)
+            category = classify(
+                name,
+                str(raw.get("description") or ""),
+                fallback=EventCategory.COMMUNITY,
+                hint=EventCategory(hinted) if hinted else None,
+            )
 
             # Image
             image = raw.get("image", "")
@@ -274,7 +283,7 @@ class AllEventsScraper(BaseScraper):
                 address=f"{address}, {city}".strip(", ") if address else city,
                 lat=lat,
                 lng=lng,
-                category=EventCategory(category),
+                category=category,
                 is_free=is_free,
                 price_min=price_min,
                 price_max=price_max,
