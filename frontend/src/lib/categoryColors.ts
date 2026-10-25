@@ -1,40 +1,66 @@
 import { EventCategory } from "./types";
 
 /**
- * Per-category hue assignments so category badges and card accent strips
- * read as genuinely different colors, not a single repeated blue.
- * Lightness/chroma are tuned to sit alongside the brand tokens in
- * globals.css (light tint background, saturated mid-tone accent,
- * darker readable text) and hold ~4.5:1+ contrast on their own tint.
+ * Per-category hues.
+ *
+ * Category colour is an index key, not a theme: it appears as a small marker,
+ * a tile edge and the generated card art, never as a full restyling of the
+ * interface. That is what lets a robotics listing and a poetry reading sit in
+ * the same grid and still belong to one product.
  */
 const CATEGORY_HUES: Record<EventCategory, number> = {
-  music: 300,
-  tech: 235,
-  sports: 145,
-  arts: 340,
-  food: 45,
-  business: 255,
-  health: 175,
+  tech: 245,
   education: 275,
-  community: 25,
-  nightlife: 315,
-  family: 60,
-  outdoor: 125,
-  other: 195,
+  business: 295,
+  arts: 340,
+  music: 318,
+  sports: 150,
+  community: 30,
+  food: 60,
+  health: 180,
+  outdoor: 130,
+  family: 85,
+  nightlife: 300,
+  other: 230,
 };
 
-export interface CategoryColor {
-  bg: string;
-  text: string;
-  accent: string;
+/** "other" is deliberately desaturated — an unknown category shouldn't shout. */
+function chromaFor(category: EventCategory): number {
+  return category === "other" ? 0.02 : 0.14;
 }
 
-export function getCategoryColor(category: EventCategory): CategoryColor {
-  const hue = CATEGORY_HUES[category] ?? 195;
-  const chroma = category === "other" ? 0.01 : 0.1;
+export interface CategoryPaint {
+  /** Solid marker colour — chip dots, map pins. */
+  marker: string;
+  /** Category tile edge rule. */
+  tileAccent: string;
+  /** Generated card art, as CSS custom properties. */
+  art: {
+    "--art-top": string;
+    "--art-bottom": string;
+    "--art-line": string;
+    "--art-ink": string;
+  };
+}
+
+/**
+ * Values are built with `color-mix` against the theme's own surface and ink
+ * tokens, so a single definition resolves correctly in light and dark without
+ * shipping two palettes or reading the active theme in JS.
+ */
+export function getCategoryPaint(category: EventCategory): CategoryPaint {
+  const hue = CATEGORY_HUES[category] ?? CATEGORY_HUES.other;
+  const c = chromaFor(category);
+  const base = `oklch(0.62 ${c} ${hue})`;
+
   return {
-    bg: `oklch(0.94 ${chroma === 0.01 ? 0.005 : 0.045} ${hue})`,
-    text: `oklch(0.38 ${chroma === 0.01 ? 0.01 : 0.11} ${hue})`,
-    accent: `oklch(0.62 ${chroma === 0.01 ? 0.01 : 0.13} ${hue})`,
+    marker: base,
+    tileAccent: base,
+    art: {
+      "--art-top": `color-mix(in oklab, ${base} 22%, var(--paper-raised))`,
+      "--art-bottom": `color-mix(in oklab, ${base} 7%, var(--paper-raised))`,
+      "--art-line": `color-mix(in oklab, ${base} 22%, transparent)`,
+      "--art-ink": `color-mix(in oklab, ${base} 58%, var(--ink))`,
+    },
   };
 }

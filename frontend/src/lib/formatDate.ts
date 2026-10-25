@@ -53,3 +53,28 @@ export function formatFullDateTime(dateStr: string): string {
     minute: "2-digit",
   });
 }
+
+/** Day/month pair for the stacked datestamp on featured cards. */
+export function datestampParts(dateStr: string): { day: string; month: string } {
+  const date = new Date(dateStr);
+  return {
+    day: date.toLocaleDateString("en-US", { day: "numeric" }),
+    month: date.toLocaleDateString("en-US", { month: "short" }),
+  };
+}
+
+/** Compact day label for map/list rows, without the time. */
+export function formatDayOnly(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const same =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (same) return "Today";
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}

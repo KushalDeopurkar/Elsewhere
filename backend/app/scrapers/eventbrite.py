@@ -107,6 +107,7 @@ class EventbriteScraper(BaseScraper):
             image_url=logo.get("url"),
             url=raw.get("url"),
             is_free=raw.get("is_free", False),
+            is_online=bool(raw.get("online_event", False)),
             source="eventbrite",
             source_id=str(raw["id"]),
             raw_data=raw,

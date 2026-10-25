@@ -36,6 +36,7 @@ MOCK_EVENTBRITE_RESPONSE = {
             "logo": None,
             "url": "https://eventbrite.com/e/789012",
             "is_free": False,
+            "online_event": True,
             "category_id": "101",
         },
     ],
@@ -71,6 +72,11 @@ async def test_eventbrite_scraper_parses_events(httpx_mock):
     assert e2.title == "Startup Networking Night"
     assert e2.lat is None
     assert e2.lng is None
+
+    # Delivery format comes from Eventbrite's own online_event flag;
+    # an absent flag must read as in-person, not as unknown/online.
+    assert e1.is_online is False
+    assert e2.is_online is True
 
 
 @pytest.mark.asyncio

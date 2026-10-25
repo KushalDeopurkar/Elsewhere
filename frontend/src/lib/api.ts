@@ -10,6 +10,13 @@ export async function searchEvents(params: SearchParams): Promise<Event[]> {
   if (params.lat) searchParams.set("lat", String(params.lat));
   if (params.lng) searchParams.set("lng", String(params.lng));
   if (params.radius_km) searchParams.set("radius_km", String(params.radius_km));
+  if (params.from_time) searchParams.set("from_time", params.from_time);
+  if (params.to_time) searchParams.set("to_time", params.to_time);
+  // Only send the facets when set — the API treats absence as "no constraint",
+  // so sending `false` would wrongly narrow to paid / in-person only.
+  if (params.free_only != null) searchParams.set("free_only", String(params.free_only));
+  if (params.online_only != null) searchParams.set("online_only", String(params.online_only));
+  if (params.sort_by) searchParams.set("sort_by", params.sort_by);
   if (params.limit) searchParams.set("limit", String(params.limit));
   if (params.offset) searchParams.set("offset", String(params.offset));
 

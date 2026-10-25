@@ -1,153 +1,193 @@
-import { getEvent } from "@/lib/api";
-import { CATEGORIES } from "@/lib/types";
-import { getCategoryColor } from "@/lib/categoryColors";
-import { formatFullDateTime } from "@/lib/formatDate";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { getEvent } from "@/lib/api";
+import { categoryLabel } from "@/lib/types";
+import { getCategoryPaint } from "@/lib/categoryColors";
+import { formatFullDateTime } from "@/lib/formatDate";
+import { joinPlaceParts } from "@/lib/place";
+import SaveButton from "@/components/SaveButton";
+import {
+  ArrowLeftIcon,
+  ExternalIcon,
+  GlobeIcon,
+  PinIcon,
+} from "@/components/icons";
 
-const BackArrow = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-  </svg>
-);
-
-function CalendarIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  );
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const event = await getEvent(id).catch(() => null);
+  if (!event) return { title: "Event not found — EventEngine" };
+  return {
+    title: `${event.title} — EventEngine`,
+    description: event.description?.slice(0, 160) ?? undefined,
+  };
 }
 
-function PinIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
+/**
+ * Price.
+ *
+ * Says only what the record contains: free, a real figure or range, or
+ * "check the listing". It never implies a price that was never captured.
+ */
+function priceText(event: {
+  is_free: boolean;
+  price_min: number | null;
+  price_max: number | null;
+}): string {
+  if (event.is_free) return "Free to attend";
+  const { price_min: min, price_max: max } = event;
+  if (min == null && max == null) return "Check the listing";
+  if (min != null && max != null && min !== max) return `${min} – ${max}`;
+  return String(min ?? max);
 }
 
-function TagIcon() {
-  return (
-    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 100 18 9 9 0 000-18z" />
-    </svg>
-  );
-}
-
-const ExternalIcon = () => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-  </svg>
-);
-
-export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EventPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const event = await getEvent(id);
 
   if (!event) notFound();
 
-  const cat = CATEGORIES.find((c) => c.value === event.category);
-  const colors = getCategoryColor(event.category);
+  const paint = getCategoryPaint(event.category);
+  const hasImage = Boolean(event.image_url);
 
-  const priceLabel = event.is_free
-    ? "Free"
-    : event.price_min != null || event.price_max != null
-      ? event.price_min === event.price_max
-        ? `$${event.price_min}`
-        : `$${event.price_min ?? 0}–${event.price_max ?? "?"}`
-      : "See listing";
+  const locationLine = event.is_online
+    ? "Online event"
+    : joinPlaceParts([event.location_name, event.address, event.city]);
 
   return (
-    <div>
-      {event.image_url ? (
+    <article>
+      {hasImage && (
         <div className="detail-hero">
+          {/* Third-party image host; see EventCard for why this stays <img>. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={event.image_url} alt="" className="detail-hero-image" />
-          <div className="detail-hero-overlay" />
-          <Link href="/" className="back-link on-image">
-            <BackArrow />
-            Back to events
+          <img src={event.image_url!} alt="" />
+          <div className="detail-hero-scrim" aria-hidden="true" />
+          <Link href="/" className="backlink backlink-floating">
+            <ArrowLeftIcon size={14} />
+            All events
           </Link>
         </div>
-      ) : null}
+      )}
 
-      <div className="container-page" style={{ maxWidth: "48rem", paddingBlock: "2rem 4rem" }}>
-        {!event.image_url && (
-          <Link href="/" className="back-link" style={{ marginBottom: "1.5rem" }}>
-            <BackArrow />
-            Back to events
-          </Link>
+      <div className="detail-shell">
+        {!hasImage && (
+          <div style={{ paddingTop: "2rem" }}>
+            <Link href="/" className="backlink">
+              <ArrowLeftIcon size={14} />
+              All events
+            </Link>
+          </div>
         )}
 
-        <div className="event-card-badges" style={{ marginTop: event.image_url ? "1.5rem" : 0, marginBottom: "0.75rem" }}>
-          <span
-            className="badge badge-category"
-            style={{ "--cat-bg": colors.bg, "--cat-text": colors.text } as React.CSSProperties}
-          >
-            <span aria-hidden="true">{cat?.emoji}</span>
-            {cat?.label || event.category}
-          </span>
-          {event.is_free && <span className="badge badge-free">Free</span>}
-        </div>
-
-        <h1 style={{ marginBottom: "0.5rem" }}>{event.title}</h1>
-
-        <div className="info-grid">
-          <div className="info-item">
-            <span className="info-icon">
-              <CalendarIcon />
+        <header className={`detail-head${hasImage ? "" : " detail-head-noimage"}`}>
+          <div className="detail-kicker">
+            <span className="card-kicker micro">
+              <span
+                className="chip-dot"
+                style={{ background: paint.marker }}
+                aria-hidden="true"
+              />
+              {categoryLabel(event.category)}
             </span>
-            <div>
-              <p className="info-label">When</p>
-              <p className="info-value">
-                {formatFullDateTime(event.start_time)}
-                {event.end_time && <> &ndash; {formatFullDateTime(event.end_time)}</>}
-              </p>
-            </div>
+            {event.is_free && <span className="badge badge-free">Free</span>}
+            {event.is_online && <span className="badge badge-online">Online</span>}
           </div>
 
-          {event.location_name && (
-            <div className="info-item">
-              <span className="info-icon">
-                <PinIcon />
-              </span>
-              <div>
-                <p className="info-label">Where</p>
-                <p className="info-value">
-                  {event.location_name}
-                  {event.address && `, ${event.address}`}
-                </p>
-              </div>
+          <h1 className="detail-title">{event.title}</h1>
+
+          <div className="detail-actions">
+            {event.url && (
+              <a
+                href={event.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button button-primary"
+              >
+                View listing on {event.source}
+                <ExternalIcon size={14} />
+              </a>
+            )}
+            <SaveButton eventId={event.id} title={event.title} />
+            {event.lat != null && event.lng != null && (
+              <Link href="/map" className="button">
+                <PinIcon size={14} />
+                See on map
+              </Link>
+            )}
+          </div>
+        </header>
+
+        <dl className="facts">
+          <div className="fact">
+            <dt className="fact-label micro">When</dt>
+            <dd className="fact-value numeric">
+              {formatFullDateTime(event.start_time)}
+              {event.end_time && (
+                <>
+                  <br />
+                  <span className="meta">
+                    until {formatFullDateTime(event.end_time)}
+                  </span>
+                </>
+              )}
+            </dd>
+          </div>
+
+          {locationLine && (
+            <div className="fact">
+              <dt className="fact-label micro">Where</dt>
+              <dd className="fact-value">
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4375rem",
+                  }}
+                >
+                  {event.is_online ? <GlobeIcon /> : <PinIcon />}
+                  {locationLine}
+                </span>
+                {event.distance_km != null && (
+                  <span className="meta numeric">
+                    {" "}
+                    · {event.distance_km.toFixed(1)} km away
+                  </span>
+                )}
+              </dd>
             </div>
           )}
 
-          <div className="info-item">
-            <span className="info-icon">
-              <TagIcon />
-            </span>
-            <div>
-              <p className="info-label">Price</p>
-              <p className="info-value">{priceLabel}</p>
-            </div>
+          <div className="fact">
+            <dt className="fact-label micro">Price</dt>
+            <dd className="fact-value numeric">{priceText(event)}</dd>
           </div>
-        </div>
+
+          <div className="fact">
+            <dt className="fact-label micro">Source</dt>
+            <dd className="fact-value">
+              Listed on {event.source}
+            </dd>
+          </div>
+        </dl>
 
         {event.description && (
-          <div className="prose-body" style={{ marginBottom: "2rem" }}>
-            <p style={{ whiteSpace: "pre-line" }}>{event.description}</p>
-          </div>
-        )}
-
-        {event.url && (
-          <a href={event.url} target="_blank" rel="noopener noreferrer" className="cta-button">
-            View on {event.source}
-            <ExternalIcon />
-          </a>
+          <section style={{ marginTop: "2.5rem" }}>
+            <h2 className="detail-section-title">About this event</h2>
+            <div className="prose-body">
+              <p style={{ whiteSpace: "pre-line" }}>{event.description}</p>
+            </div>
+          </section>
         )}
       </div>
-    </div>
+    </article>
   );
 }

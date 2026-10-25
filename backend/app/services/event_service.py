@@ -48,6 +48,9 @@ class EventService:
             "radius_km": params.radius_km,
             "from_time": params.from_time.isoformat() if params.from_time else None,
             "to_time": params.to_time.isoformat() if params.to_time else None,
+            "free_only": params.free_only,
+            "online_only": params.online_only,
+            "sort_by": params.sort_by.value,
             "page_limit": params.limit,
             "page_offset": params.offset,
         }

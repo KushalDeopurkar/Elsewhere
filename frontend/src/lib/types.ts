@@ -16,6 +16,7 @@ export interface Event {
   price_min: number | null;
   price_max: number | null;
   is_free: boolean;
+  is_online: boolean;
   source: string;
   distance_km: number | null;
   relevance: number | null;
@@ -52,11 +53,37 @@ export const CATEGORIES: { value: EventCategory; label: string; emoji: string }[
   { value: "other", label: "Other", emoji: "📌" },
 ];
 
+/**
+ * Human labels for the raw enum values. The enum is terse because it is a
+ * storage detail; these are what a reader should see.
+ */
+export const CATEGORY_LABELS: Record<EventCategory, string> = {
+  music: "Music",
+  tech: "Technology",
+  sports: "Sports",
+  arts: "Arts & Culture",
+  food: "Food & Drink",
+  business: "Business",
+  health: "Wellbeing",
+  education: "Education",
+  community: "Community",
+  nightlife: "Nightlife",
+  family: "Family",
+  outdoor: "Outdoors",
+  other: "Other",
+};
+
+export function categoryLabel(category: EventCategory): string {
+  return CATEGORY_LABELS[category] ?? "Other";
+}
+
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
   meta: { total?: number; limit?: number; offset?: number } | null;
 }
+
+export type EventSort = "relevance" | "date" | "distance";
 
 export interface SearchParams {
   q?: string;
@@ -64,6 +91,13 @@ export interface SearchParams {
   lat?: number;
   lng?: number;
   radius_km?: number;
+  /** ISO timestamps; the API defaults from_time to "now" when omitted. */
+  from_time?: string;
+  to_time?: string;
+  /** Tri-state on the wire: omitted means "no constraint". */
+  free_only?: boolean;
+  online_only?: boolean;
+  sort_by?: EventSort;
   limit?: number;
   offset?: number;
 }

@@ -12,6 +12,7 @@ from app.models.event import (
     EventDetailResponse,
     EventResponse,
     EventSearchParams,
+    EventSort,
 )
 from app.models.schemas import ApiResponse, Meta
 from app.scrapers.eventbrite import EventbriteScraper
@@ -43,6 +44,18 @@ def search_events(
     radius_km: float = 25.0,
     from_time: Optional[datetime] = None,
     to_time: Optional[datetime] = None,
+    free_only: Optional[bool] = Query(
+        default=None,
+        description="True for free events only. Omit for no price constraint.",
+    ),
+    online_only: Optional[bool] = Query(
+        default=None,
+        description=(
+            "True for online events only, False for in-person only. "
+            "Omit for no format constraint."
+        ),
+    ),
+    sort_by: EventSort = Query(default=EventSort.RELEVANCE),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     service: EventService = Depends(get_event_service),
@@ -55,6 +68,9 @@ def search_events(
         radius_km=radius_km,
         from_time=from_time or datetime.now(timezone.utc),
         to_time=to_time,
+        free_only=free_only,
+        online_only=online_only,
+        sort_by=sort_by,
         limit=limit,
         offset=offset,
     )
