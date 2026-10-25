@@ -1338,7 +1338,10 @@ select {
 
 @media (min-width: 56rem) {
   .rail {
-    grid-auto-columns: minmax(18rem, 1fr);
+    /* A fixed track rather than 1fr: cards keep one width whether the rail
+       holds three events or twelve, and a short rail simply ends early
+       instead of stretching to fill. */
+    grid-auto-columns: minmax(17rem, 20rem);
     margin-inline: 0;
     padding-inline: 0;
   }

@@ -1,4 +1,15 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export default function SiteFooter() {
+  const pathname = usePathname();
+
+  // The map is a full-viewport application view: its own height is
+  // calc(100dvh - header), so appending a footer below it would make the
+  // page scroll and cut off the map.
+  if (pathname.startsWith("/map")) return null;
+
   return (
     <footer className="footer">
       <div className="shell footer-inner">

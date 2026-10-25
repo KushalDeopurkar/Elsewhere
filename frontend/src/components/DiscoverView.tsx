@@ -143,6 +143,39 @@ export default function DiscoverView() {
   );
   const upcomingQuery = useEventSearch(upcoming, !showResults);
 
+  const leadEvents = useMemo(
+    () => upcomingQuery.events.slice(0, 7),
+    [upcomingQuery.events]
+  );
+
+  /**
+   * Rails, deduplicated against everything already shown above them.
+   *
+   * The shelves overlap by nature — today's events are also the soonest
+   * upcoming ones, and an online event is often free too — so without this
+   * the page repeats the same cards under three different headings. Each
+   * rail keeps only what is new at the point it appears, and a rail left
+   * with fewer than two events is dropped rather than shown nearly empty.
+   */
+  const visibleRails = useMemo(() => {
+    const seen = new Set(leadEvents.map((e) => e.id));
+    const out: typeof rails = [];
+
+    for (const rail of rails) {
+      const fresh = rail.events.filter((e) => !seen.has(e.id));
+      if (fresh.length < 2) continue;
+      fresh.forEach((e) => seen.add(e.id));
+      out.push({ ...rail, events: fresh });
+    }
+
+    return out;
+  }, [rails, leadEvents]);
+
+  // While rails load, the skeletons stand in for every configured rail, so
+  // the explorer must number past all of them or it repeats an index.
+  const explorerIndex =
+    (railsLoading ? railConfigs.length : visibleRails.length) + 2;
+
   const group = filters.group ? getGroup(filters.group) : undefined;
   const subLabel = group && filters.sub
     ? group.subcategories.find((s) => s.slug === filters.sub)?.label
@@ -254,7 +287,7 @@ export default function DiscoverView() {
             ) : upcomingQuery.events.length === 0 ? (
               <EmptyState filters={EMPTY_FILTERS} onChange={update} onReset={reset} />
             ) : (
-              <EventGrid events={upcomingQuery.events.slice(0, 7)} featureFirst />
+              <EventGrid events={leadEvents} featureFirst />
             )}
           </section>
 
@@ -278,37 +311,42 @@ export default function DiscoverView() {
 
           {/* Empty rails are dropped rather than rendered as bare shelves. */}
           {!railsLoading &&
-            rails
-              .filter((r) => r.events.length > 0)
-              .map((rail, i) => (
-                <section
-                  className="shell section"
-                  key={rail.id}
-                  aria-labelledby={`rail-${rail.id}`}
-                >
-                  <SectionHead
-                    index={i + 2}
-                    title={rail.title}
-                    basis={rail.basis}
-                    href={rail.href}
-                    id={`rail-${rail.id}`}
-                  />
-                  <div className="rail scrollbar-hide">
-                    {rail.events.map((event) => (
-                      <EventCard key={event.id} event={event} />
-                    ))}
-                  </div>
-                </section>
-              ))}
+            visibleRails.map((rail, i) => (
+              <section
+                className="shell section"
+                key={rail.id}
+                aria-labelledby={`rail-${rail.id}`}
+              >
+                <SectionHead
+                  index={i + 2}
+                  title={rail.title}
+                  basis={rail.basis}
+                  href={rail.href}
+                  id={`rail-${rail.id}`}
+                />
+                <div className="rail scrollbar-hide">
+                  {rail.events.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+              </section>
+            ))}
 
           <section className="shell section" aria-labelledby="categories-head">
             <SectionHead
-              index={rails.filter((r) => r.events.length > 0).length + 2}
+              index={explorerIndex}
               title="Explore by interest"
               basis="Jump into a category, then narrow by type"
               id="categories-head"
             />
-            <CategoryExplorer onSelect={(slug) => update({ group: slug, sub: null })} />
+            <CategoryExplorer
+              onSelect={(slug) => {
+                update({ group: slug, sub: null });
+                // The page becomes a short result list; without this the
+                // viewport stays near the old page's bottom.
+                window.scrollTo({ top: 0 });
+              }}
+            />
           </section>
         </>
       )}
