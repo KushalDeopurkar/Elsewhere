@@ -32,6 +32,9 @@ import { SlidersIcon } from "./icons";
 
 const RESULT_LIMIT = 48;
 
+/** The front page shows at most this many rails; the rest is a browse away. */
+const MAX_RAILS = 2;
+
 /**
  * Discovery home.
  *
@@ -147,8 +150,14 @@ export default function DiscoverView() {
   );
   const upcomingQuery = useEventSearch(upcoming, !showResults);
 
+  /**
+   * Three, because the featured card spans two columns: featured + 2 fills
+   * exactly one row at both the three- and four-column breakpoints, and
+   * stacks cleanly below them. Counts in between leave visible holes in the
+   * grid, which read as a layout bug rather than as whitespace.
+   */
   const leadEvents = useMemo(
-    () => upcomingQuery.events.slice(0, 7),
+    () => upcomingQuery.events.slice(0, 3),
     [upcomingQuery.events]
   );
 
@@ -170,6 +179,7 @@ export default function DiscoverView() {
       if (fresh.length < 2) continue;
       fresh.forEach((e) => seen.add(e.id));
       out.push({ ...rail, events: fresh });
+      if (out.length === MAX_RAILS) break;
     }
 
     return out;
@@ -178,7 +188,7 @@ export default function DiscoverView() {
   // While rails load, the skeletons stand in for every configured rail, so
   // the explorer must number past all of them or it repeats an index.
   const explorerIndex =
-    (railsLoading ? railConfigs.length : visibleRails.length) + 2;
+    (railsLoading ? Math.min(railConfigs.length, MAX_RAILS) : visibleRails.length) + 2;
 
   const group = filters.group ? getGroup(filters.group) : undefined;
   const subLabel = group && filters.sub
@@ -191,9 +201,6 @@ export default function DiscoverView() {
   return (
     <>
       <section className={`shell hero${showResults ? " hero-compact" : ""}`}>
-        <p className="hero-eyebrow micro">
-          {showResults ? "Search results" : "Event discovery"}
-        </p>
         <h1 className="display-xl hero-headline">
           {showResults ? (
             <>Find your next thing.</>
@@ -205,17 +212,12 @@ export default function DiscoverView() {
         </h1>
         {!showResults && (
           <p className="hero-lede">
-            Hackathons, exhibitions, league matches, workshops, supper clubs
-            and community meetups — indexed from public listings and
-            filterable by date, category and distance.
+            Everything on, indexed from public listings — filterable by date,
+            category and distance.
           </p>
         )}
 
         <SearchConsole value={filters.q} onSubmit={(q) => update({ q })} />
-
-        <div style={{ marginTop: "1.25rem" }}>
-          <ShortcutRow filters={filters} onChange={update} />
-        </div>
       </section>
 
       <div className="shell">
@@ -236,6 +238,7 @@ export default function DiscoverView() {
                 : "Everything coming up"}
             </p>
           </div>
+          <ShortcutRow filters={filters} onChange={update} />
           <div className="toolbar-spacer" />
           <ViewToggle view={filters.view} onChange={(view) => update({ view })} />
           {showResults && (
@@ -305,7 +308,7 @@ export default function DiscoverView() {
           </section>
 
           {railsLoading &&
-            railConfigs.map((cfg, i) => (
+            railConfigs.slice(0, MAX_RAILS).map((cfg, i) => (
               <section className="shell section" key={cfg.id}>
                 <SectionHead index={i + 2} title={cfg.title} basis={cfg.basis} />
                 <div className="rail">

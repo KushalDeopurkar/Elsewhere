@@ -49,7 +49,7 @@
   --font-ui: "Inter Variable", "Inter", system-ui, -apple-system, sans-serif;
 
   /* Fluid display sizes. Lower bounds stay readable on a 320px screen. */
-  --size-display-xl: clamp(2.75rem, 10.5vw, 7.5rem);
+  --size-display-xl: clamp(2.25rem, 5.5vw, 4rem);
   --size-display-lg: clamp(2rem, 5.2vw, 3.5rem);
   --size-display-md: clamp(1.625rem, 3.2vw, 2.25rem);
   --size-title: clamp(1.0625rem, 1.4vw, 1.25rem);
@@ -59,7 +59,7 @@
 
   /* ---- Space ----------------------------------------------------------- */
   --gutter: 1.25rem;
-  --section-gap: clamp(3rem, 7vw, 5.5rem);
+  --section-gap: clamp(2.25rem, 4.5vw, 3.5rem);
 
   /* ---- Geometry: restrained, mostly square ----------------------------- */
   --radius-sm: 3px;
@@ -460,8 +460,8 @@ select {
    ========================================================================== */
 
 .hero {
-  padding-top: clamp(2.5rem, 7vw, 5rem);
-  padding-bottom: 0.5rem;
+  padding-top: clamp(1.5rem, 3.5vw, 2.5rem);
+  padding-bottom: 0.25rem;
 }
 
 /* Once a search or filter is active, results matter more than the masthead
@@ -469,10 +469,6 @@ select {
    without scrolling past a full screen of display type. */
 .hero-compact {
   padding-top: clamp(1.5rem, 3vw, 2.25rem);
-}
-
-.hero-compact .hero-eyebrow {
-  margin-bottom: 0.875rem;
 }
 
 .hero-compact .hero-headline {
@@ -483,21 +479,6 @@ select {
 
 .hero-compact .console {
   margin-top: 1.25rem;
-}
-
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  color: var(--ink-faint);
-  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
-}
-
-.hero-eyebrow::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
 }
 
 .hero-headline {
@@ -513,8 +494,8 @@ select {
 }
 
 .hero-lede {
-  margin-top: clamp(1rem, 2vw, 1.5rem);
-  max-width: 54ch;
+  margin-top: 0.75rem;
+  max-width: 62ch;
   font-size: clamp(1rem, 1.3vw, 1.125rem);
   line-height: 1.6;
   color: var(--ink-muted);
@@ -525,7 +506,7 @@ select {
    ========================================================================== */
 
 .console {
-  margin-top: clamp(1.75rem, 3.5vw, 2.5rem);
+  margin-top: clamp(1.125rem, 2vw, 1.5rem);
 }
 
 .console-form {
@@ -700,7 +681,7 @@ select {
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding-block: 1rem;
+  padding-block: 0.625rem;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -710,6 +691,22 @@ select {
 
 .toolbar-spacer {
   flex: 1;
+}
+
+/* The chip row is a full-bleed scroller on its own; inside the toolbar it
+   shrinks to its content so the summary, facets and actions share one row. */
+.toolbar .chip-row {
+  margin-inline: 0;
+  padding-inline: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 55.999rem) {
+  .toolbar .chip-row {
+    order: 3;
+    flex-basis: 100%;
+  }
 }
 
 .button {
@@ -881,9 +878,9 @@ select {
   display: flex;
   align-items: flex-end;
   gap: 1rem;
-  padding-bottom: 0.875rem;
+  padding-bottom: 0.625rem;
   border-bottom: 1px solid var(--ink);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.125rem;
 }
 
 .section-index {

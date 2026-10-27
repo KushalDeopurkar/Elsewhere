@@ -17,25 +17,12 @@ interface Shortcut {
   isActive: (f: Filters) => boolean;
 }
 
+/**
+ * Date presets deliberately live in the date strip, not here — duplicating
+ * them produced two competing date controls stacked on top of each other.
+ * This row covers only what the strip cannot express.
+ */
 const SHORTCUTS: Shortcut[] = [
-  {
-    id: "today",
-    label: "Today",
-    patch: { date: "today" },
-    isActive: (f) => f.date === "today",
-  },
-  {
-    id: "weekend",
-    label: "This weekend",
-    patch: { date: "weekend" },
-    isActive: (f) => f.date === "weekend",
-  },
-  {
-    id: "week",
-    label: "Next 7 days",
-    patch: { date: "week" },
-    isActive: (f) => f.date === "week",
-  },
   {
     id: "free",
     label: "Free",
@@ -81,8 +68,7 @@ export default function ShortcutRow({
                 return;
               }
               if (s.id === "free") onChange({ freeOnly: false });
-              else if (s.id === "online" || s.id === "in-person") onChange({ online: null });
-              else onChange({ date: "any" });
+              else onChange({ online: null });
             }}
           >
             {s.label}
