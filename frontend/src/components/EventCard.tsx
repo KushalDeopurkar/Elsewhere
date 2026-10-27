@@ -5,7 +5,13 @@ import { formatEventDate, datestampParts } from "@/lib/formatDate";
 import SaveButton from "./SaveButton";
 import { GlobeIcon, PinIcon } from "./icons";
 
-export type CardVariant = "standard" | "featured" | "compact";
+/**
+ * standard — the general-purpose grid tile.
+ * featured — wide editorial lead, display-serif title.
+ * poster   — portrait artwork-led tile for rails; the image carries it.
+ * compact  — dense row for map lists and tight spaces.
+ */
+export type CardVariant = "standard" | "featured" | "poster" | "compact";
 
 /**
  * Generated art for events with no image.
@@ -36,7 +42,7 @@ function Media({ event, variant }: { event: Event; variant: CardVariant }) {
         <CardArt event={event} />
       )}
 
-      {variant === "featured" && (
+      {(variant === "featured" || variant === "poster") && (
         <span className="datestamp" aria-hidden="true">
           <span className="datestamp-month">{stamp.month}</span>
           <span className="datestamp-day">{stamp.day}</span>

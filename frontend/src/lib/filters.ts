@@ -16,6 +16,9 @@ export interface PlaceSelection {
   lng: number;
 }
 
+/** Grid is image-led and browsable; list is dense and scannable. */
+export type ViewMode = "grid" | "list";
+
 export interface Filters {
   q: string;
   /** Taxonomy group slug, not a raw enum value — resolved on the way out. */
@@ -23,6 +26,13 @@ export interface Filters {
   /** Subcategory slug within the selected group. */
   sub: string | null;
   date: DatePreset;
+  /**
+   * A single calendar day (YYYY-MM-DD) picked from the date strip. Takes
+   * precedence over `date` — choosing an exact day is a more specific
+   * intent than any preset window.
+   */
+  day: string | null;
+  view: ViewMode;
   freeOnly: boolean;
   /** null = any format, true = online only, false = in person only. */
   online: boolean | null;
@@ -38,6 +48,8 @@ export const EMPTY_FILTERS: Filters = {
   group: null,
   sub: null,
   date: "any",
+  day: null,
+  view: "grid",
   freeOnly: false,
   online: null,
   place: null,
@@ -106,6 +118,29 @@ export function resolveDateRange(
   }
 }
 
+/**
+ * Window for one calendar day in the user's own timezone. Clamped to "now"
+ * when that day is today, so the strip never surfaces events that already
+ * started this morning.
+ */
+export function resolveDay(
+  day: string,
+  now: Date = new Date()
+): { from?: string; to?: string } {
+  const [y, m, d] = day.split("-").map(Number);
+  if (!y || !m || !d) return {};
+  const start = new Date(y, m - 1, d);
+  const end = addDays(start, 1);
+  const from = start < now && end > now ? now : start;
+  return { from: from.toISOString(), to: end.toISOString() };
+}
+
+/** YYYY-MM-DD in local time — `toISOString` would shift across timezones. */
+export function toDayKey(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /** True when anything is set that should switch the home view to results. */
 export function hasActiveFilters(f: Filters): boolean {
   return (
@@ -113,6 +148,7 @@ export function hasActiveFilters(f: Filters): boolean {
     f.group !== null ||
     f.sub !== null ||
     f.date !== "any" ||
+    f.day !== null ||
     f.freeOnly ||
     f.online !== null ||
     f.place !== null
@@ -124,7 +160,7 @@ export function activeFilterCount(f: Filters): number {
   let n = 0;
   if (f.group) n += 1;
   if (f.sub) n += 1;
-  if (f.date !== "any") n += 1;
+  if (f.date !== "any" || f.day) n += 1;
   if (f.freeOnly) n += 1;
   if (f.online !== null) n += 1;
   if (f.place) n += 1;
@@ -149,7 +185,9 @@ export function toSearchParams(
 
   const resolved = subcategory?.query ?? group?.query ?? {};
   const terms = [f.q.trim(), resolved.q].filter((t): t is string => !!t);
-  const { from, to } = resolveDateRange(f.date, opts.now);
+  const { from, to } = f.day
+    ? resolveDay(f.day, opts.now)
+    : resolveDateRange(f.date, opts.now);
 
   // Distance sorting is only meaningful with an origin point.
   const sort: EventSort = f.sort === "distance" && !f.place ? "date" : f.sort;
@@ -180,7 +218,9 @@ export function filtersToQueryString(f: Filters): string {
   if (f.q.trim()) p.set("q", f.q.trim());
   if (f.group) p.set("group", f.group);
   if (f.sub) p.set("sub", f.sub);
-  if (f.date !== "any") p.set("date", f.date);
+  if (f.day) p.set("day", f.day);
+  else if (f.date !== "any") p.set("date", f.date);
+  if (f.view !== "grid") p.set("view", f.view);
   if (f.freeOnly) p.set("free", "1");
   if (f.online !== null) p.set("format", f.online ? "online" : "in-person");
   if (f.place) {
@@ -228,11 +268,17 @@ export function filtersFromSearchParams(
   const radiusRaw = Number(get("radius"));
   const sortRaw = get("sort") ?? "relevance";
 
+  const dayRaw = get("day");
+  const day = dayRaw && /^\d{4}-\d{2}-\d{2}$/.test(dayRaw) ? dayRaw : null;
+  const view: ViewMode = get("view") === "list" ? "list" : "grid";
+
   return {
     q: get("q") ?? "",
     group: group?.slug ?? null,
     sub,
     date,
+    day,
+    view,
     freeOnly: get("free") === "1",
     online,
     place,

@@ -21,6 +21,10 @@ import FilterPanel from "./FilterPanel";
 import CategoryExplorer from "./CategoryExplorer";
 import EventGrid, { GridSkeleton, SkeletonCard } from "./EventGrid";
 import EventCard from "./EventCard";
+import DateStrip from "./DateStrip";
+import ScheduleList from "./ScheduleList";
+import ViewToggle from "./ViewToggle";
+import CollectionRow from "./CollectionRow";
 import SectionHead from "./SectionHead";
 import EmptyState from "./EmptyState";
 import ErrorState from "./ErrorState";
@@ -215,6 +219,10 @@ export default function DiscoverView() {
       </section>
 
       <div className="shell">
+        <DateStrip filters={filters} now={now} onChange={update} />
+      </div>
+
+      <div className="shell">
         <div className="toolbar">
           <div className="toolbar-summary">
             <p className="micro" style={{ color: "var(--ink-faint)" }}>
@@ -229,6 +237,7 @@ export default function DiscoverView() {
             </p>
           </div>
           <div className="toolbar-spacer" />
+          <ViewToggle view={filters.view} onChange={(view) => update({ view })} />
           {showResults && (
             <button type="button" className="button button-quiet" onClick={reset}>
               Clear all
@@ -265,6 +274,8 @@ export default function DiscoverView() {
             <ErrorState message={error} onRetry={retry} />
           ) : events.length === 0 ? (
             <EmptyState filters={filters} onChange={update} onReset={reset} />
+          ) : filters.view === "list" ? (
+            <ScheduleList events={events} />
           ) : (
             <EventGrid events={events} featureFirst />
           )}
@@ -286,6 +297,8 @@ export default function DiscoverView() {
               <ErrorState message={upcomingQuery.error} onRetry={upcomingQuery.retry} />
             ) : upcomingQuery.events.length === 0 ? (
               <EmptyState filters={EMPTY_FILTERS} onChange={update} onReset={reset} />
+            ) : filters.view === "list" ? (
+              <ScheduleList events={upcomingQuery.events} />
             ) : (
               <EventGrid events={leadEvents} featureFirst />
             )}
@@ -324,17 +337,27 @@ export default function DiscoverView() {
                   href={rail.href}
                   id={`rail-${rail.id}`}
                 />
-                <div className="rail scrollbar-hide">
+                <div className="rail rail-posters scrollbar-hide">
                   {rail.events.map((event) => (
-                    <EventCard key={event.id} event={event} />
+                    <EventCard key={event.id} event={event} variant="poster" />
                   ))}
                 </div>
               </section>
             ))}
 
-          <section className="shell section" aria-labelledby="categories-head">
+          <section className="shell section" aria-labelledby="collections-head">
             <SectionHead
               index={explorerIndex}
+              title="Collections"
+              basis="Editorial angles on the index — each opens the real feed"
+              id="collections-head"
+            />
+            <CollectionRow />
+          </section>
+
+          <section className="shell section" aria-labelledby="categories-head">
+            <SectionHead
+              index={explorerIndex + 1}
               title="Explore by interest"
               basis="Jump into a category, then narrow by type"
               id="categories-head"
