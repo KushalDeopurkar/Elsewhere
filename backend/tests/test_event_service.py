@@ -173,6 +173,30 @@ def test_get_in_bounds_unset_to_time_is_none(service, mock_supabase):
     assert mock_supabase.rpc.call_args[0][1]["to_time"] is None
 
 
+def test_get_in_bounds_passes_query(service, mock_supabase):
+    """Map search must reach the RPC so it uses the same index as /search."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.get_in_bounds(
+        south=19.0, west=72.8, north=19.2, east=73.0, q="hackathon"
+    )
+
+    assert mock_supabase.rpc.call_args[0][1]["query"] == "hackathon"
+
+
+def test_get_in_bounds_unset_query_is_none(service, mock_supabase):
+    """No keyword means no text constraint on the bounding box."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0)
+
+    assert mock_supabase.rpc.call_args[0][1]["query"] is None
+
+
 def test_get_in_bounds_empty_result(service, mock_supabase):
     mock_rpc = MagicMock()
     mock_rpc.execute.return_value.data = None

@@ -1692,6 +1692,27 @@ select {
   padding-block: 0.4375rem;
 }
 
+/* The search console is a hero element on the home page; in the map bar it
+   is one control among several and carries no outer spacing of its own. */
+.map-bar .console {
+  margin-top: 0;
+  padding-block: 0.5rem;
+}
+
+.map-bar .console-form {
+  box-shadow: none;
+  border-radius: var(--radius-md);
+}
+
+.map-bar .console-input {
+  padding-block: 0.4375rem;
+  font-size: var(--size-body);
+}
+
+.map-bar .console-submit {
+  padding-inline: 1rem;
+}
+
 .map-bar .chip-row {
   padding-block: 0.375rem;
 }

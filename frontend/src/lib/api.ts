@@ -48,6 +48,8 @@ export interface MapQuery {
   /** ISO timestamps bounding the day or window shown on the map. */
   from_time?: string;
   to_time?: string;
+  /** Keyword, matched against the same index the main feed searches. */
+  q?: string;
 }
 
 export async function getMapEvents(
@@ -63,6 +65,7 @@ export async function getMapEvents(
   if (query.category) params.set("category", query.category);
   if (query.from_time) params.set("from_time", query.from_time);
   if (query.to_time) params.set("to_time", query.to_time);
+  if (query.q) params.set("q", query.q);
 
   const res = await fetch(`${API_BASE}/events/map?${params}`);
   if (!res.ok) throw new Error(`Map fetch failed: ${res.status}`);

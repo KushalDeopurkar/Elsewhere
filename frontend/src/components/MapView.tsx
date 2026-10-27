@@ -10,6 +10,7 @@ import { getCategoryPaint } from "@/lib/categoryColors";
 import { formatDayOnly } from "@/lib/formatDate";
 import { ArrowRightIcon, PinIcon } from "./icons";
 import DateStrip from "./DateStrip";
+import SearchConsole from "./SearchConsole";
 
 // Leaflet touches window/document at import time, so the map must never be
 // part of the server render.
@@ -46,6 +47,7 @@ const MAP_CATEGORIES: { value: EventCategory; label: string }[] = Array.from(
 export default function MapView() {
   const [category, setCategory] = useState<EventCategory | null>(null);
   const [day, setDay] = useState<string | null>(null);
+  const [q, setQ] = useState("");
 
   // One anchor per mount, as on the home page: a fresh Date each render
   // would change the derived window and refetch forever.
@@ -97,6 +99,7 @@ export default function MapView() {
   return (
     <div className="map-page">
       <div className="map-bar">
+        <SearchConsole value={q} onSubmit={setQ} size="compact" />
         <DateStrip
           filters={stripFilters}
           now={now}
@@ -137,7 +140,7 @@ export default function MapView() {
         <aside className="map-aside" aria-label="Events in view">
           <div className="map-aside-head">
             <h1 className="section-title" style={{ fontSize: "1.25rem" }}>
-              In this area
+              {q ? `“${q}” in this area` : "In this area"}
             </h1>
             <span className="meta numeric">
               {status.loading ? "…" : listed.length}
@@ -150,8 +153,9 @@ export default function MapView() {
             </p>
           ) : listed.length === 0 && !status.loading ? (
             <p className="meta">
-              No mapped events{day ? " on this day" : ""} here. Pan or zoom out
-              to widen the search —
+              No mapped events{q ? ` matching “${q}”` : ""}
+              {day ? " on this day" : ""} here. Pan or zoom out to widen the
+              search —
               online events have no location, so they only appear in{" "}
               <Link href="/?format=online" style={{ textDecoration: "underline" }}>
                 the main feed
@@ -215,6 +219,7 @@ export default function MapView() {
           <EventMap
             category={category}
             window={timeWindow}
+            q={q}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onEventsChange={handleEvents}

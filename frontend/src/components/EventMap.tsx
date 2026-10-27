@@ -103,6 +103,7 @@ export interface EventMapProps {
   category?: EventCategory | null;
   /** Serialised so the fetch effect compares by value, not identity. */
   window?: { from_time?: string; to_time?: string };
+  q?: string;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   onEventsChange?: (events: Event[]) => void;
@@ -114,6 +115,7 @@ export default function EventMap({
   zoom = 12,
   category = null,
   window: timeWindow,
+  q,
   selectedId = null,
   onSelect,
   onEventsChange,
@@ -155,14 +157,14 @@ export default function EventMap({
     }
   }, []);
 
-  const queryKey = JSON.stringify({ category, ...timeWindow });
+  const queryKey = JSON.stringify({ category, q: q || undefined, ...timeWindow });
 
   const handleBoundsChange = useCallback(
     (b: MapBounds) => {
       setBounds(b);
-      fetchEvents(b, { category: category || undefined, ...timeWindow });
+      fetchEvents(b, { category: category || undefined, q: q || undefined, ...timeWindow });
     },
-    [fetchEvents, category, timeWindow]
+    [fetchEvents, category, q, timeWindow]
   );
 
   useEffect(() => {
@@ -237,7 +239,13 @@ export default function EventMap({
 
       {!loading && !error && loadedOnce && markers.length === 0 && (
         <div className="map-pill" role="status">
-          No mapped events in this area — try panning or zooming out
+          {/* Name the active refinement: "no events here" and "no matches
+              here" are different facts, and the pill should not imply the
+              first when the second is true. */}
+          {q
+            ? `No events matching “${q}” in this area`
+            : "No mapped events in this area"}{" "}
+          — try panning or zooming out
         </div>
       )}
 
@@ -250,7 +258,11 @@ export default function EventMap({
             style={{ padding: "0.25rem 0.5rem" }}
             onClick={() =>
               bounds &&
-              fetchEvents(bounds, { category: category || undefined, ...timeWindow })
+              fetchEvents(bounds, {
+                category: category || undefined,
+                q: q || undefined,
+                ...timeWindow,
+              })
             }
           >
             Retry
