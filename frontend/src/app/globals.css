@@ -1654,14 +1654,46 @@ select {
 }
 
 .map-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.75rem var(--gutter);
+  display: grid;
+  gap: 0.25rem;
+  padding: 0 var(--gutter) 0.5rem;
   border-bottom: 1px solid var(--rule);
   background: var(--paper);
   flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Grid children default to min-width:auto, which lets the scrollable
+   strip and chip row push the whole page wider instead of scrolling. */
+.map-bar > * {
+  min-width: 0;
+}
+
+/* The map is the point of this page, so its controls stay on single
+   scrollable rows instead of wrapping and eating the canvas. */
+.map-bar .chip-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+/* The strip is already inside the bar's border; it needs neither its own
+   rules nor sticky positioning here. */
+.map-bar .datestrip-wrap {
+  position: static;
+  border-block: none;
+  border-bottom: 1px solid var(--rule);
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.map-bar .datestrip {
+  padding-block: 0.4375rem;
+}
+
+.map-bar .chip-row {
+  padding-block: 0.375rem;
 }
 
 .map-split {

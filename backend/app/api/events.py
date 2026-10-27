@@ -88,6 +88,7 @@ def map_events(
     north: float = Query(...),
     east: float = Query(...),
     from_time: Optional[datetime] = None,
+    to_time: Optional[datetime] = None,
     category: Optional[EventCategory] = None,
     max_results: int = Query(default=200, ge=1, le=500),
     service: EventService = Depends(get_event_service),
@@ -98,6 +99,7 @@ def map_events(
         north=north,
         east=east,
         from_time=from_time,
+        to_time=to_time,
         category=category.value if category else None,
         max_results=max_results,
     )

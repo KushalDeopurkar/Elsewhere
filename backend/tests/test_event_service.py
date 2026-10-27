@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from unittest.mock import MagicMock
 
@@ -140,6 +142,35 @@ def test_get_in_bounds(service, mock_supabase):
     assert rpc_params["west"] == 72.8
     assert rpc_params["north"] == 19.2
     assert rpc_params["east"] == 73.0
+
+
+def test_get_in_bounds_passes_time_window(service, mock_supabase):
+    """The map's day filter must reach the RPC as a real bounded window."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    start = datetime(2026, 10, 31, tzinfo=timezone.utc)
+    end = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    service.get_in_bounds(
+        south=19.0, west=72.8, north=19.2, east=73.0,
+        from_time=start, to_time=end,
+    )
+
+    rpc_params = mock_supabase.rpc.call_args[0][1]
+    assert rpc_params["from_time"] == start.isoformat()
+    assert rpc_params["to_time"] == end.isoformat()
+
+
+def test_get_in_bounds_unset_to_time_is_none(service, mock_supabase):
+    """No upper bound means no constraint, not an empty result."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0)
+
+    assert mock_supabase.rpc.call_args[0][1]["to_time"] is None
 
 
 def test_get_in_bounds_empty_result(service, mock_supabase):

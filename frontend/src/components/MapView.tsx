@@ -3,11 +3,13 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { EMPTY_FILTERS, resolveDay } from "@/lib/filters";
 import { Event, EventCategory } from "@/lib/types";
 import { TAXONOMY } from "@/lib/taxonomy";
 import { getCategoryPaint } from "@/lib/categoryColors";
 import { formatDayOnly } from "@/lib/formatDate";
 import { ArrowRightIcon, PinIcon } from "./icons";
+import DateStrip from "./DateStrip";
 
 // Leaflet touches window/document at import time, so the map must never be
 // part of the server render.
@@ -43,6 +45,30 @@ const MAP_CATEGORIES: { value: EventCategory; label: string }[] = Array.from(
 
 export default function MapView() {
   const [category, setCategory] = useState<EventCategory | null>(null);
+  const [day, setDay] = useState<string | null>(null);
+
+  // One anchor per mount, as on the home page: a fresh Date each render
+  // would change the derived window and refetch forever.
+  const [nowIso] = useState(() => new Date().toISOString());
+  const now = useMemo(() => new Date(nowIso), [nowIso]);
+
+  /**
+   * The map's day filter is a real bounded window on the bounds query
+   * (migration 003 added the upper bound). Filtering client-side would be
+   * wrong: the RPC caps its result set by start_time, so a far-enough day
+   * would fall outside it and read as empty.
+   */
+  const timeWindow = useMemo(() => {
+    if (!day) return {};
+    const { from, to } = resolveDay(day, now);
+    return { from_time: from, to_time: to };
+  }, [day, now]);
+
+  // DateStrip speaks the shared Filters shape; the map only varies the day.
+  const stripFilters = useMemo(
+    () => ({ ...EMPTY_FILTERS, day }),
+    [day]
+  );
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<{ loading: boolean; error: string | null }>({
@@ -71,6 +97,11 @@ export default function MapView() {
   return (
     <div className="map-page">
       <div className="map-bar">
+        <DateStrip
+          filters={stripFilters}
+          now={now}
+          onChange={(patch) => setDay(patch.day ?? null)}
+        />
         <div className="chip-row scrollbar-hide" aria-label="Filter map by category">
           <button
             type="button"
@@ -119,7 +150,8 @@ export default function MapView() {
             </p>
           ) : listed.length === 0 && !status.loading ? (
             <p className="meta">
-              No mapped events here. Pan or zoom out to widen the search —
+              No mapped events{day ? " on this day" : ""} here. Pan or zoom out
+              to widen the search —
               online events have no location, so they only appear in{" "}
               <Link href="/?format=online" style={{ textDecoration: "underline" }}>
                 the main feed
@@ -182,6 +214,7 @@ export default function MapView() {
         <div className="map-stage">
           <EventMap
             category={category}
+            window={timeWindow}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onEventsChange={handleEvents}

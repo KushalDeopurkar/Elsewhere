@@ -43,14 +43,26 @@ export interface MapBounds {
   east: number;
 }
 
-export async function getMapEvents(bounds: MapBounds, category?: string): Promise<Event[]> {
+export interface MapQuery {
+  category?: string;
+  /** ISO timestamps bounding the day or window shown on the map. */
+  from_time?: string;
+  to_time?: string;
+}
+
+export async function getMapEvents(
+  bounds: MapBounds,
+  query: MapQuery = {}
+): Promise<Event[]> {
   const params = new URLSearchParams({
     south: String(bounds.south),
     west: String(bounds.west),
     north: String(bounds.north),
     east: String(bounds.east),
   });
-  if (category) params.set("category", category);
+  if (query.category) params.set("category", query.category);
+  if (query.from_time) params.set("from_time", query.from_time);
+  if (query.to_time) params.set("to_time", query.to_time);
 
   const res = await fetch(`${API_BASE}/events/map?${params}`);
   if (!res.ok) throw new Error(`Map fetch failed: ${res.status}`);

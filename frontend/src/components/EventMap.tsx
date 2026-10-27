@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "re
 import L from "leaflet";
 import Link from "next/link";
 import { Event, EventCategory, categoryLabel } from "@/lib/types";
-import { getMapEvents, MapBounds } from "@/lib/api";
+import { getMapEvents, MapBounds, MapQuery } from "@/lib/api";
 import { getCategoryPaint } from "@/lib/categoryColors";
 import { formatEventDate } from "@/lib/formatDate";
 import { ArrowRightIcon } from "./icons";
@@ -101,6 +101,8 @@ export interface EventMapProps {
   center?: [number, number];
   zoom?: number;
   category?: EventCategory | null;
+  /** Serialised so the fetch effect compares by value, not identity. */
+  window?: { from_time?: string; to_time?: string };
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   onEventsChange?: (events: Event[]) => void;
@@ -111,6 +113,7 @@ export default function EventMap({
   center = [19.076, 72.8777], // Mumbai
   zoom = 12,
   category = null,
+  window: timeWindow,
   selectedId = null,
   onSelect,
   onEventsChange,
@@ -131,12 +134,12 @@ export default function EventMap({
     notifyStatus.current = onStatusChange;
   }, [onEventsChange, onStatusChange]);
 
-  const fetchEvents = useCallback(async (b: MapBounds, cat: EventCategory | null) => {
+  const fetchEvents = useCallback(async (b: MapBounds, query: MapQuery) => {
     setLoading(true);
     setError(null);
     notifyStatus.current?.({ loading: true, error: null });
     try {
-      const data = await getMapEvents(b, cat || undefined);
+      const data = await getMapEvents(b, query);
       setEvents(data);
       notifyEvents.current?.(data);
       notifyStatus.current?.({ loading: false, error: null });
@@ -152,22 +155,29 @@ export default function EventMap({
     }
   }, []);
 
+  const queryKey = JSON.stringify({ category, ...timeWindow });
+
   const handleBoundsChange = useCallback(
     (b: MapBounds) => {
       setBounds(b);
-      fetchEvents(b, category);
+      fetchEvents(b, { category: category || undefined, ...timeWindow });
     },
-    [fetchEvents, category]
+    [fetchEvents, category, timeWindow]
   );
 
   useEffect(() => {
-    // Re-query the current viewport whenever the category changes.
+    // Re-query the current viewport whenever the category or day changes.
+    //
+    // Unlike the search hooks, this component's `loading` cannot be derived
+    // from the current query: fetches are also kicked off imperatively by
+    // map pan/zoom, not only by a dependency change, so the request state
+    // genuinely lives here.
     if (bounds) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchEvents(bounds, category);
+      fetchEvents(bounds, JSON.parse(queryKey) as MapQuery);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [queryKey]);
 
   const markers = useMemo(() => events.filter(hasCoords), [events]);
   const selected = useMemo(
@@ -238,7 +248,10 @@ export default function EventMap({
             type="button"
             className="button"
             style={{ padding: "0.25rem 0.5rem" }}
-            onClick={() => bounds && fetchEvents(bounds, category)}
+            onClick={() =>
+              bounds &&
+              fetchEvents(bounds, { category: category || undefined, ...timeWindow })
+            }
           >
             Retry
           </button>

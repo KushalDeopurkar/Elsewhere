@@ -73,6 +73,7 @@ class EventService:
         north: float,
         east: float,
         from_time: Optional[datetime] = None,
+        to_time: Optional[datetime] = None,
         category: Optional[str] = None,
         max_results: int = 200,
     ) -> List[Dict]:
@@ -85,6 +86,7 @@ class EventService:
                 "north": north,
                 "east": east,
                 "from_time": (from_time or datetime.now(timezone.utc)).isoformat(),
+                "to_time": to_time.isoformat() if to_time else None,
                 "category_filter": category,
                 "max_results": max_results,
             },
