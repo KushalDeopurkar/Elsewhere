@@ -48,6 +48,9 @@ class EventService:
             "radius_km": params.radius_km,
             "from_time": params.from_time.isoformat() if params.from_time else None,
             "to_time": params.to_time.isoformat() if params.to_time else None,
+            "free_only": params.free_only,
+            "online_only": params.online_only,
+            "sort_by": params.sort_by.value,
             "page_limit": params.limit,
             "page_offset": params.offset,
         }
@@ -70,7 +73,9 @@ class EventService:
         north: float,
         east: float,
         from_time: Optional[datetime] = None,
+        to_time: Optional[datetime] = None,
         category: Optional[str] = None,
+        q: Optional[str] = None,
         max_results: int = 200,
     ) -> List[Dict]:
         """Get events within a map bounding box via events_in_bounds RPC."""
@@ -82,7 +87,9 @@ class EventService:
                 "north": north,
                 "east": east,
                 "from_time": (from_time or datetime.now(timezone.utc)).isoformat(),
+                "to_time": to_time.isoformat() if to_time else None,
                 "category_filter": category,
+                "query": q,
                 "max_results": max_results,
             },
         ).execute()
