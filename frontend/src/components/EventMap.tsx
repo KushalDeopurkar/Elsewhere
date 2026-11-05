@@ -46,6 +46,7 @@ export default function EventMap({
   const didLoad = useRef(false);
   const triedFallback = useRef(false);
   const [loaded, setLoaded] = useState(false);
+  const [bearing, setBearing] = useState<number>(DEFAULT_VIEW.bearing);
 
   // Callbacks are held in refs so the map is built exactly once; re-creating
   // a GL context on every parent render would thrash the GPU.
@@ -63,7 +64,15 @@ export default function EventMap({
       ...DEFAULT_VIEW,
       attributionControl: { compact: true },
       maxPitch: 70,
+      // Rotation: right-click / ctrl+drag on desktop, two-finger twist on touch,
+      // shift+arrow keys on keyboard. Buttons in .map-tools cover the rest.
+      dragRotate: true,
+      touchZoomRotate: true,
+      touchPitch: true,
+      pitchWithRotate: true,
+      keyboard: true,
     });
+    instance.touchZoomRotate.enableRotation();
 
     map.current = instance;
 
@@ -103,6 +112,7 @@ export default function EventMap({
     });
 
     instance.on("moveend", reportBounds);
+    instance.on("rotate", () => setBearing(instance.getBearing()));
 
     instance.on("error", (e: { error?: { message?: string } }) => {
       // Once the style is up, a single bad tile or missing glyph range is not
@@ -180,6 +190,14 @@ export default function EventMap({
       if (markers.current.has(event.id)) continue;
 
       const hue = getCategoryColor(event.category);
+
+      // MapLibre owns the marker element's position and transform (it writes
+      // an inline translate on every frame). Keep that element bare and put
+      // all styling, hover scale and transitions on an inner button, or the
+      // pin drifts away from its coordinate while the map moves.
+      const anchor = document.createElement("div");
+      anchor.className = "pin-anchor";
+
       const el = document.createElement("button");
       el.type = "button";
       el.className = "pin pin-cat";
@@ -193,10 +211,17 @@ export default function EventMap({
         ev.stopPropagation();
         cb.current.onSelect(event);
       });
+      anchor.appendChild(el);
 
       markers.current.set(
         event.id,
-        new Marker({ element: el })
+        new Marker({
+          element: anchor,
+          anchor: "center",
+          // Pins stay upright and face the viewer whatever the bearing/pitch.
+          rotationAlignment: "viewport",
+          pitchAlignment: "viewport",
+        })
           .setLngLat([event.lng, event.lat])
           .addTo(instance),
       );
@@ -225,6 +250,22 @@ export default function EventMap({
     });
   }, []);
 
+  const rotate = useCallback((delta: number) => {
+    const m = map.current;
+    if (!m) return;
+    m.easeTo({
+      bearing: m.getBearing() + delta,
+      duration: prefersReducedMotion() ? 0 : 400,
+    });
+  }, []);
+
+  const resetNorth = useCallback(() => {
+    map.current?.easeTo({
+      bearing: 0,
+      duration: prefersReducedMotion() ? 0 : 500,
+    });
+  }, []);
+
   const reset = useCallback(() => {
     map.current?.easeTo({
       ...DEFAULT_VIEW,
@@ -244,6 +285,22 @@ export default function EventMap({
         <button type="button" className="map-tool" onClick={() => nudge(-1)} aria-label="Zoom out">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M5 12h14" />
+          </svg>
+        </button>
+        <button type="button" className="map-tool" onClick={() => rotate(-30)} aria-label="Rotate left" title="Rotate left (or right-click and drag)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" />
+          </svg>
+        </button>
+        <button type="button" className="map-tool" onClick={() => rotate(30)} aria-label="Rotate right" title="Rotate right (or right-click and drag)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" />
+          </svg>
+        </button>
+        <button type="button" className="map-tool map-compass" onClick={resetNorth} aria-label="Point north" title="Point north">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ transform: `rotate(${-bearing}deg)` }}>
+            <path d="M12 3l3.5 9h-7z" fill="var(--marigold)" />
+            <path d="M12 21l-3.5-9h7z" fill="currentColor" opacity="0.5" />
           </svg>
         </button>
         <button type="button" className="map-tool" onClick={reset} aria-label="Reset the view">

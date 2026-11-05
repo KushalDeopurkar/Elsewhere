@@ -1144,7 +1144,18 @@ p {
   font-weight: 700;
 }
 
-/* Marker. A marigold pin with a soft halo so it reads against dark terrain. */
+/* Marker. MapLibre positions .pin-anchor (it carries .maplibregl-marker and
+   an inline translate), so it must stay unstyled: no position, transform or
+   transition here, or pins drift off their coordinates as the map moves. */
+.pin-anchor {
+  z-index: 1;
+}
+
+.pin-anchor.is-active {
+  z-index: var(--z-raised);
+}
+
+/* A marigold pin with a soft halo so it reads against dark terrain. */
 .pin {
   position: relative;
   width: 2rem;
@@ -1163,9 +1174,12 @@ p {
 }
 
 .pin:hover,
-.pin.is-active {
+.pin-anchor.is-active .pin {
   transform: scale(1.18);
-  z-index: var(--z-raised);
+}
+
+.map-compass svg {
+  transition: transform 120ms linear;
 }
 
 .pin-cat {
