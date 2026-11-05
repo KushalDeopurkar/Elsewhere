@@ -8,6 +8,7 @@ import { TimeRail, CategoryRail, TimeWindow } from "@/components/FilterRail";
 import EventGrid from "@/components/EventGrid";
 import HeroDeck from "@/components/HeroDeck";
 import IntentResults from "@/components/IntentResults";
+import DayPlanner from "@/components/DayPlanner";
 import SiteFooter from "@/components/SiteFooter";
 import { useEvents } from "@/hooks/useEvents";
 import { EventCategory } from "@/lib/types";
@@ -117,6 +118,12 @@ export default function Home() {
             ))}
           </div>
 
+          <a href="#plan" className="section-link">
+            <Sparkle size={17} weight="duotone" />
+            Plan my whole day with AI
+            <ArrowRight size={14} weight="bold" />
+          </a>
+
           <Link href="/map" className="section-link">
             <MapTrifold size={17} weight="duotone" />
             See it on the map
@@ -126,6 +133,8 @@ export default function Home() {
 
         <HeroDeck events={events} />
       </section>
+
+      <DayPlanner city={city} />
 
       {intent ? (
         <IntentResults
