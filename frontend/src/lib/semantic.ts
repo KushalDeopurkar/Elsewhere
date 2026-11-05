@@ -10,8 +10,12 @@ import { Event } from "./types";
 import { invokeFunction, rpc } from "./supabaseServer";
 
 export const EMBED_DIMS = 384;
-const EMBED_BATCH = 8;
-const EMBED_CONCURRENCY = 3;
+// The free Edge Function tier has a small CPU budget per call: a few short
+// texts per request, two requests at a time. Oversized batches are split.
+const EMBED_BATCH = 3;
+const EMBED_CONCURRENCY = 2;
+// gte-small reads ~512 tokens; longer text only costs CPU.
+const EMBED_MAX_CHARS = 700;
 
 export interface SemanticEvent extends Event {
   /** Cosine similarity to the query, 0..1. */
@@ -34,21 +38,39 @@ function toEvent(r: Row): SemanticEvent {
   };
 }
 
+async function callEmbed(texts: string[]): Promise<number[][]> {
+  const out = await invokeFunction<{ embeddings?: number[][] }>("embed", {
+    texts: texts.map((t) => t.slice(0, EMBED_MAX_CHARS)),
+  });
+  const vecs = out.embeddings;
+  if (!Array.isArray(vecs) || vecs.length !== texts.length || vecs.some((v) => v.length !== EMBED_DIMS)) {
+    throw new Error("embed returned an unexpected shape");
+  }
+  return vecs;
+}
+
+/**
+ * Embed a batch, splitting it in half whenever the function runs out of
+ * resources. A single text that still fails is retried shortened, so one
+ * awkward listing can never stall the whole sync.
+ */
 async function embedBatch(texts: string[]): Promise<number[][]> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  try {
+    return await callEmbed(texts);
+  } catch (err) {
+    if (texts.length > 1) {
+      const mid = Math.ceil(texts.length / 2);
+      const [a, b] = [await embedBatch(texts.slice(0, mid)), await embedBatch(texts.slice(mid))];
+      return [...a, ...b];
+    }
     try {
-      const out = await invokeFunction<{ embeddings?: number[][] }>("embed", { texts });
-      const vecs = out.embeddings;
-      if (!Array.isArray(vecs) || vecs.length !== texts.length || vecs.some((v) => v.length !== EMBED_DIMS)) {
-        throw new Error("embed returned an unexpected shape");
-      }
-      return vecs;
-    } catch (err) {
-      lastErr = err;
+      return await callEmbed(texts);
+    } catch {
+      return await callEmbed([texts[0].slice(0, 200)]).catch(() => {
+        throw err;
+      });
     }
   }
-  throw lastErr;
 }
 
 /** Embed many texts, in small batches with limited parallelism. */
