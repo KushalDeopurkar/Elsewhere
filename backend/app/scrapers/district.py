@@ -395,12 +395,21 @@ class DistrictScraper(BaseScraper):
             return None
 
     def _parse_iso_date(self, value) -> Optional[datetime]:
-        """Parse an ISO-8601 date string."""
+        """Parse an ISO-8601 date string.
+
+        A trailing "Z" means UTC. It used to be matched as a literal and the
+        result treated as IST, which stored every such event 5h30m early.
+        Only strings with no offset at all are local (IST) times.
+        """
         if not value or not isinstance(value, str):
             return None
+        value = value.strip()
+        try:
+            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return dt if dt.tzinfo else dt.replace(tzinfo=IST)
+        except ValueError:
+            pass
         for fmt in [
-            "%Y-%m-%dT%H:%M:%S.%fZ",
-            "%Y-%m-%dT%H:%M:%SZ",
             "%Y-%m-%dT%H:%M:%S.%f%z",
             "%Y-%m-%dT%H:%M:%S%z",
             "%Y-%m-%dT%H:%M:%S",

@@ -19,6 +19,7 @@ import { searchEvents } from "./api";
 import { parseIntent } from "./intent";
 import { detectCity, cityByName, DEFAULT_CITY, CityPoint } from "./cities";
 import { buildSchedule, parseBudget, lowestPrice, PlanResult } from "./plan";
+import { hasTime } from "./formatDate";
 import { embedQuery, matchEvents } from "./semantic";
 import { supabaseConfigured } from "./supabaseServer";
 
@@ -371,9 +372,12 @@ async function planWithLlm(
     const id = `c${i + 1}`;
     byId.set(id, s.event);
     const e = s.event;
-    const end = e.end_time ? timeFmt.format(new Date(e.end_time)) : "?";
+    const end = e.end_time && hasTime(e.start_time) ? timeFmt.format(new Date(e.end_time)) : "?";
     const venue = (e.location_name || e.address || "").slice(0, 45);
-    return `${id} | ${slotFmt.format(new Date(e.start_time))}–${end} | ${e.title.slice(0, 60)} | ${e.category} | ${venue || e.city || "venue n/a"} | ${priceText(e)}`;
+    const when = hasTime(e.start_time)
+      ? slotFmt.format(new Date(e.start_time))
+      : `${dayKey(Date.parse(e.start_time))} (time not listed)`;
+    return `${id} | ${when}–${end} | ${e.title.slice(0, 60)} | ${e.category} | ${venue || e.city || "venue n/a"} | ${priceText(e)}`;
   });
 
   const user = [
@@ -512,12 +516,16 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
 
   // Upcoming, within two weeks. Sample data ignores the radius, so filter it
   // by city name instead.
-  const upcoming = [...merged.values()].filter((e) => {
+  const inWindow = [...merged.values()].filter((e) => {
     const t = Date.parse(e.start_time);
     if (!(t > now - 30 * 60_000 && t < horizon)) return false;
     if (isSample) return (e.city ?? "").toLowerCase() === city.name.toLowerCase();
     return true;
   });
+  // A timeline needs start times. Listings that give only a date are used
+  // only when a city has almost nothing else.
+  const timed = inWindow.filter((e) => hasTime(e.start_time));
+  const upcoming = timed.length >= 4 ? timed : inWindow;
 
   const ranked = shortlist(upcoming, city, text, day, area, budget, similarity);
   const pool = ranked.slice(0, SHORTLIST);

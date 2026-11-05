@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { Event } from "./types";
 import { NotConfiguredError } from "./supabaseServer";
+import { hasTime } from "./formatDate";
 
 // Overridable only so the flow can be tested against a local stand-in.
 const API = (process.env.TELEGRAM_API_BASE || "https://api.telegram.org").replace(/\/$/, "");
@@ -77,6 +78,13 @@ const whenFmt = new Intl.DateTimeFormat("en-IN", {
   hour12: true,
 });
 
+const dateFmt = new Intl.DateTimeFormat("en-IN", {
+  timeZone: "Asia/Kolkata",
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+
 function price(e: Event): string {
   if (e.is_free) return "Free";
   if (e.price_min == null) return "Tickets on listing";
@@ -89,7 +97,17 @@ export function eventBlock(e: Event, origin: string): string {
   const link = `${origin}/events/${e.id}`;
   return [
     `<b>${escapeHtml(e.title)}</b>`,
-    escapeHtml([whenFmt.format(new Date(e.start_time)), where, price(e)].filter(Boolean).join(" · ")),
+    escapeHtml(
+      [
+        hasTime(e.start_time)
+          ? whenFmt.format(new Date(e.start_time))
+          : `${dateFmt.format(new Date(e.start_time))}, time on listing`,
+        where,
+        price(e),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    ),
     `<a href="${link}">Details</a>`,
   ].join("\n");
 }

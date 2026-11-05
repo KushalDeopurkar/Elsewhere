@@ -17,6 +17,7 @@ import {
 import { PlanResult, planToIcs, googleCalendarLink } from "@/lib/plan";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { priceBadge } from "@/lib/money";
+import { hasTime } from "@/lib/formatDate";
 import AlertButton from "@/components/AlertButton";
 
 const PlanMap = dynamic(() => import("@/components/PlanMap"), {
@@ -320,8 +321,9 @@ export default function DayPlanner({ city }: { city: string }) {
                         <span className="plan-num">{i + 1}</span>
                         <div className="plan-card-body">
                           <p className="plan-time">
-                            {dayFmt.format(new Date(e.start_time))} · {timeFmt.format(new Date(e.start_time))}
-                            {e.end_time && dayFmt.format(new Date(e.end_time)) === dayFmt.format(new Date(e.start_time))
+                            {dayFmt.format(new Date(e.start_time))} ·{" "}
+                            {hasTime(e.start_time) ? timeFmt.format(new Date(e.start_time)) : "time on listing"}
+                            {hasTime(e.start_time) && e.end_time && dayFmt.format(new Date(e.end_time)) === dayFmt.format(new Date(e.start_time))
                               ? `–${timeFmt.format(new Date(e.end_time))}`
                               : ""}
                           </p>

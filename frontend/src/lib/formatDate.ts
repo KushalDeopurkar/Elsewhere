@@ -27,6 +27,17 @@ const FULL = fmt({
   hour12: true,
 });
 
+const HHMM = fmt({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const DATE_ONLY_FULL = fmt({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+/**
+ * Some sources list only a date, which arrives as exactly midnight IST.
+ * Treat that as "time not listed" rather than an event at 12:00 am.
+ */
+export function hasTime(iso: string): boolean {
+  return HHMM.format(new Date(iso)) !== "00:00";
+}
+
 /** Calendar days between two instants, counted in IST rather than UTC. */
 function daysApart(a: Date, b: Date): number {
   const key = (d: Date) => {
@@ -51,6 +62,12 @@ export function formatDatePlate(iso: string): { day: string; month: string } {
 export function formatWhen(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);
   const diff = daysApart(d, now);
+  if (!hasTime(iso)) {
+    if (diff === 0) return "Today, time on listing";
+    if (diff === 1) return "Tomorrow, time on listing";
+    if (diff > 1 && diff < 7) return `${WEEKDAY.format(d)}, time on listing`;
+    return `${DATE_SHORT.format(d)}, time on listing`;
+  }
   const time = TIME.format(d);
 
   if (diff === 0) {
@@ -68,6 +85,7 @@ export function formatWhen(iso: string, now: Date = new Date()): string {
 
 /** Unambiguous date and time for the detail page. */
 export function formatFull(iso: string): string {
+  if (!hasTime(iso)) return `${DATE_ONLY_FULL.format(new Date(iso))} (time on listing)`;
   return FULL.format(new Date(iso));
 }
 

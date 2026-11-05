@@ -249,8 +249,15 @@ class AllEventsScraper(BaseScraper):
             return None
 
     def _parse_date(self, date_str: str) -> Optional[datetime]:
+        """Parse a schema.org startDate. "Z" means UTC; no offset means IST."""
         if not date_str:
             return None
+        date_str = date_str.strip()
+        try:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            return dt if dt.tzinfo else dt.replace(tzinfo=IST)
+        except ValueError:
+            pass
         for fmt in [
             "%Y-%m-%dT%H:%M:%S%z",
             "%Y-%m-%dT%H:%M:%S",
