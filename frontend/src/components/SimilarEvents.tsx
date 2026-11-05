@@ -3,11 +3,11 @@ import { similarEvents } from "@/lib/semantic";
 import { supabaseConfigured } from "@/lib/supabaseServer";
 
 /** "More like this" on an event page. Renders nothing if it cannot help. */
-export default async function SimilarEvents({ eventId }: { eventId: string }) {
+export default async function SimilarEvents({ eventId, title }: { eventId: string; title: string }) {
   if (!supabaseConfigured()) return null;
   let events: Awaited<ReturnType<typeof similarEvents>> = [];
   try {
-    events = await similarEvents(eventId, 6);
+    events = await similarEvents(eventId, 6, title);
   } catch (err) {
     console.warn("[similar]", (err as Error).message);
     return null;

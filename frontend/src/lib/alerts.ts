@@ -20,10 +20,13 @@ import { embedQuery, matchEvents, vectorLiteral, SemanticEvent } from "./semanti
 import { detectCity, cityByName, DEFAULT_CITY } from "./cities";
 import { botUsername, eventBlock, escapeHtml, sendMessage, TelegramError } from "./telegram";
 
-/** gte-small scores related texts roughly 0.80–0.92 and unrelated ones below. */
+/**
+ * Alerts should be precise: on live data gte-small scores real matches
+ * 0.84-0.90 and unrelated events up to about 0.82.
+ */
 function minSimilarity(): number {
   const v = Number(process.env.ALERT_MIN_SIMILARITY);
-  return Number.isFinite(v) && v > 0 && v < 1 ? v : 0.8;
+  return Number.isFinite(v) && v > 0 && v < 1 ? v : 0.84;
 }
 const PREVIEW_MIN = () => minSimilarity() - 0.02;
 const HORIZON_DAYS = 21;

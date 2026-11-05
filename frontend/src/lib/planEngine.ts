@@ -173,11 +173,11 @@ function shortlist(
       ) {
         score -= 1;
       }
-      // Meaning match from the embeddings, when available. gte-small puts
-      // close matches around 0.82+ and loose ones near 0.76.
+      // Meaning match from the embeddings, when available. On live data
+      // gte-small scores real matches 0.84-0.90 and noise up to ~0.82.
       const sim = similarity.get(event.id);
       if (sim != null) {
-        const bonus = Math.max(0, Math.min(6, Math.round((sim - 0.76) * 50)));
+        const bonus = Math.max(0, Math.min(6, Math.round((sim - 0.8) * 75)));
         score += bonus;
         if (bonus >= 3) reasons.unshift("Close to what you described");
       }

@@ -157,7 +157,7 @@ export default async function EventPage({
         </aside>
       </div>
 
-      {event.source !== "sample" && <SimilarEvents eventId={event.id} />}
+      {event.source !== "sample" && <SimilarEvents eventId={event.id} title={event.title} />}
 
       <SiteFooter />
     </>

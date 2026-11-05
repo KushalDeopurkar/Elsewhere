@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
-import { embedQuery, matchEvents } from "@/lib/semantic";
+import { embedQuery, matchEvents, dedupeListings } from "@/lib/semantic";
 import { detectCity, cityByName, DEFAULT_CITY } from "@/lib/cities";
 import { supabaseConfigured } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Below this, gte-small matches are usually unrelated. Tunable per deployment. */
+/**
+ * Measured on live data with gte-small (2,400 events): strong matches score
+ * 0.84-0.90, useful looser ones 0.81-0.83, and unrelated events sit around
+ * 0.80 and below. Tunable per deployment.
+ */
 function minSimilarity(): number {
   const v = Number(process.env.SEMANTIC_MIN_SIMILARITY);
-  return Number.isFinite(v) && v >= 0 && v < 1 ? v : 0.75;
+  return Number.isFinite(v) && v >= 0 && v < 1 ? v : 0.81;
 }
 
 /**
@@ -39,9 +43,9 @@ export async function GET(req: Request) {
       minSimilarity: minSimilarity(),
     });
     // Keep the pack near the best hit: a long tail of weak matches reads as
-    // noise. gte-small spreads related results over roughly 0.08.
+    // noise. On live data, related results sit within about 0.04 of the top.
     const best = ranked[0]?.similarity ?? 0;
-    const events = ranked.filter((e) => e.similarity >= best - 0.08);
+    const events = dedupeListings(ranked.filter((e) => e.similarity >= best - 0.04));
     return NextResponse.json({ data: events, city: city?.name ?? null });
   } catch (err) {
     console.error("[semantic]", (err as Error).message);

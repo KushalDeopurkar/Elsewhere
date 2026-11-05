@@ -130,9 +130,38 @@ export async function matchEvents(opts: {
   return rows.map(toEvent);
 }
 
-export async function similarEvents(eventId: string, count = 6): Promise<SemanticEvent[]> {
-  const rows = await rpc<Row[]>("similar_events", { p_event_id: eventId, match_count: count });
-  return rows.map(toEvent);
+function titleTokens(title: string): Set<string> {
+  return new Set(title.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 1));
+}
+
+function sameListing(a: Set<string>, b: Set<string>): boolean {
+  if (a.size === 0 || b.size === 0) return false;
+  let shared = 0;
+  for (const t of a) if (b.has(t)) shared++;
+  return shared / (a.size + b.size - shared) >= 0.75;
+}
+
+/**
+ * Drop the same event listed by several sources ("Startup Club l Mumbai" vs
+ * "Startup Club | Mumbai"). Different shows from one organiser share some
+ * words but stay well under the overlap threshold, so they are kept.
+ */
+export function dedupeListings<T extends { title: string }>(events: T[], exclude: string[] = []): T[] {
+  const seen = exclude.map(titleTokens);
+  const out: T[] = [];
+  for (const e of events) {
+    const tokens = titleTokens(e.title);
+    if (seen.some((s) => sameListing(s, tokens))) continue;
+    seen.push(tokens);
+    out.push(e);
+  }
+  return out;
+}
+
+export async function similarEvents(eventId: string, count = 6, sourceTitle?: string): Promise<SemanticEvent[]> {
+  // Over-fetch: duplicates of the source and of each other are removed below.
+  const rows = await rpc<Row[]>("similar_events", { p_event_id: eventId, match_count: count * 3 });
+  return dedupeListings(rows.map(toEvent), sourceTitle ? [sourceTitle] : []).slice(0, count);
 }
 
 /**
