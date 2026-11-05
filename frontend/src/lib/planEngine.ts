@@ -21,7 +21,7 @@ import { detectCity, cityByName, DEFAULT_CITY, CityPoint } from "./cities";
 import { buildSchedule, parseBudget, lowestPrice, PlanResult } from "./plan";
 
 const ZONE = "Asia/Kolkata";
-const SHORTLIST = 40;
+const SHORTLIST = 30;
 
 // ---------------------------------------------------------------------------
 // Dates (IST)
@@ -40,6 +40,18 @@ const slotFmt = new Intl.DateTimeFormat("en-GB", {
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
   timeZone: ZONE, hour: "numeric", minute: "2-digit", hour12: true,
 });
+
+const hourFmt = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, hour: "numeric", hourCycle: "h23" });
+
+/** [fromHour, toHour, label] for "morning", "shaam", "tonight" and friends. */
+function partOfDay(text: string): [number, number, string] | null {
+  const q = text.toLowerCase();
+  if (/\b(morning|subah|breakfast|sunrise)\b/.test(q)) return [5, 12, "In the morning"];
+  if (/\b(afternoon|dopahar|lunch)\b/.test(q)) return [12, 17, "In the afternoon"];
+  if (/\b(evening|shaam|sham|sunset|after work)\b/.test(q)) return [16, 21, "In the evening"];
+  if (/\b(night|tonight|raat|late)\b/.test(q)) return [19, 24, "At night"];
+  return null;
+}
 
 const dayKey = (ms: number) => dayKeyFmt.format(new Date(ms));
 const DAY_MS = 86_400_000;
@@ -117,11 +129,19 @@ function shortlist(
       const reasons: string[] = [];
       if (interests.includes(event.category)) {
         score += 3;
-        reasons.push(`Fits your ${event.category} pick`);
+        reasons.push("Matches what you asked for");
       }
       if (day && dayKey(Date.parse(event.start_time)) === day) {
         score += 4;
         reasons.push("On the day you asked for");
+      }
+      const part = partOfDay(text);
+      if (part) {
+        const hour = Number(hourFmt.format(new Date(event.start_time)));
+        if (hour >= part[0] && hour < part[1]) {
+          score += 2;
+          reasons.push(part[2]);
+        }
       }
       if (area) {
         const where = `${event.location_name ?? ""} ${event.address ?? ""}`.toLowerCase();
@@ -174,9 +194,11 @@ function llmConfig(): LlmConfig | null {
     return {
       provider: "Groq",
       apiKey: process.env.GROQ_API_KEY,
-      baseUrl: GROQ_URL,
+      baseUrl: (process.env.PLANNER_BASE_URL || GROQ_URL).replace(/\/$/, ""),
       model: override || "llama-3.3-70b-versatile",
-      prefer: [/llama-3\.3-70b/, /llama-4/, /gpt-oss-120b/, /qwen.*32b/, /gpt-oss/, /llama/],
+      // Fast, non-reasoning models first: they answer in about a second and
+      // use far fewer tokens, which matters on a per-minute free quota.
+      prefer: [/llama-4-maverick/, /llama-4-scout/, /llama-3\.3-70b/, /kimi-k2/, /gpt-oss-120b/, /gpt-oss-20b/, /qwen/, /llama/],
     };
   }
   if (process.env.GEMINI_API_KEY) {
@@ -200,31 +222,44 @@ function llmConfig(): LlmConfig | null {
   return null;
 }
 
-/** Remembered across requests on a warm function once a working model is found. */
-let discoveredModel: string | null = null;
+/** Ranked chat models the provider serves, cached on a warm function. */
+let modelCache: { ids: string[]; at: number } | null = null;
 
-async function discoverModel(cfg: LlmConfig): Promise<string | null> {
+// Free tiers list speech, embedding and safety models alongside chat ones.
+const NOT_CHAT = /whisper|tts|embed|guard|moderation|playai|orpheus|image|audio|live|vision|distil|aqa|compound|safeguard/i;
+
+async function rankedModels(cfg: LlmConfig): Promise<string[]> {
+  if (modelCache && Date.now() - modelCache.at < 10 * 60_000) return modelCache.ids;
+  let ids: string[] = [];
   try {
     const res = await fetch(`${cfg.baseUrl}/models`, {
       headers: { Authorization: `Bearer ${cfg.apiKey}` },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(6000),
     });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { data?: { id: string }[] };
-    // Free tiers list speech, embedding and safety models alongside chat ones.
-    const NOT_CHAT = /whisper|tts|embed|guard|moderation|playai|orpheus|image|audio|live|vision|distil|aqa/i;
-    const ids = (json.data ?? [])
-      .map((m) => m.id.replace(/^models\//, ""))
-      .filter((id) => !NOT_CHAT.test(id));
-    for (const re of cfg.prefer) {
-      const hit = ids.find((id) => re.test(id));
-      if (hit) return hit;
+    if (res.ok) {
+      const json = (await res.json()) as { data?: { id: string }[] };
+      const all = (json.data ?? [])
+        .map((m) => m.id.replace(/^models\//, ""))
+        .filter((id) => !NOT_CHAT.test(id));
+      const ranked: string[] = [];
+      for (const re of cfg.prefer) {
+        for (const id of all) if (re.test(id) && !ranked.includes(id)) ranked.push(id);
+      }
+      ids = ranked.length ? ranked : all;
     }
-    return ids[0] ?? null;
   } catch {
-    return null;
+    // Listing is best effort; fall back to the configured model alone.
   }
+  // An explicit PLANNER_MODEL always goes first.
+  const order = [cfg.model, ...ids.filter((id) => id !== cfg.model)];
+  const result = process.env.PLANNER_MODEL ? order : ids.length ? ids : [cfg.model];
+  // Only cache a real listing, so one failed lookup does not pin us for ten minutes.
+  if (ids.length) modelCache = { ids: result, at: Date.now() };
+  return result;
 }
+
+/** Reasoning models spend their token budget thinking unless told not to. */
+const REASONING = /gpt-oss|qwen3|deepseek-r1|gemini-2\.5|gemini-3|magistral|\bo\d/i;
 
 async function chat(cfg: LlmConfig, model: string, system: string, user: string): Promise<string> {
   const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
@@ -236,18 +271,19 @@ async function chat(cfg: LlmConfig, model: string, system: string, user: string)
     body: JSON.stringify({
       model,
       temperature: 0.4,
-      max_tokens: 900,
+      max_tokens: REASONING.test(model) ? 2500 : 900,
+      ...(REASONING.test(model) ? { reasoning_effort: "low" } : {}),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
     }),
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    const err = new Error(`LLM ${res.status}: ${body.slice(0, 300)}`) as Error & { status?: number };
+    const err = new Error(`LLM ${res.status} on ${model}: ${body.slice(0, 200)}`) as Error & { status?: number };
     err.status = res.status;
     throw err;
   }
@@ -316,8 +352,8 @@ async function planWithLlm(
     byId.set(id, s.event);
     const e = s.event;
     const end = e.end_time ? timeFmt.format(new Date(e.end_time)) : "?";
-    const venue = [e.location_name, e.address].filter(Boolean).join(", ").slice(0, 70);
-    return `${id} | ${slotFmt.format(new Date(e.start_time))}–${end} | ${e.title.slice(0, 80)} | ${e.category} | ${venue || e.city || "venue n/a"} | ${priceText(e)}`;
+    const venue = (e.location_name || e.address || "").slice(0, 45);
+    return `${id} | ${slotFmt.format(new Date(e.start_time))}–${end} | ${e.title.slice(0, 60)} | ${e.category} | ${venue || e.city || "venue n/a"} | ${priceText(e)}`;
   });
 
   const user = [
@@ -331,29 +367,26 @@ async function planWithLlm(
     ...rows,
   ].join("\n");
 
-  let model = discoveredModel ?? cfg.model;
-  try {
-    const raw = await chat(cfg, model, SYSTEM_PROMPT, user);
-    const plan = parseJson(raw);
-    if (!plan) throw new Error("Model reply was not JSON");
-    return { plan, model, byId };
-  } catch (err) {
-    // A retired or renamed model is the most common failure on free tiers.
-    // Ask the provider what it serves today and try once more.
-    const status = (err as { status?: number }).status;
-    if (status === 400 || status === 404) {
-      const found = await discoverModel(cfg);
-      if (found && found !== model) {
-        model = found;
-        const raw = await chat(cfg, model, SYSTEM_PROMPT, user);
-        const plan = parseJson(raw);
-        if (!plan) throw new Error("Model reply was not JSON");
-        discoveredModel = found;
-        return { plan, model, byId };
-      }
+  // Try models in order. Each Groq model has its own per-minute quota, so a
+  // 429 on one usually means the next one is free; a 404 means retired.
+  const models = (await rankedModels(cfg)).slice(0, 4);
+  const errors: string[] = [];
+  for (const model of models) {
+    try {
+      const raw = await chat(cfg, model, SYSTEM_PROMPT, user);
+      const plan = parseJson(raw);
+      if (!plan || !Array.isArray(plan.stops)) throw new Error(`Reply from ${model} was not a plan`);
+      return { plan, model, byId };
+    } catch (err) {
+      errors.push((err as Error).message);
+      const status = (err as { status?: number }).status;
+      // Bad key or bad request body: another model will not help.
+      if (status === 401 || status === 403) break;
+      // A model that keeps failing should not stay at the front of the queue.
+      if (modelCache) modelCache.ids = [...modelCache.ids.filter((m) => m !== model), model];
     }
-    throw err;
   }
+  throw new Error(errors.join(" | ") || "No model available");
 }
 
 // ---------------------------------------------------------------------------
@@ -384,7 +417,11 @@ function planWithRules(
   }
 
   const sameDay = pool.filter((s) => dayKey(Date.parse(s.event.start_time)) === target);
-  const source = sameDay.length >= 2 ? sameDay : pool;
+  const dayPool = sameDay.length >= 2 ? sameDay : pool;
+  // When the request names interests, only fall back to unrelated events if
+  // nothing related exists at all.
+  const related = dayPool.filter((s) => s.reasons.includes("Matches what you asked for"));
+  const source = related.length ? related : dayPool;
   const usedCats = new Set<EventCategory>();
   const picks = [...source]
     // Light variety bonus so the day is not four of the same thing.
