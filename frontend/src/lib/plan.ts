@@ -57,7 +57,12 @@ export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; l
 export function travelBetween(a: Event, b: Event): TravelLeg | null {
   if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return null;
   // Straight-line distance understates road distance by roughly a third.
-  const km = haversineKm({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng }) * 1.35;
+  const straight = haversineKm({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng });
+  // Two different venues on the exact same point means at least one was
+  // stored at its city's centre for want of an address. Say nothing rather
+  // than claim "0 km".
+  if (straight < 0.05 && (a.location_name ?? "") !== (b.location_name ?? "")) return null;
+  const km = straight * 1.35;
   const minutes = km < 0.4 ? 5 : Math.round((km / CITY_KMH) * 60 + HOP_MINUTES);
   return { km: Math.round(km * 10) / 10, minutes };
 }

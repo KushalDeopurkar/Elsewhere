@@ -29,7 +29,15 @@ export default function PlanMap({ stops }: { stops: PlanStop[] }) {
     markers.current = [];
 
     const pts = located(list);
+    // Several venues can share one point (events stored at a city centre).
+    // Fan those pins out by a fixed pixel offset so every number stays visible.
+    const seen: { lat: number; lng: number; n: number }[] = [];
     pts.forEach((s) => {
+      const hit = seen.find(
+        (p) => Math.abs(p.lat - s.event.lat!) < 0.0004 && Math.abs(p.lng - s.event.lng!) < 0.0004,
+      );
+      const dup = hit ? ++hit.n : 0;
+      if (!hit) seen.push({ lat: s.event.lat!, lng: s.event.lng!, n: 0 });
       // MapLibre owns the anchor's transform; style the inner badge only.
       const anchor = document.createElement("div");
       const badge = document.createElement("span");
@@ -38,7 +46,7 @@ export default function PlanMap({ stops }: { stops: PlanStop[] }) {
       badge.title = s.event.title;
       anchor.appendChild(badge);
       markers.current.push(
-        new Marker({ element: anchor, anchor: "center" })
+        new Marker({ element: anchor, anchor: "center", offset: [dup * 26, dup * -6] })
           .setLngLat([s.event.lng!, s.event.lat!])
           .addTo(instance),
       );

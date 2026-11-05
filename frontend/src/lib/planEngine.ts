@@ -114,6 +114,7 @@ function interestsFor(text: string): EventCategory[] {
 
 function shortlist(
   events: Event[],
+  city: CityPoint,
   text: string,
   day: string | null,
   area: string | null,
@@ -160,6 +161,14 @@ function shortlist(
         } else if (intent.freeOnly || (budget != null && price > budget)) {
           score -= 4;
         }
+      }
+      // Events stored at the city centre (no venue address) make a poor route.
+      if (
+        event.lat == null ||
+        event.lng == null ||
+        (Math.abs(event.lat - city.lat) < 0.003 && Math.abs(event.lng - city.lng) < 0.003)
+      ) {
+        score -= 1;
       }
       const hay = `${event.title} ${event.description ?? ""}`.toLowerCase();
       const hits = words.filter((w) => hay.includes(w)).length;
@@ -472,7 +481,7 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
     return true;
   });
 
-  const ranked = shortlist(upcoming, text, day, area, budget);
+  const ranked = shortlist(upcoming, city, text, day, area, budget);
   const pool = ranked.slice(0, SHORTLIST);
 
   const base = {
