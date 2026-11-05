@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, MapTrifold, Sparkle } from "@phosphor-icons/react/ssr";
 import SearchBar from "@/components/SearchBar";
 import { TimeRail, CategoryRail, TimeWindow } from "@/components/FilterRail";
 import EventGrid from "@/components/EventGrid";
 import HeroDeck from "@/components/HeroDeck";
-import IntentResults from "@/components/IntentResults";
+import IntentResults, { SemanticState } from "@/components/IntentResults";
 import DayPlanner from "@/components/DayPlanner";
 import SiteFooter from "@/components/SiteFooter";
 import { useEvents } from "@/hooks/useEvents";
@@ -36,9 +36,30 @@ export default function Home() {
   const [when, setWhen] = useState<TimeWindow>("any");
   const [city, setCity] = useState<string>(DEMO_CITIES[0]);
 
+  // Meaning-based results arrive separately from the keyword ones; a newer
+  // search always wins over a slower older one.
+  const [semantic, setSemantic] = useState<SemanticState | undefined>(undefined);
+  const searchSeq = useRef(0);
+
   const runIntent = (text: string) => {
     const trimmed = text.trim();
     setIntent(trimmed ? parseIntent(trimmed) : null);
+    const seq = ++searchSeq.current;
+    if (!trimmed) {
+      setSemantic(undefined);
+      return;
+    }
+    setSemantic({ status: "loading", events: [] });
+    fetch(`/api/semantic?q=${encodeURIComponent(trimmed)}&city=${encodeURIComponent(city)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((json) => {
+        if (seq !== searchSeq.current) return;
+        const found = Array.isArray(json.data) ? json.data : [];
+        setSemantic({ status: found.length ? "ok" : "off", events: found });
+      })
+      .catch(() => {
+        if (seq === searchSeq.current) setSemantic({ status: "off", events: [] });
+      });
   };
 
   const browse = useMemo(
@@ -57,6 +78,8 @@ export default function Home() {
   const rest = filtered ? browse : browse.slice(3);
 
   const clearAll = () => {
+    searchSeq.current += 1;
+    setSemantic(undefined);
     setQuery("");
     setIntent(null);
     setCategory(null);
@@ -134,7 +157,6 @@ export default function Home() {
         <HeroDeck events={events} />
       </section>
 
-      <DayPlanner city={city} />
 
       {intent ? (
         <IntentResults
@@ -144,8 +166,14 @@ export default function Home() {
           isSample={isSample}
           onDropSignal={(s: Signal) => setIntent(dropSignal(intent, s))}
           onClear={clearAll}
+          semantic={semantic}
+          city={city}
         />
-      ) : (
+      ) : null}
+
+      <DayPlanner city={city} />
+
+      {intent ? null : (
         <>
           <div className="shell" style={{ display: "grid", gap: "0.75rem" }}>
             <TimeRail value={when} onChange={setWhen} />

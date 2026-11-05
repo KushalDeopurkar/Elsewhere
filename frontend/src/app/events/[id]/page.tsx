@@ -10,6 +10,7 @@ import {
   Tag,
 } from "@phosphor-icons/react/ssr";
 import SiteFooter from "@/components/SiteFooter";
+import SimilarEvents from "@/components/SimilarEvents";
 import { getEvent } from "@/lib/api";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -155,6 +156,8 @@ export default async function EventPage({
           )}
         </aside>
       </div>
+
+      {event.source !== "sample" && <SimilarEvents eventId={event.id} />}
 
       <SiteFooter />
     </>

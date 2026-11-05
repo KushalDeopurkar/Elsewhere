@@ -19,6 +19,8 @@ import { searchEvents } from "./api";
 import { parseIntent } from "./intent";
 import { detectCity, cityByName, DEFAULT_CITY, CityPoint } from "./cities";
 import { buildSchedule, parseBudget, lowestPrice, PlanResult } from "./plan";
+import { embedQuery, matchEvents } from "./semantic";
+import { supabaseConfigured } from "./supabaseServer";
 
 const ZONE = "Asia/Kolkata";
 const SHORTLIST = 30;
@@ -119,6 +121,7 @@ function shortlist(
   day: string | null,
   area: string | null,
   budget: number | null,
+  similarity: Map<string, number> = new Map(),
 ): Shortlisted[] {
   const interests = interestsFor(text);
   const intent = parseIntent(text);
@@ -169,6 +172,14 @@ function shortlist(
         (Math.abs(event.lat - city.lat) < 0.003 && Math.abs(event.lng - city.lng) < 0.003)
       ) {
         score -= 1;
+      }
+      // Meaning match from the embeddings, when available. gte-small puts
+      // close matches around 0.82+ and loose ones near 0.76.
+      const sim = similarity.get(event.id);
+      if (sim != null) {
+        const bonus = Math.max(0, Math.min(6, Math.round((sim - 0.76) * 50)));
+        score += bonus;
+        if (bonus >= 3) reasons.unshift("Close to what you described");
       }
       const hay = `${event.title} ${event.description ?? ""}`.toLowerCase();
       const hits = words.filter((w) => hay.includes(w)).length;
@@ -464,24 +475,51 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
   const day = requestedDay(text, now);
   const budget = parseBudget(text);
 
-  const { events, isSample } = await searchEvents({
-    lat: city.lat,
-    lng: city.lng,
-    radius_km: 40,
-    limit: 100,
-  });
-
-  // Upcoming, located, within two weeks. Sample data ignores the radius, so
-  // filter it by city name instead.
   const horizon = now + 14 * DAY_MS;
-  const upcoming = events.filter((e) => {
+
+  // Two retrievals in parallel: the existing keyword/geo search, and events
+  // nearest in meaning to the request. Either may fail on its own.
+  const [keyword, semantic] = await Promise.all([
+    searchEvents({ lat: city.lat, lng: city.lng, radius_km: 40, limit: 100 }),
+    supabaseConfigured()
+      ? Promise.race([
+          embedQuery(text).then((embedding) =>
+            matchEvents({
+              embedding,
+              lat: city.lat,
+              lng: city.lng,
+              radiusKm: 40,
+              from: new Date(now - 30 * 60_000),
+              to: new Date(horizon),
+              count: 40,
+            }),
+          ),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("semantic timeout")), 8000)),
+        ]).catch((err) => {
+          console.warn("[plan] semantic retrieval skipped:", (err as Error).message);
+          return [];
+        })
+      : Promise.resolve([]),
+  ]);
+
+  // Sample events only stand in when there is no live data at all.
+  const isSample = keyword.isSample && semantic.length === 0;
+  const merged = new Map<string, Event>();
+  for (const e of semantic) merged.set(e.id, e);
+  if (!keyword.isSample) for (const e of keyword.events) if (!merged.has(e.id)) merged.set(e.id, e);
+  if (isSample) for (const e of keyword.events) merged.set(e.id, e);
+  const similarity = new Map(semantic.map((e) => [e.id, e.similarity]));
+
+  // Upcoming, within two weeks. Sample data ignores the radius, so filter it
+  // by city name instead.
+  const upcoming = [...merged.values()].filter((e) => {
     const t = Date.parse(e.start_time);
     if (!(t > now - 30 * 60_000 && t < horizon)) return false;
     if (isSample) return (e.city ?? "").toLowerCase() === city.name.toLowerCase();
     return true;
   });
 
-  const ranked = shortlist(upcoming, city, text, day, area, budget);
+  const ranked = shortlist(upcoming, city, text, day, area, budget, similarity);
   const pool = ranked.slice(0, SHORTLIST);
 
   const base = {

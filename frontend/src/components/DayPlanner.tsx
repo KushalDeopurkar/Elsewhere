@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -17,6 +17,7 @@ import {
 import { PlanResult, planToIcs, googleCalendarLink } from "@/lib/plan";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { priceBadge } from "@/lib/money";
+import AlertButton from "@/components/AlertButton";
 
 const PlanMap = dynamic(() => import("@/components/PlanMap"), {
   ssr: false,
@@ -68,6 +69,8 @@ interface Recognition {
 }
 type RecognitionCtor = new () => Recognition;
 
+const noopSubscribe = () => () => {};
+
 function speechCtor(): RecognitionCtor | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as {
@@ -84,17 +87,21 @@ export default function DayPlanner({ city }: { city: string }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
-  const [canListen, setCanListen] = useState(false);
   const [copied, setCopied] = useState(false);
   const recog = useRef<Recognition | null>(null);
   const section = useRef<HTMLElement>(null);
   const heard = useRef("");
 
-  useEffect(() => setCanListen(Boolean(speechCtor())), []);
+  // Speech support is a browser fact: false while server-rendering, real on
+  // the client, without a hydration mismatch.
+  const canListen = useSyncExternalStore(
+    noopSubscribe,
+    () => Boolean(speechCtor()),
+    () => false,
+  );
 
   useEffect(() => {
     if (!loading) return;
-    setStep(0);
     const id = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 1100);
     return () => clearInterval(id);
   }, [loading]);
@@ -103,6 +110,7 @@ export default function DayPlanner({ city }: { city: string }) {
     async (text: string) => {
       const q = text.trim();
       if (q.length < 3 || loading) return;
+      setStep(0);
       setLoading(true);
       setError(null);
       try {
@@ -126,11 +134,14 @@ export default function DayPlanner({ city }: { city: string }) {
   // Shared links land here as /?plan=<request>.
   useEffect(() => {
     const shared = new URLSearchParams(window.location.search).get("plan");
-    if (shared) {
+    if (!shared) return;
+    // Deferred a tick so the page has painted before the plan starts.
+    const t = setTimeout(() => {
       setPrompt(shared);
       run(shared);
       section.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    }, 0);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -356,6 +367,7 @@ export default function DayPlanner({ city }: { city: string }) {
             <button type="button" className="btn btn-ghost" onClick={() => run(prompt)}>
               <ArrowClockwise size={17} weight="bold" /> Plan again
             </button>
+            <AlertButton query={prompt} city={city} />
           </div>
         </div>
       )}

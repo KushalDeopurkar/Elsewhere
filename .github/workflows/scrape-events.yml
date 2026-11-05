@@ -70,3 +70,26 @@ jobs:
           
           echo "Running: $CMD"
           $CMD
+
+      # New and edited events get embeddings (meaning-based search, "More like
+      # this", the planner), then Telegram alerts go out for what is new.
+      # Both endpoints are idempotent, so a retry or an extra run is harmless.
+      - name: Embed new events
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://event-discovery-engine.vercel.app' }}
+        run: |
+          for i in $(seq 1 20); do
+            OUT=$(curl -sS -X POST --max-time 70 "$SITE_URL/api/embed/sync" || echo '{"error":"request failed"}')
+            echo "$OUT"
+            echo "$OUT" | grep -q '"remaining":0' && break
+            echo "$OUT" | grep -q '"error"' && break
+          done
+
+      - name: Send Telegram alerts
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://event-discovery-engine.vercel.app' }}
+        run: curl -sS -X POST --max-time 70 "$SITE_URL/api/alerts/run"

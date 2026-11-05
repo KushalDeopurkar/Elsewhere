@@ -1791,3 +1791,38 @@ p {
     padding-inline: 1rem;
   }
 }
+
+/* ==========================================================================
+   Telegram alerts
+   ========================================================================== */
+.alert-ready {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.alert-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-low);
+  font-size: 0.875rem;
+}
+
+.alert-error {
+  color: var(--danger);
+}
+
+.intent-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
