@@ -78,11 +78,18 @@ export async function rest<T>(
   return (text ? JSON.parse(text) : null) as T;
 }
 
-/** Invoke an Edge Function. */
+/**
+ * Invoke an Edge Function. Functions keep JWT verification on, so they need
+ * a legacy JWT in Authorization: the service-role key when it is one, else
+ * the public anon key (SUPABASE_ANON_KEY) for projects on sb_secret_ keys.
+ */
 export async function invokeFunction<T>(name: string, body: unknown, timeoutMs = 30_000): Promise<T> {
+  const h = headers();
+  const anon = process.env.SUPABASE_ANON_KEY?.trim();
+  if (!h.Authorization && anon?.startsWith("eyJ")) h.Authorization = `Bearer ${anon}`;
   const res = await fetch(`${supabaseUrl()}/functions/v1/${name}`, {
     method: "POST",
-    headers: headers(),
+    headers: h,
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
     cache: "no-store",

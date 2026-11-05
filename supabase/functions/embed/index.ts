@@ -1,9 +1,9 @@
 // Supabase Edge Function: embed text with gte-small (384 dims).
 //
 // Uses Supabase's built-in inference, so no third-party key or quota is
-// involved. Deploy with JWT verification off: the site's server calls it
-// with whichever key format the project has (legacy JWT or sb_secret_), and
-// input is capped so it cannot be used for bulk work by anyone else.
+// involved. Keep "Verify JWT" on: the site's server calls it with the
+// service-role JWT (or the anon JWT on projects using sb_secret_ keys).
+// Input is capped per call as well.
 //
 // POST { "texts": ["...", "..."] }  ->  { "embeddings": [[...384 floats], ...] }
 
