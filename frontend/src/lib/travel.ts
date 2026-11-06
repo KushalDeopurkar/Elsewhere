@@ -1,8 +1,10 @@
 /**
- * Travel time from a starting point to a venue, from OpenStreetMap routing
- * (FOSSGIS OSRM servers) and Photon geocoding. Both are free, keyless and
- * called straight from the browser, so the viewer's location never touches
- * our server. Times are free-flow road estimates: no live traffic.
+ * Travel time from a starting point to a venue.
+ *
+ * First choice: /api/travel (TomTom, live traffic, needs TOMTOM_API_KEY).
+ * Fallback: OpenStreetMap routing (FOSSGIS OSRM), free and keyless but with
+ * no traffic, called straight from the browser. Addresses are looked up
+ * with Photon. The result says which source produced it.
  */
 
 export type Mode = "car" | "bike" | "foot";
@@ -11,12 +13,18 @@ export interface Leg {
   mode: Mode;
   minutes: number;
   km: number;
+  /** Minutes added by current traffic (traffic source only). */
+  delayMinutes?: number;
 }
 
 export interface TravelResult {
+  /** "tomtom": live traffic. "osm": free-flow estimate without traffic. */
+  source: "tomtom" | "osm";
   legs: Leg[];
   /** Driving route as [lng, lat] pairs, for drawing on the map. */
   line: [number, number][];
+  /** Latest departure to arrive by the event start, in typical traffic for that time. */
+  leaveBy?: { departAt: string; minutes: number } | null;
 }
 
 export interface LatLng {
@@ -25,7 +33,8 @@ export interface LatLng {
 }
 
 const BASE = "https://routing.openstreetmap.de";
-const cache = new Map<string, Promise<TravelResult>>();
+/** Live traffic goes stale; keep answers for two minutes. */
+const cache = new Map<string, { at: number; p: Promise<TravelResult> }>();
 
 async function route(mode: Mode, from: LatLng, to: LatLng, withLine: boolean) {
   const url =
@@ -42,11 +51,38 @@ async function route(mode: Mode, from: LatLng, to: LatLng, withLine: boolean) {
   };
 }
 
-export function travelTimes(from: LatLng, to: LatLng): Promise<TravelResult> {
-  const key = [from.lat, from.lng, to.lat, to.lng].map((n) => n.toFixed(5)).join(",");
-  let hit = cache.get(key);
+/** Set once the server says traffic routing isn't configured. */
+let trafficOff = false;
+
+async function trafficRoute(from: LatLng, to: LatLng, arrive?: string): Promise<TravelResult | null> {
+  if (trafficOff) return null;
+  const qs = new URLSearchParams({
+    from: `${from.lat.toFixed(5)},${from.lng.toFixed(5)}`,
+    to: `${to.lat.toFixed(5)},${to.lng.toFixed(5)}`,
+  });
+  if (arrive) qs.set("arrive", arrive);
+  try {
+    const res = await fetch(`/api/travel?${qs}`);
+    if (res.status === 501) {
+      trafficOff = true;
+      return null;
+    }
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.legs?.length ? (json as TravelResult) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function travelTimes(from: LatLng, to: LatLng, arrive?: string): Promise<TravelResult> {
+  const key = [from.lat, from.lng, to.lat, to.lng].map((n) => n.toFixed(5)).join(",") + (arrive ?? "");
+  const cached = cache.get(key);
+  let hit = cached && Date.now() - cached.at < 120_000 ? cached.p : undefined;
   if (!hit) {
     hit = (async () => {
+      const live = await trafficRoute(from, to, arrive);
+      if (live) return live;
       const settled = await Promise.allSettled([
         route("car", from, to, true),
         route("bike", from, to, false),
@@ -57,10 +93,10 @@ export function travelTimes(from: LatLng, to: LatLng): Promise<TravelResult> {
         const first = settled[0];
         throw first.status === "rejected" ? first.reason : new Error("Routing failed");
       }
-      return { legs: ok.map((o) => o.leg), line: ok.find((o) => o.leg.mode === "car")?.line ?? [] };
+      return { source: "osm", legs: ok.map((o) => o.leg), line: ok.find((o) => o.leg.mode === "car")?.line ?? [] };
     })();
     hit.catch(() => cache.delete(key));
-    cache.set(key, hit);
+    cache.set(key, { at: Date.now(), p: hit });
   }
   return hit;
 }

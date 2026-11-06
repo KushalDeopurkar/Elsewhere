@@ -2613,3 +2613,32 @@ html {
     display: none;
   }
 }
+
+.travel-delay {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: oklch(0.78 0.15 50);
+}
+
+.travel-leave {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-control);
+  background: var(--ink-800);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-mid);
+}
+
+.travel-leave svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--marigold);
+}
+
+.travel-leave strong {
+  color: var(--text-hi);
+}

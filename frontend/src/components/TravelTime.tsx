@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
   Car,
   Bicycle,
+  Moped,
+  Clock,
   PersonSimpleWalk,
   Crosshair,
   Plus,
@@ -20,11 +22,25 @@ import { travelTimes, geocode, formatDuration, directionsUrl, GeoHit, LatLng, Mo
 import { isCityCentroid } from "@/lib/cities";
 import { useCity } from "@/lib/cityPref";
 
-const MODES: Record<Mode, { label: string; Icon: typeof Car }> = {
-  car: { label: "Drive", Icon: Car },
-  bike: { label: "Bike", Icon: Bicycle },
-  foot: { label: "Walk", Icon: PersonSimpleWalk },
-};
+// "bike" is a bicycle on the free router and a two-wheeler on TomTom.
+const modeInfo = (mode: Mode, source: TravelResult["source"]) =>
+  mode === "car"
+    ? { label: "Drive", Icon: Car }
+    : mode === "bike"
+      ? source === "tomtom"
+        ? { label: "2-wheeler", Icon: Moped }
+        : { label: "Cycle", Icon: Bicycle }
+      : { label: "Walk", Icon: PersonSimpleWalk };
+
+const clock = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true });
+const dayFmt = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric", month: "short" });
+const istDay = (ms: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(ms);
+/** "5:02 pm" today, "Sat 8 Nov, 5:02 pm" on another day. */
+function when(iso: string, ref: number): string {
+  const ms = Date.parse(iso);
+  const t = clock.format(ms).toLowerCase();
+  return istDay(ms) === istDay(ref) ? t : `${dayFmt.format(ms)}, ${t}`;
+}
 const LABELS = ["Home", "Work", "Other"] as const;
 const labelIcon = (label: string) => (label === "Home" ? House : label === "Work" ? Briefcase : MapPin);
 
@@ -48,6 +64,7 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
   const [label, setLabel] = useState<(typeof LABELS)[number]>("Home");
   const [hits, setHits] = useState<{ q: string; list: GeoHit[]; error?: string } | null>(null);
 
+  const [mountedAt] = useState(() => Date.now());
   const [result, setResult] = useState<{ key: string; data?: TravelResult; error?: string } | null>(null);
 
   const dest = event.lat != null && event.lng != null ? { lat: event.lat, lng: event.lng } : null;
@@ -95,7 +112,7 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
   useEffect(() => {
     if (!key || !origin || !dest) return;
     let live = true;
-    travelTimes(origin, dest).then(
+    travelTimes(origin, dest, event.start_time).then(
       (data) => {
         if (!live) return;
         setResult({ key, data });
@@ -224,20 +241,33 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
         <>
           <ul className="travel-legs">
             {current.data.legs.map((l) => {
-              const { label: name, Icon } = MODES[l.mode];
+              const { label: name, Icon } = modeInfo(l.mode, current.data!.source);
               return (
                 <li key={l.mode}>
                   <Icon size={18} weight="duotone" />
                   <span className="travel-time">{formatDuration(l.minutes)}</span>
                   <span className="travel-mode">{name} · {l.km} km</span>
+                  {l.delayMinutes ? <span className="travel-delay">+{l.delayMinutes} min traffic</span> : null}
                 </li>
               );
             })}
           </ul>
+          {current.data.leaveBy && (
+            <p className="travel-leave">
+              <Clock size={15} weight="bold" />
+              <span>
+                Leave by <strong>{when(current.data.leaveBy.departAt, mountedAt)}</strong> to arrive for the{" "}
+                {when(event.start_time, mountedAt)} start ({formatDuration(current.data.leaveBy.minutes)} drive in usual traffic then).
+              </span>
+            </p>
+          )}
           <p className="travel-note">
-            Road estimate without live traffic{approx ? ". The venue pin is the city centre, as the listing has no exact address" : ""}.{" "}
+            {current.data.source === "tomtom"
+              ? "Live traffic right now, from TomTom"
+              : "Road estimate without live traffic"}
+            {approx ? ". The venue pin is the city centre, as the listing has no exact address" : ""}.{" "}
             <a href={directionsUrl(origin, dest)} target="_blank" rel="noopener noreferrer" className="travel-link">
-              Live traffic in Google Maps <ArrowSquareOut size={12} weight="bold" />
+              {current.data.source === "tomtom" ? "Directions in Google Maps" : "Live traffic in Google Maps"} <ArrowSquareOut size={12} weight="bold" />
             </a>
           </p>
         </>
