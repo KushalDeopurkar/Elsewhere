@@ -8,6 +8,9 @@ import {
   Microphone,
   CalendarPlus,
   ShareNetwork,
+  WhatsappLogo,
+  DownloadSimple,
+  GoogleLogo,
   ArrowClockwise,
   MapPin,
   Car,
@@ -18,6 +21,7 @@ import {
   ArrowRight,
 } from "@phosphor-icons/react/ssr";
 import { PlanResult, planToIcs, googleCalendarLink } from "@/lib/plan";
+import { whatsappUrl, planShareText } from "@/lib/share";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { priceBadge } from "@/lib/money";
 import { hasTime } from "@/lib/formatDate";
@@ -148,6 +152,8 @@ export default function DayPlanner({ city }: { city: string }) {
   const [lastPrompt, setLastPrompt] = useState("");
   const savedPlans = useSavedPlans();
   const [justSaved, setJustSaved] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
+  const [calDone, setCalDone] = useState<string[]>([]);
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
@@ -181,6 +187,8 @@ export default function DayPlanner({ city }: { city: string }) {
       setError(null);
       setLastPrompt(q);
       setJustSaved(false);
+      setCalOpen(false);
+      setCalDone([]);
       try {
         const res = await fetch("/api/plan", {
           method: "POST",
@@ -252,8 +260,14 @@ export default function DayPlanner({ city }: { city: string }) {
     URL.revokeObjectURL(a.href);
   };
 
+  const planUrl = () => `${window.location.origin}/plan-my-day?plan=${encodeURIComponent((lastPrompt || prompt).trim())}`;
+  const shareWhatsApp = () => {
+    if (!plan) return;
+    window.open(whatsappUrl(planShareText(plan, planUrl())), "_blank", "noopener,noreferrer");
+  };
+
   const share = async () => {
-    const url = `${window.location.origin}/plan-my-day?plan=${encodeURIComponent((lastPrompt || prompt).trim())}`;
+    const url = planUrl();
     try {
       if (navigator.share) {
         await navigator.share({ title: plan?.title ?? "My EventEngine plan", url });
@@ -511,8 +525,19 @@ export default function DayPlanner({ city }: { city: string }) {
 
           <div className="plan-actions">
             {plan.stops.length > 0 && (
-              <button type="button" className="btn btn-primary" onClick={downloadIcs}>
-                <CalendarPlus size={17} weight="bold" /> Add all to calendar
+              <button
+                type="button"
+                className="btn btn-primary"
+                aria-expanded={calOpen}
+                aria-controls="plan-calendar"
+                onClick={() => setCalOpen((o) => !o)}
+              >
+                <CalendarPlus size={17} weight="bold" /> Add day to calendar
+              </button>
+            )}
+            {plan.stops.length > 0 && (
+              <button type="button" className="btn btn-ghost btn-wa" onClick={shareWhatsApp}>
+                <WhatsappLogo size={17} weight="fill" /> WhatsApp
               </button>
             )}
             {plan.stops.length > 0 && (
@@ -538,6 +563,38 @@ export default function DayPlanner({ city }: { city: string }) {
             </button>
             <AlertButton query={lastPrompt || prompt} city={city} />
           </div>
+          {calOpen && plan.stops.length > 0 && (
+            <div className="plan-cal" id="plan-calendar">
+              <div className="plan-cal-all">
+                <div>
+                  <p className="plan-cal-title">All {plan.stops.length} stops at once</p>
+                  <p className="plan-cal-sub">One file with every stop. Opens in Apple Calendar or Outlook; on Google Calendar use Settings, Import.</p>
+                </div>
+                <button type="button" className="btn btn-primary" onClick={downloadIcs}>
+                  <DownloadSimple size={16} weight="bold" /> Download .ics
+                </button>
+              </div>
+              <p className="plan-cal-title">Or add each stop to Google Calendar</p>
+              <ol className="plan-cal-list">
+                {plan.stops.map((st, i) => (
+                  <li key={st.event.id}>
+                    <span className="plan-cal-num">{i + 1}</span>
+                    <span className="plan-cal-name">{st.event.title}</span>
+                    <a
+                      href={googleCalendarLink(st, origin)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn btn-ghost plan-cal-add${calDone.includes(st.event.id) ? " is-done" : ""}`}
+                      onClick={() => setCalDone((d) => (d.includes(st.event.id) ? d : [...d, st.event.id]))}
+                    >
+                      {calDone.includes(st.event.id) ? <Check size={14} weight="bold" /> : <GoogleLogo size={14} weight="bold" />}
+                      {calDone.includes(st.event.id) ? "Added" : "Add"}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
         </div>
       )}
       {savedPlans.length > 0 && !loading && (

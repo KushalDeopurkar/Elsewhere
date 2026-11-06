@@ -10,7 +10,7 @@ export function SectionHeader({
   children,
 }: {
   title: string;
-  kicker?: string;
+  kicker?: React.ReactNode;
   href?: string;
   linkLabel?: string;
   children?: React.ReactNode;

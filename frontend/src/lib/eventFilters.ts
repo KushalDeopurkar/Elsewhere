@@ -60,3 +60,25 @@ export function textMatch(e: Event, words: string[]): boolean {
   const hay = `${e.title} ${e.description ?? ""}`.toLowerCase();
   return words.some((w) => hay.includes(w));
 }
+
+/**
+ * Events on right now or starting within the next few hours, each with a
+ * short live badge. Multi-day runs (exhibitions, fests) are left out: "on
+ * now" should mean you can walk in to something happening this evening.
+ */
+export function startingSoon(events: Event[], hours = 3, now = Date.now()): { event: Event; badge: string }[] {
+  const out: { event: Event; badge: string; at: number }[] = [];
+  for (const e of events) {
+    if (!hasTime(e.start_time)) continue;
+    const start = Date.parse(e.start_time);
+    const end = e.end_time ? Date.parse(e.end_time) : start + 2 * 3_600_000;
+    if (start <= now && end > now && end - start <= 8 * 3_600_000) {
+      out.push({ event: e, badge: "On now", at: start });
+    } else if (start > now && start - now <= hours * 3_600_000) {
+      const min = Math.max(1, Math.round((start - now) / 60_000));
+      const label = min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ""}`;
+      out.push({ event: e, badge: `Starts in ${label}`, at: start });
+    }
+  }
+  return out.sort((a, b) => a.at - b.at).map(({ event, badge }) => ({ event, badge }));
+}

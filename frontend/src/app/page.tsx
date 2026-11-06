@@ -15,12 +15,22 @@ import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
 import { useCity } from "@/lib/cityPref";
 import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
-import { inDateWindow, sortEvents, upcoming, showcase, textMatch } from "@/lib/eventFilters";
+import { inDateWindow, sortEvents, upcoming, showcase, textMatch, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
 
 const LEARN_WORDS = ["workshop", "course", "class", "masterclass", "bootcamp", "learn", "session", "training", "lecture"];
 
-function RailOf({ events, label, loading }: { events: Event[]; label: string; loading: boolean }) {
+function RailOf({
+  events,
+  label,
+  loading,
+  badges,
+}: {
+  events: Event[];
+  label: string;
+  loading: boolean;
+  badges?: Map<string, string>;
+}) {
   if (loading) {
     return (
       <Rail label={label}>
@@ -33,7 +43,7 @@ function RailOf({ events, label, loading }: { events: Event[]; label: string; lo
   return (
     <Rail label={label}>
       {events.map((e) => (
-        <EventCard key={e.id} event={e} />
+        <EventCard key={e.id} event={e} badge={badges?.get(e.id)} />
       ))}
     </Rail>
   );
@@ -63,6 +73,9 @@ export default function Home() {
   }, [all]);
   const featuredIds = new Set(featured.map((e) => e.id));
   const notFeatured = all.filter((e) => !featuredIds.has(e.id));
+
+  const soon = useMemo(() => startingSoon(all).slice(0, 12), [all]);
+  const soonBadges = new Map(soon.map((s) => [s.event.id, s.badge]));
 
   const thisWeek = sortEvents(notFeatured.filter((e) => inDateWindow(e, "week")), "soonest").slice(0, 14);
   const nearby = sortEvents(notFeatured.filter((e) => e.distance_km != null), "distance").slice(0, 8);
@@ -147,6 +160,18 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {soon.length > 0 && (
+        <section className="shell sec">
+          <SectionHeader
+            kicker={<><span className="live-dot" aria-hidden="true" /> Next 3 hours</>}
+            title={`Happening now in ${city.name}`}
+            href="/explore?when=today&sort=soonest"
+            linkLabel="All of today"
+          />
+          <RailOf events={soon.map((s) => s.event)} badges={soonBadges} label="events on now or starting soon" loading={false} />
+        </section>
+      )}
 
       {(pool.loading || thisWeek.length > 0) && (
         <section className="shell sec">

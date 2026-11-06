@@ -2646,3 +2646,93 @@ html {
 .travel-legs:has(li:nth-child(4)) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+/* ---- WhatsApp share + plan calendar ------------------------------------ */
+.btn-wa svg {
+  color: oklch(0.72 0.17 150);
+}
+
+.sec-kicker .live-dot {
+  display: inline-block;
+}
+
+.plan-cal {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--r-card);
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+  animation: fade-in 200ms var(--ease);
+}
+
+.plan-cal-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.plan-cal-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.plan-cal-sub {
+  margin: 0.2rem 0 0;
+  max-width: 52ch;
+  font-size: 0.8125rem;
+  color: var(--text-low);
+}
+
+.plan-cal-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-cal-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.plan-cal-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--marigold-wash);
+  color: var(--marigold);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.plan-cal-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+}
+
+.plan-cal-add {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+.plan-cal-add.is-done {
+  color: var(--marigold);
+  border-color: oklch(0.82 0.16 78 / 0.5);
+}
