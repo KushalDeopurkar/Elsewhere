@@ -7,7 +7,7 @@
  * with Photon. The result says which source produced it.
  */
 
-export type Mode = "car" | "bike" | "foot";
+export type Mode = "car" | "bike" | "foot" | "transit";
 
 export interface Leg {
   mode: Mode;
@@ -18,8 +18,8 @@ export interface Leg {
 }
 
 export interface TravelResult {
-  /** "tomtom": live traffic. "osm": free-flow estimate without traffic. */
-  source: "tomtom" | "osm";
+  /** "google" / "tomtom": live traffic. "osm": free-flow estimate without traffic. */
+  source: "google" | "tomtom" | "osm";
   legs: Leg[];
   /** Driving route as [lng, lat] pairs, for drawing on the map. */
   line: [number, number][];

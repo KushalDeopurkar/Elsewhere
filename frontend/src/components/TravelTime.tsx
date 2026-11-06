@@ -5,6 +5,7 @@ import {
   Car,
   Bicycle,
   Moped,
+  Train,
   Clock,
   PersonSimpleWalk,
   Crosshair,
@@ -27,10 +28,12 @@ const modeInfo = (mode: Mode, source: TravelResult["source"]) =>
   mode === "car"
     ? { label: "Drive", Icon: Car }
     : mode === "bike"
-      ? source === "tomtom"
-        ? { label: "2-wheeler", Icon: Moped }
-        : { label: "Cycle", Icon: Bicycle }
-      : { label: "Walk", Icon: PersonSimpleWalk };
+      ? source === "osm"
+        ? { label: "Cycle", Icon: Bicycle }
+        : { label: "2-wheeler", Icon: Moped }
+      : mode === "transit"
+        ? { label: "Transit", Icon: Train }
+        : { label: "Walk", Icon: PersonSimpleWalk };
 
 const clock = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true });
 const dayFmt = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric", month: "short" });
@@ -262,12 +265,14 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
             </p>
           )}
           <p className="travel-note">
-            {current.data.source === "tomtom"
-              ? "Live traffic right now, from TomTom"
-              : "Road estimate without live traffic"}
+            {current.data.source === "google"
+              ? "Live traffic right now, from Google Maps"
+              : current.data.source === "tomtom"
+                ? "Live traffic right now, from TomTom"
+                : "Road estimate without live traffic"}
             {approx ? ". The venue pin is the city centre, as the listing has no exact address" : ""}.{" "}
             <a href={directionsUrl(origin, dest)} target="_blank" rel="noopener noreferrer" className="travel-link">
-              {current.data.source === "tomtom" ? "Directions in Google Maps" : "Live traffic in Google Maps"} <ArrowSquareOut size={12} weight="bold" />
+              {current.data.source === "osm" ? "Live traffic in Google Maps" : "Directions in Google Maps"} <ArrowSquareOut size={12} weight="bold" />
             </a>
           </p>
         </>

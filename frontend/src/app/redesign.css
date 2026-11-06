@@ -2642,3 +2642,7 @@ html {
 .travel-leave strong {
   color: var(--text-hi);
 }
+
+.travel-legs:has(li:nth-child(4)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
