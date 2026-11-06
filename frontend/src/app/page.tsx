@@ -18,6 +18,7 @@ import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
 
+const NOT_LEARNING_RE = /\b(comedy|stand.?up|brunch|party|dj|open mic)\b/i;
 const LEARN_RE = /\b(workshops?|courses?|class(es)?|masterclass(es)?|bootcamps?|learn(ing)?|training|lectures?|seminars?|webinars?|tutorials?|study)\b/i;
 
 function RailOf({
@@ -82,8 +83,10 @@ export default function Home() {
   const free = sortEvents(all.filter((e) => e.is_free), "soonest").slice(0, 14);
   const weekend = sortEvents(all.filter((e) => inDateWindow(e, "weekend")), "soonest").slice(0, 14);
   const learn = useMemo(() => {
-    const fromPool = all.filter((e) => e.category === "education" || LEARN_RE.test(e.title));
-    return sortEvents(upcoming([...upcoming(edu.events), ...fromPool]), "soonest").slice(0, 14);
+    // Scraped categories are noisy (a comedy night can land in "education"),
+    // so the title has to read like learning too.
+    const isLearning = (e: Event) => LEARN_RE.test(e.title) && !NOT_LEARNING_RE.test(e.title);
+    return sortEvents(upcoming([...edu.events, ...all]).filter(isLearning), "soonest").slice(0, 14);
   }, [all, edu.events]);
   const scene = useMemo(
     () => sortEvents(upcoming([...tech.events, ...biz.events]), "soonest").slice(0, 14),
