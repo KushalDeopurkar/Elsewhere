@@ -2362,3 +2362,237 @@ html {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   Travel time (map peek)
+   ========================================================================== */
+.map-split .map-peek {
+  max-height: calc(100% - 4.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.travel {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.travel-title {
+  margin: 0;
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.travel-origins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.travel-origins .fchip {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  max-width: 11rem;
+}
+
+.travel-place {
+  position: relative;
+  display: inline-flex;
+}
+
+.travel-place .fchip {
+  padding-right: 1.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.travel-remove {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.travel-remove:hover {
+  opacity: 1;
+  background: oklch(0 0 0 / 0.2);
+}
+
+.travel-add {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.travel-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.travel-add-row .binput {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8125rem;
+  min-width: 0;
+}
+
+.travel-label {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.travel-add-row .icon-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.travel-hits {
+  display: grid;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  border-radius: var(--r-control);
+  background: var(--ink-800);
+  border: 1px solid var(--line);
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.travel-hits button {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--r-sm);
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+
+.travel-hits button:hover,
+.travel-hits button:focus-visible {
+  background: var(--ink-750);
+  color: var(--text-hi);
+}
+
+.travel-legs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.travel-legs li {
+  display: grid;
+  justify-items: start;
+  gap: 0.1rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--r-control);
+  background: var(--ink-800);
+  min-width: 0;
+}
+
+.travel-legs li svg {
+  color: var(--marigold);
+}
+
+.travel-legs li:first-child {
+  background: var(--marigold-wash);
+  box-shadow: inset 0 0 0 1px oklch(0.82 0.16 78 / 0.35);
+}
+
+.travel-time {
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.travel-mode {
+  font-size: 0.6875rem;
+  color: var(--text-low);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.travel-skel {
+  display: block;
+  width: 100%;
+  height: 2.6rem;
+  border-radius: var(--r-sm);
+  background: var(--ink-750);
+  background-image: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.05), transparent);
+  background-size: 200% 100%;
+  animation: skel-sheen 1.4s linear infinite;
+}
+
+.travel-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-low);
+}
+
+.travel-note.is-error {
+  color: var(--danger);
+}
+
+.travel-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.travel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 600;
+  color: var(--marigold);
+}
+
+.travel-link:hover {
+  color: var(--marigold-bright);
+}
+
+.origin-pin {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: oklch(0.7 0.15 250);
+  border: 3px solid var(--text-hi);
+  box-shadow: 0 0 0 6px oklch(0.7 0.15 250 / 0.3), var(--lift-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .travel-skel {
+    animation: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .map-split .map-peek-media,
+  .map-split .map-peek-media .eimg {
+    aspect-ratio: 3 / 1 !important;
+  }
+}

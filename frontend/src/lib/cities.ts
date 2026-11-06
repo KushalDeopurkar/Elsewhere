@@ -120,3 +120,11 @@ export const CITY_LIST: CityPoint[] = [
   "gurgaon", "noida", "ahmedabad", "jaipur", "goa", "kochi", "chandigarh",
   "indore", "lucknow", "coimbatore", "thiruvananthapuram", "guwahati",
 ].map((k) => CITIES[k]);
+
+/**
+ * True when a point sits on a city centroid: the scrapers' fallback when a
+ * listing has no venue coordinates, so the real venue could be anywhere in town.
+ */
+export function isCityCentroid(lat: number, lng: number): boolean {
+  return Object.values(CITIES).some((c) => Math.abs(c.lat - lat) < 0.002 && Math.abs(c.lng - lng) < 0.002);
+}

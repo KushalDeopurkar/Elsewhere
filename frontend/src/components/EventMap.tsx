@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
+import { LngLatBounds, MapLibreMap, Marker, setWorkerUrl, GeoJSONSource } from "maplibre-gl";
+import type { RouteLine } from "@/components/TravelTime";
 import { Event } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import {
@@ -33,7 +34,9 @@ export default function EventMap({
   onBoundsChange,
   onReady,
   onError,
+  route = null,
 }: {
+  route?: RouteLine | null;
   events: Event[];
   selectedId: string | null;
   onSelect: (event: Event) => void;
@@ -48,6 +51,8 @@ export default function EventMap({
   const triedFallback = useRef(false);
   const [loaded, setLoaded] = useState(false);
   const [bearing, setBearing] = useState<number>(DEFAULT_VIEW.bearing);
+  const [styleRev, setStyleRev] = useState(0);
+  const originPin = useRef<Marker | null>(null);
 
   // Callbacks are held in refs so the map is built exactly once; re-creating
   // a GL context on every parent render would thrash the GPU.
@@ -92,6 +97,7 @@ export default function EventMap({
     instance.on("style.load", () => {
       applyDarkTheme(instance);
       add3DBuildings(instance);
+      setStyleRev((n) => n + 1);
     });
 
     instance.on("load", () => {
@@ -244,6 +250,67 @@ export default function EventMap({
       }
     }
   }, [events, loaded]);
+
+  // Travel route from the viewer's start point to the selected venue. Lives
+  // in its own source so a style swap (fallback basemap) can redraw it.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !loaded) return;
+    const SRC = "travel-route";
+    const data: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features:
+        route && route.line.length > 1
+          ? [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: route.line } }]
+          : [],
+    };
+    const existing = instance.getSource(SRC) as GeoJSONSource | undefined;
+    if (existing) existing.setData(data);
+    else {
+      instance.addSource(SRC, { type: "geojson", data });
+      instance.addLayer({
+        id: "travel-route-casing",
+        type: "line",
+        source: SRC,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#1a1410", "line-width": 8, "line-opacity": 0.85 },
+      });
+      instance.addLayer({
+        id: "travel-route-line",
+        type: "line",
+        source: SRC,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#f5b83d", "line-width": 4.5 },
+      });
+    }
+
+    originPin.current?.remove();
+    originPin.current = null;
+    if (!route) return;
+    const anchor = document.createElement("div");
+    const dot = document.createElement("span");
+    dot.className = "origin-pin";
+    dot.title = "Your start point";
+    anchor.appendChild(dot);
+    originPin.current = new Marker({ element: anchor, anchor: "center" })
+      .setLngLat([route.origin.lng, route.origin.lat])
+      .addTo(instance);
+
+    const pts = route.line.length > 1 ? route.line : [[route.origin.lng, route.origin.lat] as [number, number]];
+    const b = new LngLatBounds(pts[0], pts[0]);
+    pts.forEach((c) => b.extend(c));
+    // Keep the route clear of the event card: it sits on the left on wide
+    // maps and across the lower half on phones.
+    const { clientWidth: w, clientHeight: h } = instance.getContainer();
+    const wide = w >= 700;
+    instance.fitBounds(b, {
+      padding: wide
+        ? { top: 90, bottom: 60, left: Math.min(420, w * 0.45), right: 80 }
+        : { top: 130, bottom: Math.round(h * 0.6), left: 40, right: 60 },
+      maxZoom: 15,
+      duration: prefersReducedMotion() ? 0 : 900,
+    });
+  }, [route, loaded, styleRev]);
 
   // Active pin styling lives outside the reconcile pass so selecting an event
   // never rebuilds markers.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
 import EventImage from "@/components/EventImage";
+import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
 import { useCity } from "@/lib/cityPref";
 import { CategoryRail } from "@/components/FilterRail";
@@ -33,6 +34,7 @@ export default function MapPage() {
   const [isSample, setIsSample] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
+  const [route, setRoute] = useState<RouteLine | null>(null);
   const handle = useRef<MapHandle | null>(null);
   const bounds = useRef<MapBounds | null>(null);
   const requestId = useRef(0);
@@ -60,6 +62,7 @@ export default function MapPage() {
 
   const pick = useCallback((event: Event) => {
     setSelected(event);
+    setRoute(null);
     handle.current?.flyToEvent(event);
   }, []);
 
@@ -141,6 +144,7 @@ export default function MapPage() {
           ready.current = true;
         }}
         onError={(m) => setMapError((prev) => prev ?? m)}
+        route={selected ? route : null}
       />
 
       {mapError && (
@@ -191,7 +195,10 @@ export default function MapPage() {
               <button
                 type="button"
                 className="map-peek-close"
-                onClick={() => setSelected(null)}
+                onClick={() => {
+                  setSelected(null);
+                  setRoute(null);
+                }}
                 aria-label="Close"
               >
                 <X size={13} weight="bold" />
@@ -220,6 +227,7 @@ export default function MapPage() {
                 Full details
                 <ArrowRight size={13} weight="bold" />
               </Link>
+              <TravelTime key={selected.id} event={selected} onRoute={setRoute} />
             </div>
           </article>
         )}
