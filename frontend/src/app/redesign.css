@@ -2596,3 +2596,20 @@ html {
     aspect-ratio: 3 / 1 !important;
   }
 }
+
+/* Tablet widths: keep the top bar on one line */
+.topnav-link {
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .topnav-inner {
+    gap: 0.75rem;
+  }
+  .topnav-link {
+    padding: 0.45rem 0.55rem;
+  }
+  .topnav-link svg {
+    display: none;
+  }
+}

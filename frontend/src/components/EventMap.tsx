@@ -299,14 +299,20 @@ export default function EventMap({
     const pts = route.line.length > 1 ? route.line : [[route.origin.lng, route.origin.lat] as [number, number]];
     const b = new LngLatBounds(pts[0], pts[0]);
     pts.forEach((c) => b.extend(c));
-    // Keep the route clear of the event card: it sits on the left on wide
-    // maps and across the lower half on phones.
-    const { clientWidth: w, clientHeight: h } = instance.getContainer();
-    const wide = w >= 700;
+    // Keep the route clear of the event card, wherever the layout put it:
+    // beside the route on wide maps, across the bottom on phones.
+    const c = instance.getContainer().getBoundingClientRect();
+    const pad = { top: 110, bottom: 50, left: 50, right: 70 };
+    const card = document.querySelector(".map-peek")?.getBoundingClientRect();
+    if (card && card.width > 0) {
+      if (card.width < c.width * 0.6) pad.left = Math.max(pad.left, card.right - c.left + 30);
+      else pad.bottom = Math.max(pad.bottom, c.bottom - card.top + 30);
+    }
+    // MapLibre refuses to fit when padding leaves no room; keep a strip free.
+    pad.bottom = Math.min(pad.bottom, Math.max(50, c.height - pad.top - 80));
+    pad.left = Math.min(pad.left, Math.max(50, c.width - pad.right - 80));
     instance.fitBounds(b, {
-      padding: wide
-        ? { top: 90, bottom: 60, left: Math.min(420, w * 0.45), right: 80 }
-        : { top: 130, bottom: Math.round(h * 0.6), left: 40, right: 60 },
+      padding: pad,
       maxZoom: 15,
       duration: prefersReducedMotion() ? 0 : 900,
     });
