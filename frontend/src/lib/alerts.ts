@@ -1,6 +1,11 @@
 /**
- * Telegram alerts for saved searches (server only).
+ * Alerts for saved searches, on Telegram or by email (server only).
  *
+ * Email uses double opt-in: an address only ever receives the confirmation
+ * email until its owner clicks "Turn on this alert". Every alert email has
+ * a one-click unsubscribe link and List-Unsubscribe headers.
+ *
+ * Telegram flow:
  * Flow:
  *  1. The site creates an alert for a request ("free AI meetups in Bengaluru")
  *     and hands back a t.me deep link carrying a one-time token.
@@ -19,6 +24,7 @@ import { rest } from "./supabaseServer";
 import { embedQuery, matchEvents, vectorLiteral, SemanticEvent } from "./semantic";
 import { detectCity, cityByName, DEFAULT_CITY } from "./cities";
 import { botUsername, eventBlock, escapeHtml, sendMessage, TelegramError } from "./telegram";
+import { confirmEmail, matchesEmail, normaliseEmail, sendEmail } from "./email";
 
 /**
  * Alerts should be precise: on live data gte-small scores real matches
@@ -31,6 +37,10 @@ function minSimilarity(): number {
 const PREVIEW_MIN = () => minSimilarity() - 0.02;
 const HORIZON_DAYS = 21;
 const MAX_ALERTS_PER_CHAT = 10;
+/** Confirmation emails one address can be sent per hour (abuse guard). */
+const MAX_EMAIL_SIGNUPS_PER_HOUR = 3;
+
+export class AlertInputError extends Error {}
 
 interface AlertRow {
   id: string;
@@ -41,6 +51,8 @@ interface AlertRow {
   radius_km: number;
   query_embedding: string;
   telegram_chat_id: number | null;
+  email: string | null;
+  email_confirmed_at: string | null;
   link_token: string;
   active: boolean;
   created_at: string;
@@ -58,6 +70,7 @@ export async function createAlert(input: {
   query: string;
   city?: string | null;
   chatId?: number | null;
+  email?: string | null;
 }): Promise<AlertRow> {
   const query = input.query.trim().replace(/\s+/g, " ").slice(0, 300);
   if (query.length < 3) throw new Error("Describe what to watch for, e.g. \"free AI meetups in Bengaluru\".");
@@ -73,6 +86,7 @@ export async function createAlert(input: {
       lng: place?.lng ?? null,
       query_embedding: vectorLiteral(embedding),
       telegram_chat_id: input.chatId ?? null,
+      email: input.email ?? null,
       link_token: randomBytes(12).toString("base64url"),
     },
   });
@@ -219,9 +233,124 @@ export async function handleMessage(msg: TgMessage, origin: string): Promise<voi
 }
 
 /** Send every active alert its newly listed matches. Safe to run repeatedly. */
+// ---------------------------------------------------------------------------
+// Email
+// ---------------------------------------------------------------------------
+
+const confirmUrl = (origin: string, a: AlertRow) => `${origin}/alert?action=confirm&token=${a.link_token}`;
+export const unsubscribeUrl = (origin: string, token: string) =>
+  `${origin}/api/alerts/unsubscribe?token=${encodeURIComponent(token)}`;
+const unsubscribePage = (origin: string, a: AlertRow) => `${origin}/alert?action=unsubscribe&token=${a.link_token}`;
+
+/** Create an unconfirmed email alert and send the confirmation email. */
+export async function createEmailAlert(
+  input: { query: string; city?: string | null; email: string },
+  origin: string,
+): Promise<void> {
+  const email = normaliseEmail(input.email);
+  if (!email) throw new AlertInputError("That doesn't look like an email address.");
+
+  const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+  const recent = await rest<{ id: string }[]>(
+    `alerts?select=id&email=eq.${encodeURIComponent(email)}&created_at=gte.${encodeURIComponent(hourAgo)}`,
+  );
+  if (recent.length >= MAX_EMAIL_SIGNUPS_PER_HOUR) {
+    throw new AlertInputError("Too many alert requests for this address. Try again in an hour.");
+  }
+  const active = await rest<{ id: string }[]>(
+    `alerts?select=id&email=eq.${encodeURIComponent(email)}&active=eq.true&email_confirmed_at=not.is.null`,
+  );
+  if (active.length >= MAX_ALERTS_PER_CHAT) {
+    throw new AlertInputError(`This address already has ${MAX_ALERTS_PER_CHAT} alerts. Turn one off first.`);
+  }
+
+  const alert = await createAlert({ query: input.query, city: input.city, email });
+  const msg = confirmEmail({ query: alert.query, city: alert.city, confirmUrl: confirmUrl(origin, alert) });
+  try {
+    await sendEmail({ to: email, ...msg });
+  } catch (err) {
+    // Don't leave an alert behind that nobody was told about.
+    await rest(`alerts?id=eq.${alert.id}`, { method: "PATCH", prefer: "return=minimal", body: { active: false } }).catch(() => {});
+    throw err;
+  }
+}
+
+async function alertByToken(token: string): Promise<AlertRow | null> {
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(token)) return null;
+  const rows = await rest<AlertRow[]>(`alerts?select=*&link_token=eq.${token}&limit=1`);
+  return rows[0] ?? null;
+}
+
+/** Confirm an email alert. Returns what already matches; safe to repeat. */
+export async function confirmEmailAlert(
+  token: string,
+  origin: string,
+): Promise<{ query: string; city: string | null; events: SemanticEvent[]; alreadyOn: boolean } | null> {
+  const alert = await alertByToken(token);
+  if (!alert || !alert.email) return null;
+
+  const now = await matchesFor(alert, PREVIEW_MIN(), 5);
+  if (alert.email_confirmed_at && alert.active) {
+    return { query: alert.query, city: alert.city, events: now, alreadyOn: true };
+  }
+
+  await rest(`alerts?id=eq.${alert.id}`, {
+    method: "PATCH",
+    prefer: "return=minimal",
+    body: { email_confirmed_at: new Date().toISOString(), active: true, last_checked_at: new Date().toISOString() },
+  });
+  const msg = matchesEmail({
+    kind: "welcome",
+    query: alert.query,
+    city: alert.city,
+    events: now,
+    origin,
+    unsubscribeUrl: unsubscribePage(origin, alert),
+  });
+  await sendEmail({ to: alert.email, ...msg, unsubscribeUrl: unsubscribeUrl(origin, alert.link_token) });
+  await recordDeliveries(alert.id, now);
+  return { query: alert.query, city: alert.city, events: now, alreadyOn: false };
+}
+
+/** Turn off one alert by its token. */
+export async function unsubscribeAlert(token: string): Promise<{ query: string } | null> {
+  const alert = await alertByToken(token);
+  if (!alert) return null;
+  await rest(`alerts?id=eq.${alert.id}`, { method: "PATCH", prefer: "return=minimal", body: { active: false } });
+  return { query: alert.query };
+}
+
+// ---------------------------------------------------------------------------
+// Delivery after each scrape
+// ---------------------------------------------------------------------------
+
+async function deliver(alert: AlertRow, fresh: Event[], origin: string): Promise<void> {
+  if (alert.telegram_chat_id) {
+    await sendMessage(
+      alert.telegram_chat_id,
+      `New for <b>${escapeHtml(alert.query)}</b>${escapeHtml(scopeLabel(alert))}:\n\n${fresh
+        .map((e) => eventBlock(e, origin))
+        .join("\n\n")}`,
+    );
+    return;
+  }
+  if (alert.email && alert.email_confirmed_at) {
+    const msg = matchesEmail({
+      kind: "new",
+      query: alert.query,
+      city: alert.city,
+      events: fresh,
+      origin,
+      unsubscribeUrl: unsubscribePage(origin, alert),
+    });
+    await sendEmail({ to: alert.email, ...msg, unsubscribeUrl: unsubscribeUrl(origin, alert.link_token) });
+  }
+}
+
 export async function runAlerts(origin: string): Promise<{ alerts: number; messages: number; events: number; errors: number }> {
+  // Telegram alerts with a bound chat, and email alerts that were confirmed.
   const alerts = await rest<AlertRow[]>(
-    "alerts?select=*&active=eq.true&telegram_chat_id=not.is.null&order=created_at",
+    "alerts?select=*&active=eq.true&or=(telegram_chat_id.not.is.null,email_confirmed_at.not.is.null)&order=created_at",
   );
   let messages = 0;
   let events = 0;
@@ -237,12 +366,7 @@ export async function runAlerts(origin: string): Promise<{ alerts: number; messa
         .slice(0, 5);
 
       if (fresh.length > 0) {
-        await sendMessage(
-          alert.telegram_chat_id!,
-          `New for <b>${escapeHtml(alert.query)}</b>${escapeHtml(scopeLabel(alert))}:\n\n${fresh
-            .map((e) => eventBlock(e, origin))
-            .join("\n\n")}`,
-        );
+        await deliver(alert, fresh, origin);
         await recordDeliveries(alert.id, fresh);
         messages += 1;
         events += fresh.length;

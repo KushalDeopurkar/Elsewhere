@@ -1826,3 +1826,60 @@ p {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Email alerts */
+.alert-box {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.alert-email {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 34rem;
+}
+
+.alert-email-input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.65rem 1rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--ink-850);
+  color: var(--text-hi);
+  font: inherit;
+}
+
+.alert-email-input:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 2px;
+}
+
+.alert-page {
+  min-height: 60svh;
+}
+
+.alert-panel {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  max-width: 60rem;
+}
+
+.alert-panel h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.alert-sub {
+  margin-top: 0.5rem;
+}
+
+.alert-panel .grid-results {
+  width: 100%;
+}

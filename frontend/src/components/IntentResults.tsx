@@ -100,7 +100,7 @@ export default function IntentResults({
       </div>
 
       <div className="intent-alert">
-        <AlertButton query={intent.text} city={city} hint="Get new matches for this search on Telegram." />
+        <AlertButton query={intent.text} city={city} hint="Get new matches for this search on Telegram or by email." />
       </div>
 
       {meaning.length > 0 && (
