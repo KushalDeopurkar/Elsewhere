@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { X, Sparkle, WarningCircle, ArrowRight } from "@phosphor-icons/react/ssr";
+import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
+import EventImage from "@/components/EventImage";
+import LocationSelector from "@/components/LocationSelector";
+import { useCity } from "@/lib/cityPref";
 import { CategoryRail } from "@/components/FilterRail";
 import type { MapHandle } from "@/components/EventMap";
 import { getMapEvents, MapBounds } from "@/lib/api";
@@ -61,8 +64,72 @@ export default function MapPage() {
   }, []);
 
   const hue = selected ? getCategoryColor(selected.category) : null;
+  const [mobileView, setMobileView] = useState<"map" | "list">("map");
+
+  // Follow the location selector: fly to the chosen city once the map is up.
+  const city = useCity();
+  const ready = useRef(false);
+  useEffect(() => {
+    if (ready.current) handle.current?.flyToPoint(city.lat, city.lng);
+  }, [city]);
+
+  const listed = [...events]
+    .sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time))
+    .slice(0, 60);
 
   return (
+    <div className={`map-split is-${mobileView}`}>
+      <aside className="map-list" aria-label="Events in view">
+        <div className="map-list-head">
+          <p className="map-list-title">
+            <strong>{events.length}</strong> events in view
+          </p>
+          <LocationSelector compact />
+        </div>
+        {events.length === 0 ? (
+          <p className="muted map-list-empty">Nothing in this part of the map. Zoom out or pan to a city.</p>
+        ) : (
+          <ul className="map-list-items">
+            {listed.map((e) => (
+              <li key={e.id}>
+                <button
+                  type="button"
+                  className={`map-item${selected?.id === e.id ? " is-active" : ""}`}
+                  onClick={() => {
+                    pick(e);
+                    setMobileView("map");
+                  }}
+                >
+                  <span className="map-item-thumb">
+                    <EventImage src={e.image_url} category={e.category} ratio="1 / 1" />
+                  </span>
+                  <span className="map-item-body">
+                    <span className="map-item-title">{e.title}</span>
+                    <span className="map-item-meta">{formatWhen(e.start_time)}</span>
+                    <span className="map-item-meta">
+                      {priceBadge(e)}
+                      {e.location_name ? ` · ${e.location_name}` : ""}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {events.length > listed.length && (
+          <p className="muted map-list-more">Showing the {listed.length} soonest. Zoom in to narrow it down.</p>
+        )}
+      </aside>
+
+      <div className="map-switch" role="group" aria-label="View">
+        <button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>
+          <MapTrifold size={16} weight="bold" /> Map
+        </button>
+        <button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>
+          <ListBullets size={16} weight="bold" /> List ({events.length})
+        </button>
+      </div>
+
     <div className="map-page">
       <EventMap
         events={events}
@@ -71,6 +138,7 @@ export default function MapPage() {
         onBoundsChange={onBoundsChange}
         onReady={(h) => {
           handle.current = h;
+          ready.current = true;
         }}
         onError={(m) => setMapError((prev) => prev ?? m)}
       />
@@ -119,9 +187,7 @@ export default function MapPage() {
         {selected && (
           <article className="map-peek">
             <div className="map-peek-media">
-              {selected.image_url && (
-                <img src={selected.image_url} alt="" decoding="async" />
-              )}
+                <EventImage src={selected.image_url} category={selected.category} ratio="16 / 9" />
               <button
                 type="button"
                 className="map-peek-close"
@@ -158,6 +224,7 @@ export default function MapPage() {
           </article>
         )}
       </div>
+    </div>
     </div>
   );
 }

@@ -1,41 +1,39 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  ArrowLeft,
-  CalendarBlank,
-  MapPin,
-  Ticket,
-  ArrowSquareOut,
-  Tag,
-} from "@phosphor-icons/react/ssr";
+import { CalendarBlank, MapPin, Ticket, ArrowSquareOut, Clock, Globe } from "@phosphor-icons/react/ssr";
 import SiteFooter from "@/components/SiteFooter";
 import SimilarEvents from "@/components/SimilarEvents";
+import EventImage from "@/components/EventImage";
+import CategoryIcon from "@/components/CategoryIcon";
+import { Breadcrumbs } from "@/components/Section";
+import { EventActions, EventLocationMap } from "@/components/EventActions";
 import { getEvent } from "@/lib/api";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { formatFull } from "@/lib/formatDate";
 import { priceLine } from "@/lib/money";
+import { categoryHref } from "@/lib/categoryPages";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const event = await getEvent(id);
   if (!event) return { title: "Event not found - EventEngine" };
   return {
     title: `${event.title} - EventEngine`,
     description: event.description?.slice(0, 160) ?? undefined,
+    openGraph: event.image_url ? { images: [event.image_url] } : undefined,
   };
 }
 
-export default async function EventPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+const SOURCE_NAMES: Record<string, string> = {
+  allevents: "AllEvents.in",
+  district: "District",
+  meetup: "Meetup",
+  sample: "Sample data",
+};
+
+export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const event = await getEvent(id);
   if (!event) notFound();
@@ -43,122 +41,114 @@ export default async function EventPage({
   const meta = CATEGORIES.find((c) => c.value === event.category);
   const hue = getCategoryColor(event.category);
   const where = [event.location_name, event.address].filter(Boolean).join(", ");
+  const source = SOURCE_NAMES[event.source] ?? event.source;
+  const free = event.is_free || (event.price_min ?? 0) === 0;
+  const mapsUrl =
+    event.lat != null && event.lng != null
+      ? `https://www.google.com/maps/search/?api=1&query=${event.lat},${event.lng}`
+      : where
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(where)}`
+        : null;
 
   return (
     <>
-      <header className="detail-hero">
-        {event.image_url && (
-          <img
-            className="detail-hero-img"
-            src={event.image_url}
-            alt=""
-            fetchPriority="high"
-            decoding="async"
+      <article className="detail" style={{ "--cat-hue": hue.color } as React.CSSProperties}>
+        <div className="shell detail-top">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: meta?.label ?? "Events", href: categoryHref(event.category) },
+              { label: event.title },
+            ]}
           />
-        )}
-        <div className="detail-hero-scrim" />
-
-        <div className="shell detail-hero-inner">
-          <Link href="/" className="back-link">
-            <ArrowLeft size={15} weight="bold" />
-            All events
-          </Link>
-
-          <h1 className="detail-title">{event.title}</h1>
-
-          <p
-            className="card-kicker"
-            style={{
-              "--cat-hue": hue.color,
-              marginTop: "0.9rem",
-            } as React.CSSProperties}
-          >
-            <Tag size={13} weight="fill" />
-            {meta?.label ?? event.category}
-            {event.city ? ` in ${event.city}` : ""}
-          </p>
         </div>
-      </header>
 
-      <div className="shell detail-layout">
-        <div>
-          {event.description && <p className="prose">{event.description}</p>}
-
-          <div className="fact-list" style={{ marginTop: "1.5rem" }}>
-            <div className="fact">
-              <span className="fact-icon">
-                <CalendarBlank size={17} weight="duotone" />
-              </span>
-              <span>
-                <span className="fact-label">Starts</span>
-                <span className="fact-value">{formatFull(event.start_time)}</span>
-              </span>
+        <div className="shell detail-grid">
+          <div className="detail-main">
+            <div className="detail-media">
+              <EventImage src={event.image_url} alt="" category={event.category} ratio="16 / 9" priority />
             </div>
 
-            {event.end_time && (
-              <div className="fact">
-                <span className="fact-icon">
-                  <CalendarBlank size={17} weight="duotone" />
-                </span>
-                <span>
-                  <span className="fact-label">Ends</span>
-                  <span className="fact-value">{formatFull(event.end_time)}</span>
-                </span>
-              </div>
+            <header className="detail-head">
+              <p className="detail-kicker">
+                <CategoryIcon category={event.category} size={15} />
+                {meta?.label ?? event.category}
+                {event.city ? <span> · {event.city}</span> : null}
+              </p>
+              <h1 className="detail-title">{event.title}</h1>
+              <ul className="detail-tags" aria-label="Tags">
+                <li>{meta?.label ?? event.category}</li>
+                <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>
+                {event.city && <li>{event.city}</li>}
+                <li>via {source}</li>
+              </ul>
+              <EventActions event={event} />
+            </header>
+
+            {event.description && (
+              <section className="detail-section">
+                <h2 className="detail-h2">About this event</h2>
+                <p className="prose">{event.description}</p>
+              </section>
             )}
 
-            {where && (
-              <div className="fact">
-                <span className="fact-icon">
-                  <MapPin size={17} weight="duotone" />
-                </span>
-                <span>
-                  <span className="fact-label">Where</span>
-                  <span className="fact-value">{where}</span>
-                </span>
-              </div>
-            )}
-
-            <div className="fact">
-              <span className="fact-icon">
-                <Ticket size={17} weight="duotone" />
-              </span>
-              <span>
-                <span className="fact-label">Entry</span>
-                <span className="fact-value">{priceLine(event)}</span>
-              </span>
-            </div>
+            <section className="detail-section">
+              <h2 className="detail-h2">Where</h2>
+              {where ? <p className="detail-where">{where}</p> : <p className="muted">The listing doesn&apos;t give a venue.</p>}
+              <EventLocationMap event={event} />
+              {mapsUrl && (
+                <a className="btn btn-ghost detail-directions" href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                  <MapPin size={16} weight="bold" /> Directions in Google Maps
+                </a>
+              )}
+            </section>
           </div>
+
+          <aside className="booking">
+            <p className="booking-price">{priceLine(event)}</p>
+            <dl className="booking-facts">
+              <div>
+                <dt><CalendarBlank size={16} weight="duotone" /> Starts</dt>
+                <dd>{formatFull(event.start_time)}</dd>
+              </div>
+              {event.end_time && (
+                <div>
+                  <dt><Clock size={16} weight="duotone" /> Ends</dt>
+                  <dd>{formatFull(event.end_time)}</dd>
+                </div>
+              )}
+              {where && (
+                <div>
+                  <dt><MapPin size={16} weight="duotone" /> Venue</dt>
+                  <dd>{event.location_name || where}</dd>
+                </div>
+              )}
+              <div>
+                <dt><Ticket size={16} weight="duotone" /> Entry</dt>
+                <dd>{priceLine(event)}</dd>
+              </div>
+              <div>
+                <dt><Globe size={16} weight="duotone" /> Source</dt>
+                <dd>{source}</dd>
+              </div>
+            </dl>
+            {event.url ? (
+              <a className="btn btn-primary btn-lg booking-cta" href={event.url} target="_blank" rel="noopener noreferrer">
+                {free ? "Register" : "Get tickets"} <ArrowSquareOut size={16} weight="bold" />
+              </a>
+            ) : (
+              <Link className="btn btn-ghost booking-cta" href="/map">Find it on the map</Link>
+            )}
+            <p className="booking-note">
+              {event.source === "sample"
+                ? "Sample listing, not a real event."
+                : `Tickets and registration are handled on ${source}. Check details there before you go.`}
+            </p>
+          </aside>
         </div>
-
-        <aside className="booking">
-          <p className="booking-price">{priceLine(event)}</p>
-          <p className="booking-note">
-            {event.source === "sample"
-              ? "Sample listing, not a real event."
-              : `Listed on ${event.source}.`}
-          </p>
-
-          {event.url ? (
-            <a
-              className="btn btn-primary"
-              href={event.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get tickets
-              <ArrowSquareOut size={15} weight="bold" />
-            </a>
-          ) : (
-            <Link className="btn btn-ghost" href="/map">
-              Find it on the map
-            </Link>
-          )}
-        </aside>
-      </div>
+      </article>
 
       {event.source !== "sample" && <SimilarEvents eventId={event.id} title={event.title} />}
-
       <SiteFooter />
     </>
   );

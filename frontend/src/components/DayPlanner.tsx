@@ -13,12 +13,18 @@ import {
   Car,
   Check,
   WarningCircle,
+  BookmarkSimple,
+  Trash,
+  ArrowRight,
 } from "@phosphor-icons/react/ssr";
 import { PlanResult, planToIcs, googleCalendarLink } from "@/lib/plan";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { priceBadge } from "@/lib/money";
 import { hasTime } from "@/lib/formatDate";
 import AlertButton from "@/components/AlertButton";
+import EventImage from "@/components/EventImage";
+import { CATEGORIES, EventCategory } from "@/lib/types";
+import { useSavedPlans, savePlan, deletePlan } from "@/lib/savedPlans";
 
 const PlanMap = dynamic(() => import("@/components/PlanMap"), {
   ssr: false,
@@ -30,6 +36,49 @@ const EXAMPLES = [
   "Free tech meetups in Bengaluru this weekend",
   "Kal shaam Andheri mein comedy aur khana",
 ];
+
+const STARTS = [
+  { value: "10 am", label: "Morning" },
+  { value: "12 noon", label: "Noon" },
+  { value: "3 pm", label: "Afternoon" },
+  { value: "6 pm", label: "Evening" },
+  { value: "8 pm", label: "Night" },
+];
+const DURATIONS = [2, 4, 6, 8];
+const dayName = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", weekday: "long" });
+
+/** Today, tomorrow and the five days after, as the words the planner reads. */
+function nextDays(now: number): { value: string; label: string }[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const name = dayName.format(new Date(now + i * 86_400_000));
+    return { value: i === 0 ? "today" : i === 1 ? "tomorrow" : name, label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : name };
+  });
+}
+
+interface Details {
+  day: string;
+  start: string;
+  hours: number;
+  budget: string;
+  people: number;
+  interests: EventCategory[];
+  close: boolean;
+  notes: string;
+}
+
+/** The details form as one plain-language request, exactly what is sent. */
+export function composeRequest(d: Details, city: string): string {
+  const labels = d.interests.map((v) => CATEGORIES.find((c) => c.value === v)?.label.toLowerCase() ?? v);
+  const parts = [
+    `${d.day === "today" ? "Today" : d.day === "tomorrow" ? "Tomorrow" : d.day} in ${city}`,
+    `starting around ${d.start} for about ${d.hours} hours`,
+    d.budget ? `budget ₹${d.budget} total${d.people > 1 ? ` for ${d.people} people` : ""}` : d.people > 1 ? `for ${d.people} people` : "",
+    labels.length ? `I'm into ${labels.join(", ")}` : "",
+    d.close ? "keep the stops close together" : "happy to travel between stops",
+    d.notes.trim(),
+  ].filter(Boolean);
+  return parts.join(". ").replace(/\.\./g, ".");
+}
 
 const STEPS = [
   "Reading your request",
@@ -83,6 +132,22 @@ function speechCtor(): RecognitionCtor | null {
 
 export default function DayPlanner({ city }: { city: string }) {
   const [prompt, setPrompt] = useState("");
+  const [days] = useState(() => nextDays(Date.now()));
+  const [details, setDetails] = useState<Details>({
+    day: "tomorrow",
+    start: "3 pm",
+    hours: 6,
+    budget: "",
+    people: 1,
+    interests: [],
+    close: true,
+    notes: "",
+  });
+  const set = (patch: Partial<Details>) => setDetails((d) => ({ ...d, ...patch }));
+  const composed = composeRequest(details, city);
+  const [lastPrompt, setLastPrompt] = useState("");
+  const savedPlans = useSavedPlans();
+  const [justSaved, setJustSaved] = useState(false);
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
@@ -114,6 +179,8 @@ export default function DayPlanner({ city }: { city: string }) {
       setStep(0);
       setLoading(true);
       setError(null);
+      setLastPrompt(q);
+      setJustSaved(false);
       try {
         const res = await fetch("/api/plan", {
           method: "POST",
@@ -132,7 +199,7 @@ export default function DayPlanner({ city }: { city: string }) {
     [city, loading],
   );
 
-  // Shared links land here as /?plan=<request>.
+  // Shared links land here as /plan-my-day?plan=<request>.
   useEffect(() => {
     const shared = new URLSearchParams(window.location.search).get("plan");
     if (!shared) return;
@@ -186,7 +253,7 @@ export default function DayPlanner({ city }: { city: string }) {
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/?plan=${encodeURIComponent(prompt.trim())}`;
+    const url = `${window.location.origin}/plan-my-day?plan=${encodeURIComponent((lastPrompt || prompt).trim())}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: plan?.title ?? "My EventEngine plan", url });
@@ -203,18 +270,11 @@ export default function DayPlanner({ city }: { city: string }) {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
   return (
-    <section ref={section} id="plan" className="shell section planner">
-      <div className="planner-head">
-        <span className="planner-kicker">
-          <Sparkle size={15} weight="fill" /> AI day planner
-        </span>
-        <h2>Plan my day</h2>
-        <p className="lede">
-          Say what kind of day you want. It picks real events, orders them so
-          you can make each one, and maps the route.
-        </p>
-      </div>
-
+    <section ref={section} id="plan" className="shell planner">
+      <div className="planner-modes">
+      <div className="planner-card">
+        <p className="planner-card-title">In your own words</p>
+        <p className="planner-card-sub">Type or speak it, in English or Hinglish.</p>
       <form
         className="planner-form"
         onSubmit={(e) => {
@@ -263,6 +323,93 @@ export default function DayPlanner({ city }: { city: string }) {
         </div>
         {listening && <p className="planner-hint">Listening… speak in English or Hinglish.</p>}
       </form>
+      </div>
+
+      <form
+        className="planner-card builder"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(composed);
+        }}
+      >
+        <p className="planner-card-title">Or pick the details</p>
+        <fieldset className="bfield">
+          <legend>Day</legend>
+          <div className="fchips">
+            {days.map((d) => (
+              <button key={d.value} type="button" className="fchip" aria-pressed={details.day === d.value} onClick={() => set({ day: d.value })}>
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div className="brow">
+          <fieldset className="bfield">
+            <legend>Start</legend>
+            <div className="fchips">
+              {STARTS.map((s) => (
+                <button key={s.value} type="button" className="fchip" aria-pressed={details.start === s.value} onClick={() => set({ start: s.value })}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="bfield">
+            <legend>For</legend>
+            <div className="fchips">
+              {DURATIONS.map((h) => (
+                <button key={h} type="button" className="fchip" aria-pressed={details.hours === h} onClick={() => set({ hours: h })}>
+                  {h} hrs
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+        <div className="brow">
+          <label className="bfield">
+            <span className="blabel">Budget (₹, total)</span>
+            <input className="binput" inputMode="numeric" placeholder="e.g. 1500" value={details.budget}
+              onChange={(e) => set({ budget: e.target.value.replace(/[^0-9]/g, "").slice(0, 6) })} />
+          </label>
+          <label className="bfield">
+            <span className="blabel">People</span>
+            <select className="binput" value={details.people} onChange={(e) => set({ people: Number(e.target.value) })}>
+              {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+          <fieldset className="bfield">
+            <legend>Travel</legend>
+            <div className="fchips">
+              <button type="button" className="fchip" aria-pressed={details.close} onClick={() => set({ close: true })}>Stay close</button>
+              <button type="button" className="fchip" aria-pressed={!details.close} onClick={() => set({ close: false })}>Happy to travel</button>
+            </div>
+          </fieldset>
+        </div>
+        <fieldset className="bfield">
+          <legend>Interests</legend>
+          <div className="fchips">
+            {CATEGORIES.filter((c) => c.value !== "other").map((c) => {
+              const on = details.interests.includes(c.value);
+              return (
+                <button key={c.value} type="button" className="fchip" aria-pressed={on}
+                  onClick={() => set({ interests: on ? details.interests.filter((v) => v !== c.value) : [...details.interests, c.value] })}>
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+        <label className="bfield">
+          <span className="blabel">Anything else (optional)</span>
+          <input className="binput" value={details.notes} maxLength={160} placeholder="e.g. vegetarian food, no late nights"
+            onChange={(e) => set({ notes: e.target.value })} />
+        </label>
+        <p className="bpreview"><span>The planner will be asked:</span> “{composed}”</p>
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          <Sparkle size={16} weight="fill" /> {loading ? "Planning…" : "Build my plan"}
+        </button>
+      </form>
+      </div>
 
       {loading && (
         <ol className="planner-steps" aria-live="polite">
@@ -319,6 +466,9 @@ export default function DayPlanner({ city }: { city: string }) {
                       )}
                       <div className="plan-card" style={{ ["--stop-hue" as string]: hue.color }}>
                         <span className="plan-num">{i + 1}</span>
+                        <div className="plan-thumb">
+                          <EventImage src={e.image_url} category={e.category} ratio="1 / 1" />
+                        </div>
                         <div className="plan-card-body">
                           <p className="plan-time">
                             {dayFmt.format(new Date(e.start_time))} ·{" "}
@@ -337,6 +487,9 @@ export default function DayPlanner({ city }: { city: string }) {
                           <p className="plan-why">{s.why}</p>
                           <div className="plan-card-foot">
                             <span className="plan-price">{priceBadge(e)}</span>
+                            <Link href={`/events/${e.id}`} className="plan-view">
+                              View event <ArrowRight size={12} weight="bold" />
+                            </Link>
                             <a
                               href={googleCalendarLink(s, origin)}
                               target="_blank"
@@ -362,15 +515,47 @@ export default function DayPlanner({ city }: { city: string }) {
                 <CalendarPlus size={17} weight="bold" /> Add all to calendar
               </button>
             )}
+            {plan.stops.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={justSaved}
+                onClick={() => {
+                  savePlan(lastPrompt || prompt, plan);
+                  setJustSaved(true);
+                }}
+              >
+                {justSaved ? <Check size={17} weight="bold" /> : <BookmarkSimple size={17} weight="bold" />}
+                {justSaved ? "Plan saved" : "Save plan"}
+              </button>
+            )}
             <button type="button" className="btn btn-ghost" onClick={share}>
               {copied ? <Check size={17} weight="bold" /> : <ShareNetwork size={17} weight="bold" />}
               {copied ? "Link copied" : "Share plan"}
             </button>
-            <button type="button" className="btn btn-ghost" onClick={() => run(prompt)}>
+            <button type="button" className="btn btn-ghost" onClick={() => run(lastPrompt || prompt)}>
               <ArrowClockwise size={17} weight="bold" /> Plan again
             </button>
-            <AlertButton query={prompt} city={city} />
+            <AlertButton query={lastPrompt || prompt} city={city} />
           </div>
+        </div>
+      )}
+      {savedPlans.length > 0 && !loading && (
+        <div className="saved-plans">
+          <p className="planner-card-title">Your saved plans</p>
+          <ul>
+            {savedPlans.map((sp) => (
+              <li key={sp.id}>
+                <button type="button" className="saved-plan-open" onClick={() => { setPlan(sp.plan); setLastPrompt(sp.prompt); setJustSaved(true); }}>
+                  <span className="saved-plan-title">{sp.plan.title}</span>
+                  <span className="saved-plan-sub">{sp.plan.stops.length} stops · “{sp.prompt.slice(0, 70)}{sp.prompt.length > 70 ? "…" : ""}”</span>
+                </button>
+                <button type="button" className="icon-btn" aria-label={`Delete ${sp.plan.title}`} onClick={() => deletePlan(sp.id)}>
+                  <Trash size={15} weight="bold" />
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </section>

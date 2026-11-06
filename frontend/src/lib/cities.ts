@@ -113,3 +113,10 @@ export function cityByName(name: string | null | undefined): CityPoint | null {
 }
 
 export const DEFAULT_CITY = CITIES.mumbai;
+
+/** Cities offered in the location selector, most active first. */
+export const CITY_LIST: CityPoint[] = [
+  "mumbai", "bengaluru", "delhi", "hyderabad", "pune", "chennai", "kolkata",
+  "gurgaon", "noida", "ahmedabad", "jaipur", "goa", "kochi", "chandigarh",
+  "indore", "lucknow", "coimbatore", "thiruvananthapuram", "guwahati",
+].map((k) => CITIES[k]);

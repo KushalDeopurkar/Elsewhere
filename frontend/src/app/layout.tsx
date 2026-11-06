@@ -3,6 +3,7 @@ import "@fontsource-variable/bricolage-grotesque";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "./globals.css";
+import "./redesign.css";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {

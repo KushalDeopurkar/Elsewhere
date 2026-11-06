@@ -23,6 +23,7 @@ const prefersReducedMotion = () =>
 
 export interface MapHandle {
   flyToEvent: (event: Event) => void;
+  flyToPoint: (lat: number, lng: number) => void;
 }
 
 export default function EventMap({
@@ -105,6 +106,15 @@ export default function EventMap({
             zoom: Math.max(instance.getZoom(), 15.5),
             pitch: 58,
             duration: prefersReducedMotion() ? 0 : 1200,
+            essential: true,
+          });
+        },
+        flyToPoint: (lat, lng) => {
+          instance.flyTo({
+            center: [lng, lat],
+            zoom: 11.5,
+            pitch: 45,
+            duration: prefersReducedMotion() ? 0 : 1400,
             essential: true,
           });
         },
