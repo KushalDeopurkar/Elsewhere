@@ -115,6 +115,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
 
   // Keyword/category pool from the existing search API.
   const pool = useCityEvents(city, { category: cat, limit: 100 });
+  // The keyword pool is fetched 100 at a time; a full page means there are more.
 
   // Meaning-based matches for a typed query.
   const [semantic, setSemantic] = useState<{ key: string; events: Event[]; ok: boolean } | null>(null);
@@ -292,7 +293,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         <section className="xmain" aria-live="polite">
           <div className="xbar">
             <p className="xcount">
-              {loading ? "Searching…" : `${results.length} event${results.length === 1 ? "" : "s"}`}
+              {loading ? "Searching…" : `${results.length}${pool.events.length >= 100 && results.length >= 100 ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
               <span> near {city.name}</span>
             </p>
             <div className="xbar-end">

@@ -15,10 +15,10 @@ import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
 import { useCity } from "@/lib/cityPref";
 import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
-import { inDateWindow, sortEvents, upcoming, showcase, textMatch, startingSoon } from "@/lib/eventFilters";
+import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
 
-const LEARN_WORDS = ["workshop", "course", "class", "masterclass", "bootcamp", "learn", "session", "training", "lecture"];
+const LEARN_RE = /\b(workshops?|courses?|class(es)?|masterclass(es)?|bootcamps?|learn(ing)?|training|lectures?|seminars?|webinars?|tutorials?|study)\b/i;
 
 function RailOf({
   events,
@@ -82,7 +82,7 @@ export default function Home() {
   const free = sortEvents(all.filter((e) => e.is_free), "soonest").slice(0, 14);
   const weekend = sortEvents(all.filter((e) => inDateWindow(e, "weekend")), "soonest").slice(0, 14);
   const learn = useMemo(() => {
-    const fromPool = all.filter((e) => e.category === "education" || textMatch(e, LEARN_WORDS));
+    const fromPool = all.filter((e) => e.category === "education" || LEARN_RE.test(e.title));
     return sortEvents(upcoming([...upcoming(edu.events), ...fromPool]), "soonest").slice(0, 14);
   }, [all, edu.events]);
   const scene = useMemo(
@@ -196,7 +196,7 @@ export default function Home() {
         <Rail label="categories" size="compact">
           {tiles.map((c) => {
             const s = statFor(c.value);
-            return <CategoryTile key={c.slug} cat={c} image={s?.image} count={s?.count ?? null} size="small" />;
+            return <CategoryTile key={c.slug} cat={c} image={s?.image} count={s?.count ?? null} capped={s?.capped} size="small" />;
           })}
         </Rail>
       </section>

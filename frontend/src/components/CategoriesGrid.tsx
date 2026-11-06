@@ -23,6 +23,7 @@ export default function CategoriesGrid() {
             cat={c}
             image={s?.image}
             count={s?.count ?? null}
+            capped={s?.capped}
           />
         ))}
       </div>

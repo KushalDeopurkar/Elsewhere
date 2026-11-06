@@ -49,6 +49,15 @@ const hourFmt = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, hour: "numeri
 /** [fromHour, toHour, label] for "morning", "shaam", "tonight" and friends. */
 function partOfDay(text: string): [number, number, string] | null {
   const q = text.toLowerCase();
+  // "starting around 3 pm for about 6 hours", "from 10 am", "at 12 noon"
+  const clock = q.match(/\b(?:from|at|around|starting(?: around| at)?|after)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm|noon)\b/);
+  if (clock) {
+    let h = Number(clock[1]) % 12;
+    if (clock[3] === "pm") h += 12;
+    if (clock[3] === "noon") h = 12;
+    const dur = Number(q.match(/\bfor (?:about |around )?(\d{1,2}) ?(?:hours|hrs|h)\b/)?.[1] ?? 5);
+    return [h, Math.min(24, h + Math.max(1, dur)), `Fits your ${clock[1]}${clock[3] === "noon" ? " noon" : ` ${clock[3]}`} start`];
+  }
   if (/\b(morning|subah|breakfast|sunrise)\b/.test(q)) return [5, 12, "In the morning"];
   if (/\b(afternoon|dopahar|lunch)\b/.test(q)) return [12, 17, "In the afternoon"];
   if (/\b(evening|shaam|sham|sunset|after work)\b/.test(q)) return [16, 21, "In the evening"];

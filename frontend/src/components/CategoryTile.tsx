@@ -11,8 +11,10 @@ export default function CategoryTile({
   cat,
   image,
   count,
+  capped = false,
   size = "standard",
 }: {
+  capped?: boolean;
   cat: CategoryPage;
   image?: string | null;
   count?: number | null;
@@ -37,7 +39,7 @@ export default function CategoryTile({
         <span className="ctile-icon"><CategoryIcon category={cat.value} size={18} weight="fill" /></span>
         <span className="ctile-label">{cat.label}</span>
         {size === "standard" && <span className="ctile-blurb">{cat.blurb}</span>}
-        {count != null && <span className="ctile-count">{count} upcoming</span>}
+        {count != null && <span className="ctile-count">{count}{capped ? "+" : ""} upcoming</span>}
       </span>
     </Link>
   );

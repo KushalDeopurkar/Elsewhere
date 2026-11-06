@@ -406,7 +406,12 @@ export default function DayPlanner({ city }: { city: string }) {
               const on = details.interests.includes(c.value);
               return (
                 <button key={c.value} type="button" className="fchip" aria-pressed={on}
-                  onClick={() => set({ interests: on ? details.interests.filter((v) => v !== c.value) : [...details.interests, c.value] })}>
+                  onClick={() =>
+                    setDetails((d) => ({
+                      ...d,
+                      interests: d.interests.includes(c.value) ? d.interests.filter((v) => v !== c.value) : [...d.interests, c.value],
+                    }))
+                  }>
                   {c.label}
                 </button>
               );
