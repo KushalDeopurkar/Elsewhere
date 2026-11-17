@@ -14,6 +14,18 @@ import { getCategoryColor } from "@/lib/categoryColors";
 import { beacons as makeBeacons, cityLights, seedOf, type Beacon } from "@/lib/cityScene";
 import { formatWhen } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
+import { indiaDots } from "@/lib/india";
+import { SKY_LIGHTS, type SkyPhase } from "@/lib/sky";
+
+/** India map units for the fly-in: degrees to world units around 78E 22N. */
+const MAP_K = 2.6;
+const MAP_COS = Math.cos((22 * Math.PI) / 180);
+const mapXZ = (lng: number, lat: number): [number, number] => [(lng - 78) * MAP_K * MAP_COS, -(lat - 22) * MAP_K];
+const FLY_S = 2.8;
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 const BG = new THREE.Color("#0e1015");
 
@@ -91,15 +103,25 @@ export default function CityScene({
   center,
   cityName,
   onPick,
+  sky = "night",
 }: {
   events: Event[];
   center: { lat: number; lng: number };
   cityName: string;
   onPick: (e: Event) => void;
+  sky?: SkyPhase;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Hover | null>(null);
-  const api = useRef<{ setData: (b: Beacon[], seed: number) => void } | null>(null);
+  const api = useRef<{
+    setData: (b: Beacon[], seed: number) => void;
+    fly: (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => void;
+  } | null>(null);
+  const flyLabel = useRef<HTMLParagraphElement>(null);
+  const skyRef = useRef(sky);
+  useEffect(() => {
+    skyRef.current = sky;
+  }, [sky]);
   const pickRef = useRef(onPick);
   useEffect(() => {
     pickRef.current = onPick;
@@ -148,6 +170,65 @@ export default function CityScene({
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.05;
     world.add(ground);
+    // India, drawn in dots, only visible while flying between cities.
+    const india = new THREE.Group();
+    const indiaMat = pointsMaterial(0);
+    {
+      const { fill, edge } = indiaDots();
+      const all = [...fill.map((p) => [p, 0] as const), ...edge.map((p) => [p, 1] as const)];
+      const pos = new Float32Array(all.length * 3);
+      const col = new Float32Array(all.length * 3);
+      const size = new Float32Array(all.length);
+      const dim = new THREE.Color("#7a84c8");
+      const rim = new THREE.Color("#a99bff");
+      all.forEach(([[lng, lat], isEdge], i) => {
+        const [x, z] = mapXZ(lng, lat);
+        pos.set([x, 0, z], i * 3);
+        const c = isEdge ? rim : dim;
+        col.set([c.r, c.g, c.b], i * 3);
+        size[i] = isEdge ? 15 : 14;
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      g.setAttribute("aColor", new THREE.BufferAttribute(col, 3));
+      g.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+      g.setAttribute("aPhase", new THREE.BufferAttribute(new Float32Array(all.length), 1));
+      india.add(new THREE.Points(g, indiaMat));
+    }
+    const ARC_N = 64;
+    const arcGeo = new THREE.BufferGeometry();
+    arcGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((ARC_N + 1) * 3), 3));
+    const arcMat = new THREE.LineBasicMaterial({ color: "#ff6b57", transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+    const arc = new THREE.Line(arcGeo, arcMat);
+    india.add(arc);
+    const pinGeo = new THREE.BufferGeometry();
+    pinGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
+    pinGeo.setAttribute("aColor", new THREE.BufferAttribute(new Float32Array([1, 0.55, 0.47, 1, 0.42, 0.34]), 3));
+    pinGeo.setAttribute("aSize", new THREE.BufferAttribute(new Float32Array([26, 34]), 1));
+    pinGeo.setAttribute("aPhase", new THREE.BufferAttribute(new Float32Array([0, 1.5]), 1));
+    const pinMat = pointsMaterial(1);
+    india.add(new THREE.Points(pinGeo, pinMat));
+    india.visible = false;
+    world.add(india);
+    let flight: { t: number; from: [number, number]; to: [number, number] } | null = null;
+
+    const fly = (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+      const a = mapXZ(from.lng, from.lat);
+      const b = mapXZ(to.lng, to.lat);
+      const arr = arcGeo.attributes.position.array as Float32Array;
+      const lift = Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.35;
+      for (let i = 0; i <= ARC_N; i++) {
+        const u = i / ARC_N;
+        arr.set([a[0] + (b[0] - a[0]) * u, Math.sin(Math.PI * u) * lift, a[1] + (b[1] - a[1]) * u], i * 3);
+      }
+      arcGeo.attributes.position.needsUpdate = true;
+      arcGeo.setDrawRange(0, 0);
+      (pinGeo.attributes.position.array as Float32Array).set([a[0], 0.05, a[1], b[0], 0.05, b[1]]);
+      pinGeo.attributes.position.needsUpdate = true;
+      flight = { t: 0, from: a, to: b };
+      india.visible = true;
+    };
+
     let lights: THREE.Points | null = null;
     let heads: THREE.Points | null = null;
     let beams: THREE.LineSegments | null = null;
@@ -217,7 +298,7 @@ export default function CityScene({
       beams = new THREE.LineSegments(bg, beamMat);
       world.add(beams);
     };
-    api.current = { setData };
+    api.current = { setData, fly };
 
     // Size and framing: on wide heroes the city sits to the right of the copy.
     let w = 1;
@@ -342,17 +423,42 @@ export default function CityScene({
         spinVel *= 0.94;
         spin += spinVel + dt * 0.035;
       }
+      // City fly-in: pull up to a map of India, glide along the arc to the
+      // new city, and drop back down as its lights come on.
+      let up = 0;
+      let mapVis = 0;
+      if (flight) {
+        flight.t = Math.min(1, flight.t + dt / FLY_S);
+        const t = flight.t;
+        up = Math.pow(Math.sin(Math.PI * t), 0.8);
+        const s = smooth(0.22, 0.78, t);
+        india.position.set(-(flight.from[0] + (flight.to[0] - flight.from[0]) * s), 0, -(flight.from[1] + (flight.to[1] - flight.from[1]) * s));
+        mapVis = smooth(0.02, 0.24, t) * (1 - smooth(0.74, 0.98, t));
+        arcGeo.setDrawRange(0, Math.round((ARC_N + 1) * smooth(0.18, 0.72, t)));
+        if (t >= 1) {
+          flight = null;
+          india.visible = false;
+        }
+      }
+      const cityVis = Math.pow(1 - up, 2);
+      const skyK = SKY_LIGHTS[skyRef.current];
       world.rotation.y = spin + mouse.x * 0.18;
       world.scale.setScalar(0.85 + 0.15 * ease);
-      camera.position.set(0, 10.5 - mouse.y * 2, 17.5);
+      camera.position.set(0, 10.5 - mouse.y * 2 + 78 * up, 17.5 + 26 * up);
       camera.lookAt(world.position.x * 0.12, 0.6, 0);
+      (scene.fog as THREE.FogExp2).density = 0.03 * (1 - up) + 0.003 * up;
 
       for (const m of [lightsMat, headMat]) {
         m.uniforms.uTime.value = clock.t;
-        m.uniforms.uOpacity.value = ease;
+        m.uniforms.uOpacity.value = ease * cityVis * (m === lightsMat ? skyK : 1);
       }
-      beamMat.opacity = 0.85 * ease;
-      glowMat.uniforms.uOpacity.value = ease;
+      indiaMat.uniforms.uOpacity.value = mapVis;
+      pinMat.uniforms.uTime.value = clock.t;
+      pinMat.uniforms.uOpacity.value = mapVis;
+      arcMat.opacity = mapVis;
+      for (const m of [indiaMat, pinMat]) m.uniforms.uPixel.value = pixel;
+      beamMat.opacity = 0.85 * ease * cityVis;
+      glowMat.uniforms.uOpacity.value = ease * cityVis * skyK;
       if (hovered >= 0 && !dragging) showHover(hovered);
       renderer.render(scene, camera);
     };
@@ -390,12 +496,32 @@ export default function CityScene({
       glowMat.dispose();
       ground.geometry.dispose();
       headMat.dispose();
+      india.traverse((o) => (o as THREE.Points).geometry?.dispose());
+      indiaMat.dispose();
+      pinMat.dispose();
+      arcMat.dispose();
       beamMat.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       api.current = null;
     };
   }, []);
+
+  // Changing city flies across India to the new one.
+  const lastCenter = useRef(center);
+  useEffect(() => {
+    const prev = lastCenter.current;
+    lastCenter.current = center;
+    if (Math.hypot(prev.lat - center.lat, prev.lng - center.lng) < 0.3) return;
+    api.current?.fly(prev, center);
+    const el = flyLabel.current;
+    if (el) {
+      el.textContent = `Flying to ${cityName}`;
+      el.classList.remove("is-on");
+      void el.offsetWidth;
+      el.classList.add("is-on");
+    }
+  }, [center, cityName]);
 
   // Feed data in whenever the city or its events change.
   useEffect(() => {
@@ -416,6 +542,7 @@ export default function CityScene({
           </span>
         </div>
       )}
+      <p className="city3d-fly" ref={flyLabel} aria-hidden="true" />
       <p className="city3d-hint" aria-hidden="true">
         Each light is a real event · hover to peek · drag to spin
       </p>

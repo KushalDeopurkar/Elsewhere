@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import VoiceButton from "./VoiceButton";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   MagnifyingGlass,
@@ -256,6 +257,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             <X size={15} weight="bold" />
           </button>
         )}
+        <VoiceButton onInterim={setDraft} onFinal={submit} />
         <button type="submit" className="btn btn-primary">Search</button>
       </form>
 

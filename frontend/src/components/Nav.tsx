@@ -13,9 +13,11 @@ import {
   Cards,
   Smiley,
   Play,
+  Medal,
 } from "@phosphor-icons/react/ssr";
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
+import SoundToggle from "./SoundToggle";
 import { useSaved } from "@/lib/saved";
 
 const LINKS = [
@@ -69,6 +71,15 @@ export default function Nav() {
 
           <div className="topnav-end">
             <LocationSelector />
+            <SoundToggle />
+            <TransitionLink
+              href="/passport"
+              className="icon-btn topnav-passport"
+              aria-label="Your passport"
+              aria-current={active(pathname, "/passport") ? "page" : undefined}
+            >
+              <Medal size={18} weight={active(pathname, "/passport") ? "fill" : "bold"} />
+            </TransitionLink>
             <TransitionLink href="/explore?focus=1" className="icon-btn" aria-label="Search events">
               <MagnifyingGlass size={18} weight="bold" />
             </TransitionLink>

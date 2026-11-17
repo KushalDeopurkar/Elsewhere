@@ -8,8 +8,10 @@ import dynamic from "next/dynamic";
 import KineticWord from "@/components/KineticWord";
 import ScrollStory from "@/components/ScrollStory";
 import TonightList from "@/components/TonightList";
+import WeekendStories from "@/components/WeekendStories";
 import Preloader from "@/components/Preloader";
 import { useCapable3D } from "@/hooks/useCapable3D";
+import { useSky } from "@/hooks/useSky";
 import HeroSearch from "@/components/HeroSearch";
 import HeroDeck from "@/components/HeroDeck";
 import EventCard from "@/components/EventCard";
@@ -66,6 +68,7 @@ export default function Home() {
   const city = useCity();
   const saved = useSaved();
   const use3d = useCapable3D();
+  const sky = useSky();
 
   // Old shared plan links were /?plan=…; the planner now has its own page.
   useEffect(() => {
@@ -125,17 +128,22 @@ export default function Home() {
   return (
     <>
       <Preloader count={all.length} loading={pool.loading} city={city.name} />
-      <section className={`home-hero${use3d ? " has-city" : ""}`}>
+      <section className={`home-hero${use3d ? " has-city" : ""}`} data-sky={sky}>
+        <div className="home-sky" aria-hidden="true" />
         {use3d && (
           <div className="home-city">
-            <CityScene events={all} center={city} cityName={city.name} onPick={(e) => router.push(`/events/${e.id}`)} />
+            <CityScene events={all} center={city} cityName={city.name} sky={sky} onPick={(e) => router.push(`/events/${e.id}`)} />
           </div>
         )}
         <div className="shell home-hero-inner">
           <div className="home-hero-copy">
             <p className="eyebrow-live">
               <span className="live-dot" aria-hidden="true" />
-              {pool.loading ? "Checking what's on" : `${all.length}${all.length >= 100 ? "+" : ""} upcoming in ${city.name}`}
+              {pool.loading
+                ? "Checking what's on"
+                : sky === "night" || sky === "dusk"
+                  ? `Tonight in ${city.name} · ${all.length}${all.length >= 100 ? "+" : ""} upcoming`
+                  : `${all.length}${all.length >= 100 ? "+" : ""} upcoming in ${city.name}`}
             </p>
             <h1 className="home-title">
               Find your next reason to <span className="sr-only">step out.</span>
@@ -165,6 +173,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {!pool.loading && <WeekendStories events={all} city={city.name} />}
 
       {pool.isSample && (
         <div className="shell">

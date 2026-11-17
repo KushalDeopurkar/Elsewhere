@@ -11,6 +11,7 @@
 
 import { Event } from "./types";
 import { createStore } from "./clientStore";
+import { stampPassport } from "./passport";
 
 export interface SavedEvent {
   event: Event;
@@ -36,6 +37,7 @@ export function toggleSaved(event: Event): boolean {
   // Keep only what the cards need; descriptions can be long.
   const snapshot: Event = { ...event, description: event.description?.slice(0, 600) ?? null };
   store.write([{ event: snapshot, savedAt: new Date().toISOString() }, ...list].slice(0, 200));
+  stampPassport(event);
   return true;
 }
 

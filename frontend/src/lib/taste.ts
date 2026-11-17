@@ -2,6 +2,7 @@
 
 /** Taste profile kept on this device, built from swipes and browsing. */
 import { createStore } from "./clientStore";
+import { stampPassport } from "./passport";
 import type { Event } from "./types";
 import { EMPTY_PROFILE, addSeen, applySignal, type Signal, type TasteProfile } from "./tasteCore";
 
@@ -19,6 +20,7 @@ export function readTaste(): TasteProfile {
 
 export function recordSignal(event: Event, signal: Signal, sign: 1 | -1 = 1): void {
   store.write(applySignal(store.read(), event, signal, sign));
+  if (sign === 1 && (signal === "open" || signal === "save")) stampPassport(event);
 }
 
 export function markSeen(id: string): void {

@@ -22,6 +22,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { PlanResult, planToIcs, googleCalendarLink } from "@/lib/plan";
 import { whatsappUrl, planShareText } from "@/lib/share";
+import ShareCard from "./ShareCard";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { priceBadge } from "@/lib/money";
 import { hasTime } from "@/lib/formatDate";
@@ -535,7 +536,7 @@ export default function DayPlanner({ city }: { city: string }) {
                   );
                 })}
               </ol>
-              <PlanMap stops={plan.stops} />
+              <PlanMap stops={plan.stops} animate />
             </div>
           )}
 
@@ -569,6 +570,9 @@ export default function DayPlanner({ city }: { city: string }) {
                 {justSaved ? <Check size={17} weight="bold" /> : <BookmarkSimple size={17} weight="bold" />}
                 {justSaved ? "Plan saved" : "Save plan"}
               </button>
+            )}
+            {plan.stops.length > 0 && (
+              <ShareCard ids={plan.stops.map((st) => st.event.id)} title={plan.title} kicker={`A day in ${plan.city}`} label="Make a card" />
             )}
             <button type="button" className="btn btn-ghost" onClick={share}>
               {copied ? <Check size={17} weight="bold" /> : <ShareNetwork size={17} weight="bold" />}

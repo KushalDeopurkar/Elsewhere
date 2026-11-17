@@ -19,15 +19,17 @@ export default function LoadingEvent() {
       <div className="shell detail-top">
         <span className="skel skel-crumbs" />
       </div>
+      <div className="shell detail-stage">
+        <div className="detail-media is-trailer">
+          {p ? (
+            <EventImage src={p.image_url} alt="" category={p.category} ratio="21 / 9" priority />
+          ) : (
+            <div className="skel detail-media-skel" />
+          )}
+        </div>
+      </div>
       <div className="shell detail-grid">
         <div className="detail-main">
-          <div className="detail-media">
-            {p ? (
-              <EventImage src={p.image_url} alt="" category={p.category} ratio="16 / 9" priority />
-            ) : (
-              <div className="skel" style={{ aspectRatio: "16 / 9" }} />
-            )}
-          </div>
           <header className="detail-head">
             {label ? <p className="detail-kicker">{label}{p?.city ? <span> · {p.city}</span> : null}</p> : <span className="skel skel-line" />}
             {p ? <h1 className="detail-title">{p.title}</h1> : <span className="skel skel-title" />}

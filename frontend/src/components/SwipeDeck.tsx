@@ -44,6 +44,7 @@ import { touchStreak, useStreak } from "@/lib/streak";
 import { formatWhen } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { whatsappUrl } from "@/lib/share";
+import ShareCard from "./ShareCard";
 import { CATEGORIES, type Event } from "@/lib/types";
 
 type Action = Exclude<Signal, "dwell" | "open">;
@@ -516,6 +517,7 @@ function Shortlist({
             <a className="btn btn-ghost" href={share} target="_blank" rel="noopener noreferrer">
               <WhatsappLogo size={16} weight="fill" aria-hidden="true" /> Share
             </a>
+            <ShareCard ids={events.map((e) => e.id)} title="My shortlist" kicker="Swiped on Elsewhere" label="Make a card" />
           </>
         )}
         <button className="btn btn-ghost" onClick={onMore}>

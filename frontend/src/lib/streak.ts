@@ -20,3 +20,7 @@ export function touchStreak(now = new Date()): void {
   const yesterday = dayKey(new Date(now.getTime() - 86_400_000));
   store.write({ last: today, days: s.last === yesterday ? s.days + 1 : 1 });
 }
+
+export function readStreak(): number {
+  return store.read().days;
+}

@@ -1,0 +1,388 @@
+/* ---------- "This weekend" stories ---------- */
+
+.stories-tray-wrap {
+  padding-top: 1.25rem;
+}
+
+.stories-tray {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding: 0.4rem 0.2rem 0.6rem;
+  margin: 0;
+  list-style: none;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+.stories-tray::-webkit-scrollbar {
+  display: none;
+}
+.stories-tray > li {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+.ws-ring {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  width: 76px;
+  border-radius: var(--r-sm);
+  color: var(--text-mid);
+  font-size: 0.75rem;
+  font-weight: 560;
+}
+.ws-ring-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(from 210deg, var(--marigold), var(--lilac), var(--marigold-bright), var(--marigold));
+  transition: transform var(--t-hover) var(--ease);
+}
+.ws-ring-art img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--ink-900);
+  background: var(--ink-800);
+}
+.ws-ring.is-seen .ws-ring-art {
+  background: var(--line-strong);
+}
+.ws-ring.is-lead .ws-ring-art {
+  background: var(--marigold);
+  color: var(--on-marigold);
+}
+.ws-ring-label {
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-ring.is-lead .ws-ring-label {
+  color: var(--text-hi);
+}
+.ws-ring:hover .ws-ring-art {
+  transform: scale(1.05);
+}
+.ws-ring:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 3px;
+}
+
+/* Player */
+.ws-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+  background: #050608;
+  overflow: hidden;
+  animation: ws-in 320ms var(--ease) both;
+  touch-action: none;
+}
+@keyframes ws-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+.ws-ambient {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  object-fit: cover;
+  filter: blur(48px) saturate(1.4) brightness(0.45);
+  opacity: 0.9;
+  animation: ws-fade 600ms ease both;
+  pointer-events: none;
+}
+@keyframes ws-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.ws-frame {
+  position: relative;
+  grid-column: 2;
+  width: min(100vw, calc(92dvh * 9 / 16));
+  height: min(100dvh, 92dvh);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--ink-900);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 0.6);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform 200ms var(--ease);
+}
+
+.ws-media {
+  position: absolute;
+  inset: 0;
+  animation: ws-fade 420ms ease both;
+}
+.ws-blur {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  filter: blur(28px) brightness(0.55);
+}
+.ws-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center 38%;
+  transform-origin: 50% 40%;
+  animation: ws-kenburns 9s linear both;
+  pointer-events: none;
+}
+@keyframes ws-kenburns {
+  from {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.14) translate3d(-1.5%, -2%, 0);
+  }
+}
+.ws-frame.is-paused .ws-poster,
+.ws-frame.is-paused .ws-fill.is-on {
+  animation-play-state: paused;
+}
+
+.ws-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(5 6 8 / 0.7), transparent 18%),
+    linear-gradient(to top, rgb(5 6 8 / 0.95) 0%, rgb(5 6 8 / 0.7) 32%, transparent 62%);
+  pointer-events: none;
+}
+
+.ws-top {
+  position: absolute;
+  inset: 0 0 auto;
+  padding: 0.75rem 0.75rem 0;
+}
+.ws-bars {
+  display: flex;
+  gap: 4px;
+}
+.ws-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.28);
+  overflow: hidden;
+}
+.ws-fill {
+  display: block;
+  height: 100%;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.ws-fill.is-done {
+  transform: scaleX(1);
+}
+.ws-fill.is-on {
+  animation: ws-progress linear forwards;
+}
+@keyframes ws-progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.ws-head {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+.ws-kicker {
+  margin-right: auto;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.6);
+}
+.ws-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #fff;
+}
+.ws-icon:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+.ws-icon:focus-visible,
+.ws-side:focus-visible,
+.ws-open:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.ws-body {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 1.25rem 1.25rem 1rem;
+  display: grid;
+  gap: 0.5rem;
+  animation: ws-rise 520ms var(--ease) both;
+}
+.ws-media + .ws-shade + .ws-top + .ws-body {
+  animation-delay: 80ms;
+}
+@keyframes ws-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+.ws-cat {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cat-hue, var(--marigold));
+}
+.ws-count {
+  justify-self: start;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.ws-count.is-live {
+  background: rgb(61 220 151 / 0.18);
+  color: var(--live);
+}
+.ws-title {
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.6rem, 4.5vh, 2.3rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-wrap: balance;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ws-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  font-size: 0.9rem;
+  color: rgb(255 255 255 / 0.86);
+}
+.ws-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ws-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.ws-actions .btn {
+  min-height: 44px;
+}
+.ws-open {
+  flex: 1;
+  justify-content: center;
+}
+.ws-actions .save-btn {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.2);
+}
+.ws-hint {
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.6);
+  text-align: center;
+}
+
+.ws-side {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  transition: background-color var(--t-hover) var(--ease), opacity var(--t-hover);
+}
+.ws-side.is-prev {
+  justify-self: end;
+  margin-right: 1.25rem;
+}
+.ws-side.is-next {
+  justify-self: start;
+  margin-left: 1.25rem;
+}
+.ws-side:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.2);
+}
+.ws-side:disabled {
+  opacity: 0.3;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .ws-overlay {
+    grid-template-columns: 1fr;
+  }
+  .ws-frame {
+    grid-column: 1;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .ws-side {
+    display: none;
+  }
+  .ws-top {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+  .ws-body {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-poster,
+  .ws-overlay,
+  .ws-media,
+  .ws-body,
+  .ws-ambient {
+    animation: none;
+  }
+  .ws-frame {
+    transition: none;
+  }
+}
+.ws-overlay:focus { outline: none; }

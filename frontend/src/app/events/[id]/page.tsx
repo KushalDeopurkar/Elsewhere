@@ -18,6 +18,11 @@ import { Suspense } from "react";
 import PosterTintStyle from "@/components/PosterTintStyle";
 import TicketList from "@/components/TicketList";
 import AboutText from "@/components/AboutText";
+import TrailerMedia from "@/components/TrailerMedia";
+import RevealTitle from "@/components/RevealTitle";
+import { SalesCountdown, StartCountdown } from "@/components/LiveCountdown";
+import CategoryAmbient from "@/components/CategoryAmbient";
+import PassportStamp from "@/components/PassportStamp";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -84,6 +89,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         }
       >
         {/* Poster colour streams in after first paint; category colour until then. */}
+        <CategoryAmbient category={event.category} />
+        <PassportStamp event={event} />
         <Suspense fallback={null}>
           <PosterTintStyle url={event.image_url} scope={event.id} />
         </Suspense>
@@ -97,19 +104,22 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
           />
         </div>
 
+        <div className="shell detail-stage">
+          <TrailerMedia>
+            <EventImage src={event.image_url} alt="" category={event.category} ratio="21 / 9" priority />
+          </TrailerMedia>
+        </div>
+
         <div className="shell detail-grid">
           <div className="detail-main">
-            <div className="detail-media">
-              <EventImage src={event.image_url} alt="" category={event.category} ratio="16 / 9" priority />
-            </div>
-
             <header className="detail-head">
               <p className="detail-kicker">
                 <CategoryIcon category={event.category} size={15} />
                 {meta?.label ?? event.category}
                 {event.city ? <span> · {event.city}</span> : null}
               </p>
-              <h1 className="detail-title">{event.title}</h1>
+              <RevealTitle className="detail-title" text={event.title} />
+              <StartCountdown start={event.start_time} end={event.end_time} />
               <ul className="detail-tags" aria-label="Tags">
                 <li>{meta?.label ?? event.category}</li>
                 {priceKnown && <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>}
@@ -189,6 +199,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 <dd>{source}</dd>
               </div>
             </dl>
+            <SalesCountdown tickets={tickets} />
             {tickets.length > 0 && (
               <TicketList tickets={tickets} fallbackUrl={event.url} sourceName={source} now={requestTime()} />
             )}

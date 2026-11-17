@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BookmarkSimple, Trash, Info } from "@phosphor-icons/react/ssr";
 import EventCard from "./EventCard";
+import ShareCard from "./ShareCard";
 import { EmptyState, SectionHeader } from "./Section";
 import { removeSaved, useSaved } from "@/lib/saved";
 
@@ -38,6 +39,11 @@ export default function SavedView() {
 
       <section className="sec-tight">
         <SectionHeader title={`Upcoming (${upcoming.length})`} />
+        {upcoming.length > 0 && (
+          <div className="saved-share">
+            <ShareCard ids={upcoming.map((s) => s.event.id)} title="On my list" kicker="Coming up" label="Share my list as a card" />
+          </div>
+        )}
         {upcoming.length === 0 ? (
           <p className="muted">None of your saved events are coming up.</p>
         ) : (
