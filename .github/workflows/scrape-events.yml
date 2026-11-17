@@ -73,6 +73,9 @@ jobs:
 
       # Each upcoming event's own page: full description, ticket tiers
       # (GA, VIP, ...), duration, organiser. Needs migration 008.
+      # District blocks cloud servers (its listing scrape returns 0 here too),
+      # so District pages are enriched from a home connection instead:
+      # double-click enrich-events.command on the Mac.
       - name: Enrich event pages
         if: ${{ github.event.inputs.dry_run != 'true' }}
         continue-on-error: true
@@ -82,7 +85,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           cd backend
-          python run_scrapers.py --enrich-only --limit 150
+          python run_scrapers.py --enrich-only --source allevents --limit 120
+          python run_scrapers.py --enrich-only --source meetup --limit 60
 
       # New and edited events get embeddings (meaning-based search, "More like
       # this", the planner), then Telegram alerts go out for what is new.

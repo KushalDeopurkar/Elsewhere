@@ -78,7 +78,25 @@ def _available(v: Any) -> Optional[bool]:
     return None
 
 
-def tickets_from_offers(offers: Any, event_name: str, source: str) -> List[Dict[str, Any]]:
+def _norm(s: str) -> str:
+    return re.sub(r"\W+", " ", unescape(unescape(s or ""))).strip().lower()
+
+
+def _is_placeholder(name: str, titles: List[str]) -> bool:
+    """An 'offer' that is just the event's own name is not a ticket tier.
+    Titles on listings often carry extras ('... 2026 (Finance Summit)'), so
+    a name contained in the title (or the reverse) counts too."""
+    n = _norm(name)
+    for t in titles:
+        t = _norm(t)
+        if not t:
+            continue
+        if n == t or (len(n) >= 8 and (n in t or t in n)):
+            return True
+    return False
+
+
+def tickets_from_offers(offers: Any, event_name: str, source: str, also_titles: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Named Offer entries become tiers. AggregateOffer only contributes its
     nested offers. AllEvents repeats the event title as an Offer with a
     placeholder USD 0 price, so that pattern is ignored."""
@@ -95,14 +113,14 @@ def tickets_from_offers(offers: Any, event_name: str, source: str) -> List[Dict[
                 flat.append(o)
 
     walk(offers)
-    title = re.sub(r"\W+", " ", unescape(event_name or "")).strip().lower()
+    titles = [event_name, *(also_titles or [])]
     tiers: List[Dict[str, Any]] = []
     seen = set()
     for o in flat:
         name = unescape(unescape(str(o.get("name") or ""))).strip()
         if not name:
             continue
-        if re.sub(r"\W+", " ", name).strip().lower() == title:
+        if _is_placeholder(name, titles):
             continue
         currency = (o.get("priceCurrency") or "INR").upper()
         price = _price(o.get("price") if o.get("price") not in (None, "") else o.get("lowPrice"))
@@ -217,4 +235,5 @@ def parse_detail(html: str, source: str, event_name: str = "") -> Dict[str, Any]
         "notes": _notes(text_for_rules),
     }
     details = {k: v for k, v in details.items() if v not in (None, "", [])}
-    return {"tickets": tickets_from_offers(ev.get("offers"), name, source), "details": details}
+    tiers = tickets_from_offers(ev.get("offers"), name, source, [str(ev.get("name") or "")])
+    return {"tickets": tiers, "details": details}

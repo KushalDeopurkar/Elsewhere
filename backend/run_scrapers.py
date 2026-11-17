@@ -59,6 +59,8 @@ async def main():
                         help="Skip scraping; fetch event pages for descriptions and ticket tiers")
     parser.add_argument("--limit", type=int, default=150,
                         help="Max event pages to enrich per run")
+    parser.add_argument("--retry-failed", action="store_true",
+                        help="Enrich: also retry events tried before that got no details")
     args = parser.parse_args()
 
     if args.enrich_only:
@@ -68,10 +70,14 @@ async def main():
         from app.database import get_supabase_service
         from app.enrich.enricher import enrich
 
-        stats = await enrich(get_supabase_service(), limit=args.limit)
+        sources = None if args.source == "all" else [args.source]
+        stats = await enrich(get_supabase_service(), limit=args.limit, sources=sources,
+                             retry_failed=args.retry_failed)
         logger.info(f"Enrich: {stats}")
         print(f"::notice::Enriched {stats['enriched']} of {stats['picked']} event pages "
               f"({stats['with_tiers']} with ticket tiers, {stats['failed']} failed)")
+        for host, outcomes in stats["by_host"].items():
+            print(f"::notice::{host}: " + ", ".join(f"{k} x{v}" for k, v in sorted(outcomes.items())))
         return
 
     # Build scrapers based on selection

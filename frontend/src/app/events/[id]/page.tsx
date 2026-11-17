@@ -12,7 +12,7 @@ import { getEvent } from "@/lib/api";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { formatFull } from "@/lib/formatDate";
-import { priceLine } from "@/lib/money";
+import { priceLine, realTiers } from "@/lib/money";
 import { categoryHref } from "@/lib/categoryPages";
 import { Suspense } from "react";
 import PosterTintStyle from "@/components/PosterTintStyle";
@@ -50,7 +50,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const meta = CATEGORIES.find((c) => c.value === event.category);
   const hue = getCategoryColor(event.category);
   const d = event.details ?? {};
-  const tickets = event.tickets ?? [];
+  const tickets = realTiers(event.tickets, event.title);
   // Unknown price is not "free": only say so when the source does.
   const free = event.is_free || event.price_min === 0 || (tickets.length > 0 && tickets.every((t) => t.price === 0));
   const priceKnown = free || event.price_min != null || tickets.some((t) => t.price != null);

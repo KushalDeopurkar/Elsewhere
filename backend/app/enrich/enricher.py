@@ -25,18 +25,23 @@ UA = (
 )
 
 
-def pick_batch(client, limit: int) -> List[Dict[str, Any]]:
-    """Upcoming events never enriched, then the stalest, soonest first."""
+def pick_batch(client, limit: int, sources=None, retry_failed: bool = False) -> List[Dict[str, Any]]:
+    """Upcoming events never enriched, then the stalest, soonest first.
+    retry_failed: also take events that were tried but got nothing (e.g. a
+    site that blocks cloud servers, retried from a home connection)."""
     now = datetime.now(timezone.utc)
+    srcs = sorted(set(sources or SUPPORTED) & SUPPORTED)
     stale = (now - timedelta(days=3)).isoformat()
     cols = "id,title,url,source,start_time,price_min,price_max,is_free"
     base = (
         client.table("events")
         .select(cols)
         .gte("start_time", (now - timedelta(hours=6)).isoformat())
-        .in_("source", sorted(SUPPORTED))
+        .in_("source", srcs)
         .not_.is_("url", "null")
     )
+    if retry_failed:
+        return base.is_("details", "null").order("start_time").limit(limit).execute().data or []
     fresh = base.is_("details_fetched_at", "null").order("start_time").limit(limit).execute().data or []
     if len(fresh) >= limit:
         return fresh
@@ -44,7 +49,7 @@ def pick_batch(client, limit: int) -> List[Dict[str, Any]]:
         client.table("events")
         .select(cols)
         .gte("start_time", now.isoformat())
-        .in_("source", sorted(SUPPORTED))
+        .in_("source", srcs)
         .lt("details_fetched_at", stale)
         .order("start_time")
         .limit(limit - len(fresh))
@@ -72,20 +77,22 @@ def price_update(row: Dict[str, Any], tickets: List[Dict[str, Any]]) -> Dict[str
     return out
 
 
-async def _fetch(client: httpx.AsyncClient, url: str) -> str | None:
+async def _fetch(client: httpx.AsyncClient, url: str) -> tuple[str | None, str]:
+    """Page HTML (or None) and a short outcome label for the run summary."""
     try:
         r = await client.get(url, timeout=20)
         if r.status_code == 200 and "text/html" in r.headers.get("content-type", ""):
-            return r.text
+            return r.text, "ok"
         logger.info("skip %s: HTTP %s", url, r.status_code)
+        return None, f"HTTP {r.status_code}"
     except httpx.HTTPError as e:
         logger.info("skip %s: %s", url, e)
-    return None
+        return None, type(e).__name__
 
 
-async def enrich(db, limit: int = 150, delay: float = 1.2) -> Dict[str, int]:
-    rows = pick_batch(db, limit)
-    stats = {"picked": len(rows), "enriched": 0, "with_tiers": 0, "failed": 0}
+async def enrich(db, limit: int = 150, delay: float = 1.2, sources=None, retry_failed: bool = False) -> Dict[str, Any]:
+    rows = pick_batch(db, limit, sources, retry_failed)
+    stats: Dict[str, Any] = {"picked": len(rows), "enriched": 0, "with_tiers": 0, "failed": 0, "by_host": {}}
     if not rows:
         return stats
 
@@ -97,7 +104,10 @@ async def enrich(db, limit: int = 150, delay: float = 1.2) -> Dict[str, int]:
 
         async def run_host(items: List[Dict[str, Any]]) -> None:
             for r in items:
-                html = await _fetch(http, r["url"])
+                html, outcome = await _fetch(http, r["url"])
+                host = httpx.URL(r["url"]).host.replace("www.", "")
+                stats["by_host"].setdefault(host, {}).setdefault(outcome, 0)
+                stats["by_host"][host][outcome] += 1
                 now = datetime.now(timezone.utc).isoformat()
                 if not html:
                     stats["failed"] += 1

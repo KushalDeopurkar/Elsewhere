@@ -46,3 +46,18 @@ export function priceLine(input: Priced): string {
   }
   return RUPEES.format(event.price_min);
 }
+
+const norm = (s: string) => s.toLowerCase().replace(/&amp;/g, "&").replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * Real ticket tiers only. Some sources list the event's own name as an
+ * "offer"; that is not a tier. (The backend filters this too; this guards
+ * rows stored before that fix.)
+ */
+export function realTiers<T extends { name: string }>(tickets: T[] | null | undefined, title: string): T[] {
+  const t = norm(title);
+  return (tickets ?? []).filter((x) => {
+    const n = norm(x.name);
+    return n && n !== t && !(n.length >= 8 && (t.includes(n) || n.includes(t)));
+  });
+}

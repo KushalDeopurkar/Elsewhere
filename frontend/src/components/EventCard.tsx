@@ -3,7 +3,7 @@ import { MapPin, Clock } from "@phosphor-icons/react/ssr";
 import { Event, CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { formatDatePlate, formatWhen } from "@/lib/formatDate";
-import { priceBadge } from "@/lib/money";
+import { priceBadge, realTiers } from "@/lib/money";
 import EventImage from "./EventImage";
 import SaveButton from "./SaveButton";
 
@@ -62,7 +62,9 @@ export default function EventCard({
         <p className="ecard-kicker">
           {meta?.label ?? event.category}
           {badge && <span className="ecard-badge">{badge}</span>}
-          {(event.tickets?.length ?? 0) > 1 && <span className="ecard-tiers">{event.tickets!.length} ticket types</span>}
+          {realTiers(event.tickets, event.title).length > 1 && (
+            <span className="ecard-tiers">{realTiers(event.tickets, event.title).length} ticket types</span>
+          )}
         </p>
         <h3 className="ecard-title">
           <TransitionLink kind="event" preview={event} href={`/events/${event.id}`} className="ecard-link" prefetch={false}>

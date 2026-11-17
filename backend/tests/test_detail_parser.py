@@ -87,3 +87,15 @@ def test_price_update_tracks_tiers():
     assert price_update({"price_min": None, "price_max": None, "is_free": False}, [{"price": 0.0, "currency": "INR"}]) == {
         "price_min": 0.0, "is_free": True}
     assert price_update({"price_min": 99}, []) == {}
+
+
+def test_offer_named_like_a_longer_listing_title_is_not_a_tier():
+    ev = {"@type": "Event", "name": "India Finance &amp; Tech Summit 2026",
+          "offers": [{"@type": "Offer", "name": "India Finance &amp; Tech Summit 2026", "price": 0, "priceCurrency": "USD"}]}
+    out = parse_detail(page([ev]), "allevents", "India Finance & Tech Summit 2026  (Finance Transformation Summit)")
+    assert out["tickets"] == []
+
+
+def test_short_tier_names_inside_title_are_kept():
+    t = tickets_from_offers([{"@type": "Offer", "name": "VIP", "price": 999, "priceCurrency": "INR"}], "VIP Night at Club", "district")
+    assert [x["name"] for x in t] == ["VIP"]
