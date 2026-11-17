@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
@@ -15,6 +15,8 @@ import { Event, EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { formatWhen } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
+import TimeScrubber from "@/components/TimeScrubber";
+import { HOUR, eventsAt, timelineStart } from "@/lib/timeline";
 
 // maplibre-gl touches window at import time, so the map never renders on the
 // server. Everything around it still does.
@@ -28,7 +30,17 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
 });
 
 export default function MapPage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [allEvents, setEvents] = useState<Event[]>([]);
+  const [now] = useState(() => Date.now());
+  const [timeOn, setTimeOn] = useState(false);
+  const [hour, setHour] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const tlStart = timelineStart(now);
+  const at = useMemo(
+    () => (timeOn ? eventsAt(allEvents, tlStart + hour * HOUR) : null),
+    [timeOn, allEvents, tlStart, hour],
+  );
+  const events = at ? at.events : allEvents;
   const [category, setCategory] = useState<EventCategory | null>(null);
   const [selected, setSelected] = useState<Event | null>(null);
   const [isSample, setIsSample] = useState(false);
@@ -90,7 +102,9 @@ export default function MapPage() {
           <LocationSelector compact />
         </div>
         {events.length === 0 ? (
-          <p className="muted map-list-empty">Nothing in this part of the map. Zoom out or pan to a city.</p>
+          <p className="muted map-list-empty">
+            {timeOn ? "Nothing on at this moment here. Drag the timeline or zoom out." : "Nothing in this part of the map. Zoom out or pan to a city."}
+          </p>
         ) : (
           <ul className="map-list-items">
             {listed.map((e) => (
@@ -145,6 +159,7 @@ export default function MapPage() {
         }}
         onError={(m) => setMapError((prev) => prev ?? m)}
         route={selected ? route : null}
+        liveIds={at?.live ?? null}
       />
 
       {mapError && (
@@ -180,6 +195,20 @@ export default function MapPage() {
           </span>
           <CategoryRail value={category} onChange={setCategory} />
         </div>
+
+        <TimeScrubber
+          events={allEvents}
+          start={tlStart}
+          now={now}
+          on={timeOn}
+          hour={hour}
+          playing={playing}
+          setOn={setTimeOn}
+          setHour={setHour}
+          setPlaying={setPlaying}
+          shown={events.length}
+          live={at?.live.size ?? 0}
+        />
 
         {isSample && !mapError && (
           <span className="sample-note" style={{ alignSelf: "flex-start" }}>

@@ -35,8 +35,11 @@ export default function EventMap({
   onReady,
   onError,
   route = null,
+  liveIds = null,
 }: {
   route?: RouteLine | null;
+  /** Pins for these events pulse: they are on at the scrubbed moment. */
+  liveIds?: ReadonlySet<string> | null;
   events: Event[];
   selectedId: string | null;
   onSelect: (event: Event) => void;
@@ -323,8 +326,9 @@ export default function EventMap({
   useEffect(() => {
     for (const [id, marker] of markers.current) {
       marker.getElement().classList.toggle("is-active", id === selectedId);
+      marker.getElement().classList.toggle("is-live", liveIds?.has(id) ?? false);
     }
-  }, [selectedId, events]);
+  }, [selectedId, events, liveIds]);
 
   const nudge = useCallback((delta: number) => {
     map.current?.easeTo({

@@ -2750,3 +2750,119 @@ html {
 .hero-swipe strong { color: var(--marigold); }
 .hero-swipe:hover { color: var(--text-hi); }
 .hero-swipe + .hero-swipe { margin-left: 1.25rem; }
+
+/* ==========================================================================
+   Map time scrubber
+   ========================================================================== */
+.tl-open {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--r-pill);
+  background: var(--marigold);
+  color: var(--on-marigold);
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 10px 30px -12px var(--marigold);
+  transition: transform var(--t-tap) var(--ease), background-color var(--t-hover) var(--ease);
+}
+.tl-open:hover { background: var(--marigold-bright); transform: translateY(-1px); }
+.tl {
+  width: min(100%, 34rem);
+  padding: 0.75rem 0.9rem 0.55rem;
+  border-radius: var(--r-card);
+  background: oklch(0.195 0.009 70 / 0.88);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 16px 40px -18px oklch(0 0 0 / 0.7);
+}
+.tl-head { display: flex; align-items: center; gap: 0.7rem; }
+.tl-play {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--marigold);
+  color: var(--on-marigold);
+  transition: transform var(--t-tap) var(--ease);
+}
+.tl-play:active { transform: scale(0.9); }
+.tl-label { flex: 1; display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.tl-label strong { color: var(--text-hi); font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tl-label span { color: var(--text-low); font-size: 0.75rem; }
+.tl-label em { font-style: normal; color: var(--live); font-weight: 600; }
+.tl-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--r-pill);
+  background: var(--ink-800);
+  color: var(--text-mid);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.tl-close:hover { color: var(--text-hi); }
+.tl-track { position: relative; height: 2.6rem; margin-top: 0.6rem; }
+.tl-bars { position: absolute; inset: 0 0 0.4rem; display: flex; align-items: flex-end; gap: 1px; }
+.tl-bars span {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  background: var(--ink-700);
+  transition: background-color var(--t-hover) var(--ease);
+}
+.tl-bars span.is-past { background: oklch(0.82 0.16 78 / 0.35); }
+.tl-bars span.is-now { background: var(--marigold); }
+.tl-track input[type="range"] {
+  position: absolute;
+  inset: auto 0 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+.tl-track input[type="range"]::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.tl-track input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-hi);
+  box-shadow: 0 0 0 3px oklch(0.195 0.009 70 / 0.8);
+}
+.tl-track input[type="range"]::-moz-range-thumb {
+  width: 4px;
+  height: 2.6rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--text-hi);
+}
+.tl-track input[type="range"]:focus-visible { outline: 2px solid var(--marigold); outline-offset: 3px; border-radius: 4px; }
+.tl-days { position: relative; height: 1rem; margin-top: 0.2rem; }
+.tl-days span { position: absolute; color: var(--text-low); font-size: 0.6875rem; white-space: nowrap; }
+
+/* Pins pop in as the timeline moves; live ones pulse. */
+.pin { animation: pin-pop 260ms var(--ease); }
+@keyframes pin-pop { from { transform: scale(0); opacity: 0; } }
+.pin-anchor.is-live .pin::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--live);
+  animation: pin-pulse 1.6s ease-out infinite;
+}
+@keyframes pin-pulse { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pin { animation: none; }
+  .pin-anchor.is-live .pin::after { animation: none; opacity: 1; }
+}
+.tl-skip { margin-left: 0.4rem; color: var(--marigold); font-weight: 600; font-size: 0.75rem; }
+.tl-skip:hover { text-decoration: underline; text-underline-offset: 2px; }
