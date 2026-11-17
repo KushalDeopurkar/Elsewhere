@@ -110,7 +110,7 @@ export default function CityScene({
     const host = wrap.current;
     if (!host) return;
     const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
-    const pixel = Math.min(window.devicePixelRatio || 1, 1.75);
+    let pixel = Math.min(window.devicePixelRatio || 1, 1.75);
     renderer.setPixelRatio(pixel);
     renderer.setClearColor(0x000000, 0);
     host.appendChild(renderer.domElement);
@@ -309,10 +309,29 @@ export default function CityScene({
     let visible = true;
     let last = performance.now();
     const clock = { t: 0 };
+    // Adaptive quality: if frames run slow for two seconds, render fewer
+    // pixels (down to 1x) so the hero stays smooth on weaker GPUs.
+    let slowSum = 0;
+    let slowN = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const raw = (now - last) / 1000;
+      const dt = Math.min(0.05, raw);
       last = now;
+      if (raw < 0.25) {
+        slowSum += raw;
+        slowN += 1;
+        if (slowN >= 120) {
+          if (slowSum / slowN > 1 / 48 && pixel > 1) {
+            pixel = Math.max(1, pixel - 0.5);
+            renderer.setPixelRatio(pixel);
+            renderer.setSize(w, h, false);
+            for (const m of [lightsMat, headMat]) m.uniforms.uPixel.value = pixel;
+          }
+          slowSum = 0;
+          slowN = 0;
+        }
+      }
       clock.t += dt;
       intro = Math.min(1, intro + dt * 0.9);
       const ease = 1 - Math.pow(1 - intro, 3);

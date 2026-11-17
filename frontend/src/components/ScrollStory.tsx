@@ -113,10 +113,11 @@ function Pinned({ pool }: { pool: Event[] }) {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
+  // Only the step index goes through React (5 changes per pass); the rail
+  // follows the scroll as a motion value, straight to the compositor.
   useMotionValueEvent(scrollYProgress, "change", (p) => {
-    setProgress(p);
-    setActive(Math.min(STEPS.length - 1, Math.max(0, Math.floor(p * STEPS.length))));
+    const next = Math.min(STEPS.length - 1, Math.max(0, Math.floor(p * STEPS.length)));
+    setActive((cur) => (cur === next ? cur : next));
   });
 
   return (
@@ -149,7 +150,7 @@ function Pinned({ pool }: { pool: Event[] }) {
               ))}
             </ol>
             <div className="story-bar" aria-hidden="true">
-              <span style={{ transform: `scaleY(${progress})` }} />
+              <motion.span style={{ scaleY: scrollYProgress }} />
             </div>
           </div>
           <div className="story-stage" aria-hidden="true">

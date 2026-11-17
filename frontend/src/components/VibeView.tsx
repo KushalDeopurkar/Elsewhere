@@ -209,12 +209,12 @@ export default function VibeView() {
           </div>
         ) : (
           <>
-            <motion.div className="vibe-grid" layout={!reduce}>
+            <motion.div className="vibe-grid">
               <AnimatePresence mode="popLayout" initial={false}>
                 {hits.slice(0, shown).map((h, i) => (
                   <motion.div
                     key={h.event.id}
-                    layout={!reduce}
+                    layout={reduce ? false : "position"}
                     initial={reduce ? false : { opacity: 0, scale: 0.92 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={reduce ? undefined : { opacity: 0, scale: 0.9 }}

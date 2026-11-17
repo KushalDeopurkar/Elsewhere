@@ -33,5 +33,28 @@ export default function TransitionLink({
     });
   };
 
-  return <Link {...props} onClick={handle} />;
+  // Warm the route as soon as the pointer or focus arrives, so the click
+  // has its code (and the event page's loading state) ready to paint.
+  const warm = () => {
+    try {
+      router.prefetch(href);
+    } catch {
+      /* prefetch is best-effort */
+    }
+  };
+
+  return (
+    <Link
+      {...props}
+      onClick={handle}
+      onPointerEnter={(e) => {
+        props.onPointerEnter?.(e);
+        warm();
+      }}
+      onFocus={(e) => {
+        props.onFocus?.(e);
+        warm();
+      }}
+    />
+  );
 }

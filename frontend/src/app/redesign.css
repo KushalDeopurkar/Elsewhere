@@ -3098,7 +3098,7 @@ html {
   color: var(--text-mid);
   font-size: 0.8125rem;
   font-weight: 600;
-  transition: all var(--t-hover) var(--ease);
+  transition: color var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease);
 }
 .dm-mood.is-on { border-color: var(--hue); color: var(--text-hi); box-shadow: 0 0 0 1px var(--hue), 0 8px 20px -10px var(--hue); }
 .dm-count { margin: 0.9rem 0 0.6rem; color: var(--text-mid); font-size: 0.875rem; }
@@ -3214,30 +3214,35 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   width: 34px;
   height: 34px;
   margin: -17px 0 0 -17px;
-  display: grid;
-  place-items: center;
   border-radius: 999px;
   border: 1.5px solid rgb(242 243 247 / 0.45);
   opacity: 0;
-  transition:
-    width 260ms var(--ease), height 260ms var(--ease), margin 260ms var(--ease),
-    background-color 260ms var(--ease), border-color 260ms var(--ease), opacity 200ms var(--ease);
+  /* Size changes are a transform scale set per frame in CursorLayer, never
+     width/height, so hovering never triggers layout. */
+  transition: background-color 220ms var(--ease), border-color 220ms var(--ease), opacity 200ms var(--ease);
 }
 .cur-dot.is-shown,
 .cur-ring.is-shown { opacity: 1; }
-.cur-ring.is-hover { width: 54px; height: 54px; margin: -27px 0 0 -27px; border-color: var(--marigold); background: rgb(255 107 87 / 0.1); }
-.cur-ring.is-text { opacity: 0; }
-.cur-ring span {
+.cur-ring.is-hover { border-color: var(--marigold); background: rgb(255 107 87 / 0.1); }
+.cur-ring.is-text,
+.cur-ring.is-labelled { opacity: 0; }
+.cur-label {
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--marigold);
   color: var(--on-marigold);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
   opacity: 0;
+  will-change: transform;
   transition: opacity 180ms var(--ease);
 }
-.cur-ring.has-label { width: auto; min-width: 0; height: 28px; margin: 16px 0 0 14px; padding: 0 0.75rem; border-color: var(--marigold); background: var(--marigold); }
-.cur-ring.has-label span { opacity: 1; }
+.cur-label.is-shown { opacity: 1; }
 .cur-reveal {
   width: 12rem;
   aspect-ratio: 4 / 5;
@@ -3371,3 +3376,34 @@ html.no-intro .intro { display: none; }
 .detail.is-loading .skel-line { display: block; width: 55%; height: 1rem; margin-top: 0.75rem; border-radius: var(--r-sm); }
 .detail.is-loading .skel-title { display: block; width: 80%; height: 2.4rem; margin-top: 0.6rem; border-radius: var(--r-sm); }
 .detail.is-loading .skel-aside { display: block; min-height: 18rem; border-radius: var(--r-card); }
+
+
+/* ==========================================================================
+   Smoothness pass
+   ========================================================================== */
+/* Off-screen home rails and grids skip rendering until scrolled near. */
+.shell.sec { content-visibility: auto; contain-intrinsic-size: auto 560px; }
+
+/* Blurring what scrolls underneath a sticky bar repaints every frame. On
+   touch devices, which are the weakest GPUs, use solid bars instead. */
+@media (hover: none), (max-width: 900px) {
+  .topnav, .tabbar, .vibe-controls-wrap, .map-bar, .tl, .map-peek, .feed-pill, .city3d-tip, .disc-match {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .topnav, .tabbar { background: rgb(14 16 21 / 0.97); }
+  .map-bar, .tl, .map-peek { background: rgb(23 26 33 / 0.97); }
+}
+
+/* Promote things that move every frame to their own layer. */
+.disc-card.is-top, .feed-card, .dm-card, .story-demo { backface-visibility: hidden; }
+
+/* One easing family everywhere: exponential ease-out for entrances,
+   a gentler in-out for things that move across the screen. */
+:root { --ease-move: cubic-bezier(0.65, 0, 0.35, 1); }
+
+/* Smooth in-page jumps (scrollIntoView, #anchors) without hijacking the
+   wheel; off for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}

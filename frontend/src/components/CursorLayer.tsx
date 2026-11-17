@@ -29,7 +29,7 @@ export default function CursorLayer() {
   const enabled = useSyncExternalStore(subscribe, () => window.matchMedia(QUERY).matches, () => false);
   const ring = useRef<HTMLDivElement>(null);
   const dot = useRef<HTMLDivElement>(null);
-  const label = useRef<HTMLSpanElement>(null);
+  const label = useRef<HTMLDivElement>(null);
   const reveal = useRef<HTMLDivElement>(null);
   const revealImg = useRef<HTMLImageElement>(null);
 
@@ -50,6 +50,8 @@ export default function CursorLayer() {
     // property applies on top of the translate, so it would scale the
     // pointer position too and throw the ring off across the screen.
     let down = false;
+    let hovering = false;
+    let labelled = false;
     let ringS = 1;
     let revealOn = false;
     let revealS = 0.85;
@@ -77,10 +79,13 @@ export default function CursorLayer() {
       const texty = t?.closest(TEXTY);
       const hit = texty ? null : (t?.closest(INTERACTIVE) as HTMLElement | null);
       const lab = (t?.closest("[data-cursor]") as HTMLElement | null)?.dataset.cursor ?? "";
-      r.classList.toggle("is-hover", Boolean(hit));
+      hovering = Boolean(hit);
+      labelled = Boolean(lab);
+      r.classList.toggle("is-hover", hovering);
       r.classList.toggle("is-text", Boolean(texty));
-      r.classList.toggle("has-label", Boolean(lab));
-      if (l.textContent !== lab) l.textContent = lab;
+      r.classList.toggle("is-labelled", labelled);
+      l.classList.toggle("is-shown", labelled);
+      if (lab && l.textContent !== lab) l.textContent = lab;
 
       const src = (t?.closest("[data-reveal-img]") as HTMLElement | null)?.dataset.revealImg ?? "";
       if (src !== revealSrc) {
@@ -104,6 +109,7 @@ export default function CursorLayer() {
       shown = false;
       r.classList.remove("is-shown");
       d.classList.remove("is-shown");
+      l.classList.remove("is-shown");
       rv.classList.remove("is-shown");
       revealOn = false;
       revealSrc = "";
@@ -124,10 +130,12 @@ export default function CursorLayer() {
       vp.x += (p.x - vp.x) * 0.12;
       vp.y += (p.y - vp.y) * 0.12;
       vp.vx = vp.vx * 0.8 + (vp.x - px) * 0.2;
-      ringS += ((down ? 0.82 : 1) - ringS) * 0.3;
+      const ringTarget = (hovering ? 1.6 : 1) * (down ? 0.82 : 1);
+      ringS += (ringTarget - ringS) * 0.25;
       revealS += ((revealOn ? 1 : 0.85) - revealS) * 0.18;
       d.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
       r.style.transform = `translate3d(${rp.x}px, ${rp.y}px, 0) scale(${ringS.toFixed(3)})`;
+      l.style.transform = `translate3d(${rp.x + 16}px, ${rp.y + 18}px, 0)`;
       const tilt = Math.max(-12, Math.min(12, vp.vx * 0.6));
       rv.style.transform = `translate3d(${vp.x + 40}px, ${vp.y - 120}px, 0) rotate(${tilt.toFixed(2)}deg) scale(${revealS.toFixed(3)})`;
     };
@@ -156,9 +164,8 @@ export default function CursorLayer() {
       <div className="cur-reveal" ref={reveal}>
         <img ref={revealImg} alt="" referrerPolicy="no-referrer" decoding="async" />
       </div>
-      <div className="cur-ring" ref={ring}>
-        <span ref={label} />
-      </div>
+      <div className="cur-ring" ref={ring} />
+      <div className="cur-label" ref={label} />
       <div className="cur-dot" ref={dot} />
     </div>
   );

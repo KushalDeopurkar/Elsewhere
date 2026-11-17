@@ -209,7 +209,7 @@ export default function SwipeDeck() {
       {total > 0 && !ended && (
         <div className="shell disc-progress" aria-hidden="true">
           <div className="disc-bar">
-            <span style={{ width: `${(index / total) * 100}%` }} />
+            <span style={{ transform: `scaleX(${index / total})` }} />
           </div>
           <span className="disc-count">
             {index + 1} of {total}
