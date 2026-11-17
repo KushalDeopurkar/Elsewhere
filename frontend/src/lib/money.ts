@@ -8,17 +8,23 @@ type Priced = {
   is_free: boolean;
   price_min: number | null;
   price_max: number | null;
-  tickets?: { price: number | null; currency: string | null }[] | null;
+  tickets?: { price: number | null; currency: string | null; available?: boolean | null }[] | null;
 };
 
 export function formatRupees(n: number): string {
   return RUPEES.format(n);
 }
 
-/** Price range from ticket tiers when the listing itself has none. */
+/**
+ * Price range from the ticket tiers when the event has them: the tiers are
+ * read from the event's own page, so they beat the listing's single price
+ * (which often only carries the cheapest tier).
+ */
 function withTiers<T extends Priced>(event: T): T {
-  if (event.price_min != null || !event.tickets?.length) return event;
-  const p = event.tickets.filter((t) => t.price != null && (t.currency ?? "INR") === "INR").map((t) => t.price as number);
+  if (!event.tickets?.length) return event;
+  const p = event.tickets
+    .filter((t) => t.price != null && (t.currency ?? "INR") === "INR" && (t as { available?: boolean | null }).available !== false)
+    .map((t) => t.price as number);
   if (!p.length) return event;
   const lo = Math.min(...p);
   const hi = Math.max(...p);
