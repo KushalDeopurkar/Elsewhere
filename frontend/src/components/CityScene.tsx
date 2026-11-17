@@ -186,7 +186,7 @@ export default function CityScene({
         pos.set([x, 0, z], i * 3);
         const c = isEdge ? rim : dim;
         col.set([c.r, c.g, c.b], i * 3);
-        size[i] = isEdge ? 15 : 14;
+        size[i] = isEdge ? 13 : 13;
       });
       const g = new THREE.BufferGeometry();
       g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
