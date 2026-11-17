@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, List, Dict
 
+import html
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -9,6 +10,19 @@ from supabase import Client
 from app.models.event import EventCreate, EventSearchParams
 
 logger = logging.getLogger(__name__)
+
+
+_TEXT_FIELDS = ("title", "description", "location_name", "address")
+
+
+def _unescape_row(row: Dict) -> Dict:
+    """Scraped pages sometimes double-encode ("Finance &amp; Tech"). Decode
+    HTML entities in text fields before storing; repeat once for &amp;amp;."""
+    for k in _TEXT_FIELDS:
+        v = row.get(k)
+        if isinstance(v, str) and "&" in v:
+            row[k] = html.unescape(html.unescape(v))
+    return row
 
 
 class EventService:
@@ -20,7 +34,7 @@ class EventService:
         if not events:
             return 0
 
-        rows = [e.to_db_row() for e in events]
+        rows = [_unescape_row(e.to_db_row()) for e in events]
 
         result = (
             self.client.table("events")

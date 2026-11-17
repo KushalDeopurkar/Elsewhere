@@ -1,6 +1,17 @@
 import { ApiResponse, Event, SearchParams } from "./types";
 import { DEMO_EVENTS } from "./demoEvents";
 
+import { decodeEntities } from "./text";
+
+function clean(e: Event): Event {
+  return {
+    ...e,
+    title: decodeEntities(e.title),
+    description: e.description ? decodeEntities(e.description) : e.description,
+    location_name: e.location_name ? decodeEntities(e.location_name) : e.location_name,
+  };
+}
+
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 const API_BASE = typeof window === "undefined" ? `${BACKEND_URL}/api` : "/api";
 
@@ -54,7 +65,7 @@ export async function searchEvents(params: SearchParams): Promise<EventsResult> 
     const res = await fetch(`${API_BASE}/events/search?${qs}`);
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     const json: ApiResponse<Event[]> = await res.json();
-    const events = json.data || [];
+    const events = (json.data || []).map(clean);
 
     // An empty result for an unfiltered browse means the database has nothing
     // in it yet, so show the sample set instead of an empty page. An empty
@@ -74,7 +85,7 @@ export async function getEvent(id: string): Promise<Event | null> {
     }
     if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
     const json: ApiResponse<Event> = await res.json();
-    return json.data ?? DEMO_EVENTS.find((e) => e.id === id) ?? null;
+    return json.data ? clean(json.data) : (DEMO_EVENTS.find((e) => e.id === id) ?? null);
   } catch {
     return DEMO_EVENTS.find((e) => e.id === id) ?? null;
   }
@@ -120,7 +131,7 @@ export async function getMapEvents(
     const res = await fetch(`${API_BASE}/events/map?${qs}`);
     if (!res.ok) throw new Error(`Map fetch failed: ${res.status}`);
     const json: ApiResponse<Event[]> = await res.json();
-    const events = json.data || [];
+    const events = (json.data || []).map(clean);
     if (events.length === 0 && !category) return sample();
     return { events, isSample: false };
   } catch {

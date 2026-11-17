@@ -145,3 +145,11 @@ def test_get_in_bounds_keeps_rows_when_details_fail(service, mock_supabase):
     mock_supabase.table.return_value.select.side_effect = RuntimeError("boom")
 
     assert service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0) == [{"id": "uuid-1", "title": "A"}]
+
+
+def test_upsert_decodes_html_entities(service, mock_supabase, sample_event_data):
+    data = {**sample_event_data, "title": "Finance &amp; Tech &amp;amp; More", "location_name": "Rock &#39;n&#39; Roll Cafe"}
+    service.upsert_events([EventCreate(**data)])
+    row = mock_supabase.table().upsert.call_args[0][0][0]
+    assert row["title"] == "Finance & Tech & More"
+    assert row["location_name"] == "Rock 'n' Roll Cafe"

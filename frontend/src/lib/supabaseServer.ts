@@ -1,3 +1,4 @@
+import { decodeRows } from "./text";
 /**
  * Minimal server-only Supabase client over REST.
  *
@@ -58,7 +59,7 @@ export async function rpc<T>(fn: string, args: Record<string, unknown>, timeoutM
     cache: "no-store",
   });
   await check(res, `rpc ${fn}`);
-  return (await res.json()) as T;
+  return decodeRows((await res.json()) as T);
 }
 
 /** Table access, e.g. rest("alerts?select=id&active=eq.true"). */
@@ -75,7 +76,7 @@ export async function rest<T>(
   });
   await check(res, `${init.method ?? "GET"} ${path.split("?")[0]}`);
   const text = await res.text();
-  return (text ? JSON.parse(text) : null) as T;
+  return decodeRows((text ? JSON.parse(text) : null) as T);
 }
 
 /**
