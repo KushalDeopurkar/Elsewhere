@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import KineticWord from "@/components/KineticWord";
 import ScrollStory from "@/components/ScrollStory";
 import TonightList from "@/components/TonightList";
+import Preloader from "@/components/Preloader";
 import { useCapable3D } from "@/hooks/useCapable3D";
 import HeroSearch from "@/components/HeroSearch";
 import HeroDeck from "@/components/HeroDeck";
@@ -122,6 +123,7 @@ export default function Home() {
 
   return (
     <>
+      <Preloader count={all.length} loading={pool.loading} city={city.name} />
       <section className={`home-hero${use3d ? " has-city" : ""}`}>
         {use3d && (
           <div className="home-city">

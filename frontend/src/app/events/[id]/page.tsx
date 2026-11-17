@@ -14,6 +14,7 @@ import { getCategoryColor } from "@/lib/categoryColors";
 import { formatFull } from "@/lib/formatDate";
 import { priceLine } from "@/lib/money";
 import { categoryHref } from "@/lib/categoryPages";
+import { getPosterTint } from "@/lib/posterTint";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -40,6 +41,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   const meta = CATEGORIES.find((c) => c.value === event.category);
   const hue = getCategoryColor(event.category);
+  // The page takes its colour from the poster; category colour if it can't.
+  const tint = await getPosterTint(event.image_url);
   const where = [event.location_name, event.address].filter(Boolean).join(", ");
   const source = SOURCE_NAMES[event.source] ?? event.source;
   const free = event.is_free || (event.price_min ?? 0) === 0;
@@ -52,7 +55,17 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <article className="detail" style={{ "--cat-hue": hue.color } as React.CSSProperties}>
+      <article
+        className={`detail${tint ? " has-tint" : ""}`}
+        style={
+          {
+            "--cat-hue": hue.color,
+            "--tint-glow": tint?.glow ?? hue.wash,
+            "--tint-wash": tint?.wash ?? hue.wash,
+            "--tint-accent": tint?.accent ?? hue.color,
+          } as React.CSSProperties
+        }
+      >
         <div className="shell detail-top">
           <Breadcrumbs
             items={[

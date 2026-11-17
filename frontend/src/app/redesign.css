@@ -3307,3 +3307,60 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 @media (prefers-reduced-motion: reduce) {
   .tonight-name, .tonight-arrow { transition: none; }
 }
+
+/* ==========================================================================
+   Event page: colour from the poster (lib/tint.ts)
+   ========================================================================== */
+.detail { position: relative; isolation: isolate; }
+.detail::before {
+  content: "";
+  position: absolute;
+  inset: -4rem 0 auto;
+  height: 46rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 30rem at 30% 0%, var(--tint-glow, var(--glow)), transparent 70%),
+    radial-gradient(40rem 24rem at 90% 10%, var(--tint-wash, transparent), transparent 70%);
+  animation: tint-in 900ms var(--ease) both;
+}
+@keyframes tint-in { from { opacity: 0; } }
+.detail.has-tint .detail-media { border-color: var(--tint-wash); box-shadow: 0 40px 90px -40px var(--tint-glow); }
+.detail.has-tint .detail-kicker { color: var(--tint-accent); }
+.detail.has-tint .detail-kicker svg { color: var(--tint-accent); }
+
+/* ==========================================================================
+   First-visit intro (components/Preloader.tsx)
+   ========================================================================== */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: var(--ink-900);
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 800ms cubic-bezier(0.76, 0, 0.24, 1);
+  cursor: pointer;
+  /* Safety: lifts itself even if scripts never run. */
+  animation: intro-auto 600ms cubic-bezier(0.76, 0, 0.24, 1) 3s forwards;
+}
+.intro.is-leaving { clip-path: inset(0 0 100% 0); }
+html.no-intro .intro { display: none; }
+@keyframes intro-auto { to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
+.intro-inner { display: grid; justify-items: center; gap: 0.25rem; text-align: center; }
+.intro-brand { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-hi); font-weight: 700; font-size: 1.1rem; }
+.intro-mark { width: 1.5rem; height: 1.5rem; color: var(--marigold); }
+.intro-count {
+  margin-top: 1rem;
+  color: var(--text-hi);
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(4rem, 2rem + 10vw, 10rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.intro-line { color: var(--text-mid); font-size: clamp(1rem, 0.9rem + 0.5vw, 1.35rem); }
+.intro-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--ink-800); }
+.intro-bar span { display: block; height: 100%; background: var(--marigold); transform-origin: left; transition: transform 120ms linear; }
