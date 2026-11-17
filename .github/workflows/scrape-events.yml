@@ -78,7 +78,7 @@ jobs:
         if: ${{ github.event.inputs.dry_run != 'true' }}
         continue-on-error: true
         env:
-          SITE_URL: ${{ vars.SITE_URL || 'https://event-discovery-engine.vercel.app' }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://elsewhere-in.vercel.app' }}
         run: |
           for i in $(seq 1 20); do
             OUT=$(curl -sS -X POST --max-time 70 "$SITE_URL/api/embed/sync" || echo '{"error":"request failed"}')
@@ -91,5 +91,5 @@ jobs:
         if: ${{ github.event.inputs.dry_run != 'true' }}
         continue-on-error: true
         env:
-          SITE_URL: ${{ vars.SITE_URL || 'https://event-discovery-engine.vercel.app' }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://elsewhere-in.vercel.app' }}
         run: curl -sS -X POST --max-time 70 "$SITE_URL/api/alerts/run"

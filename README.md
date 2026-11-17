@@ -12,7 +12,7 @@
 
 Elsewhere is a full-stack event discovery platform that aggregates events from multiple sources across 22+ Indian cities, with natural-language search, interactive map exploration, and smart categorization.
 
-> 🔗 **Live:** [event-discovery-engine.vercel.app](https://event-discovery-engine.vercel.app)
+> 🔗 **Live:** [elsewhere-in.vercel.app](https://elsewhere-in.vercel.app)
 
 ---
 
