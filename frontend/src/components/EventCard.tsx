@@ -1,4 +1,4 @@
-import Link from "next/link";
+import TransitionLink from "./TransitionLink";
 import { MapPin, Clock } from "@phosphor-icons/react/ssr";
 import { Event, CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -64,9 +64,9 @@ export default function EventCard({
           {badge && <span className="ecard-badge">{badge}</span>}
         </p>
         <h3 className="ecard-title">
-          <Link href={`/events/${event.id}`} className="ecard-link" prefetch={false}>
+          <TransitionLink kind="event" href={`/events/${event.id}`} className="ecard-link" prefetch={false}>
             {event.title}
-          </Link>
+          </TransitionLink>
         </h3>
         <p className="ecard-meta">
           <Clock size={14} weight="bold" aria-hidden="true" />

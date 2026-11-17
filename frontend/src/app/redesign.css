@@ -3144,3 +3144,47 @@ html {
   .dm-caret, .dm-dot.is-live::after, .dm-round.is-hit { animation: none; }
   .story-more, .story-step-title { transition: none; }
 }
+
+/* ==========================================================================
+   Page transitions (View Transitions API; see lib/transitions.ts)
+   ========================================================================== */
+.topnav { view-transition-name: topnav; }
+.tabbar { view-transition-name: tabbar; }
+.detail-media { view-transition-name: ev-hero; }
+
+::view-transition-old(root) { animation: vt-out 200ms cubic-bezier(0.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: vt-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-10px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(18px); } }
+
+/* Event card picture grows into the event page hero. */
+::view-transition-group(ev-hero) {
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  z-index: 50;
+}
+::view-transition-old(ev-hero),
+::view-transition-new(ev-hero) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: 560ms;
+}
+html[data-vt="event"]::view-transition-old(root) { animation-duration: 160ms; }
+html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both; }
+@keyframes vt-in-soft { from { opacity: 0; } }
+
+/* The nav stays put. */
+::view-transition-group(topnav),
+::view-transition-group(tabbar) { animation: none; }
+::view-transition-old(topnav),
+::view-transition-old(tabbar) { display: none; }
+::view-transition-new(topnav),
+::view-transition-new(tabbar) { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}

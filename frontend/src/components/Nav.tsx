@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import TransitionLink from "./TransitionLink";
 import { usePathname } from "next/navigation";
 import {
   House,
@@ -48,14 +48,14 @@ export default function Nav() {
     <>
       <nav className="topnav" aria-label="Main">
         <div className="shell topnav-inner">
-          <Link href="/" className="brand" aria-label="Elsewhere home">
+          <TransitionLink href="/" className="brand" aria-label="Elsewhere home">
             <BrandMark className="brand-mark" />
             <span>Elsewhere</span>
-          </Link>
+          </TransitionLink>
 
           <div className="topnav-links">
             {LINKS.map(({ href, label, icon: Icon }) => (
-              <Link
+              <TransitionLink
                 key={href}
                 href={href}
                 className={`topnav-link${href === "/plan-my-day" ? " is-ai" : ""}`}
@@ -63,16 +63,16 @@ export default function Nav() {
               >
                 <Icon size={16} weight={active(pathname, href) ? "fill" : "bold"} aria-hidden="true" />
                 {label}
-              </Link>
+              </TransitionLink>
             ))}
           </div>
 
           <div className="topnav-end">
             <LocationSelector />
-            <Link href="/explore?focus=1" className="icon-btn" aria-label="Search events">
+            <TransitionLink href="/explore?focus=1" className="icon-btn" aria-label="Search events">
               <MagnifyingGlass size={18} weight="bold" />
-            </Link>
-            <Link
+            </TransitionLink>
+            <TransitionLink
               href="/saved"
               className="icon-btn topnav-saved"
               aria-label={`Saved events${savedCount ? `, ${savedCount}` : ""}`}
@@ -80,7 +80,7 @@ export default function Nav() {
             >
               <BookmarkSimple size={18} weight={active(pathname, "/saved") ? "fill" : "bold"} />
               {savedCount > 0 && <span className="count-dot">{savedCount > 99 ? "99+" : savedCount}</span>}
-            </Link>
+            </TransitionLink>
           </div>
         </div>
       </nav>
@@ -89,11 +89,11 @@ export default function Nav() {
         {TABS.map(({ href, label, icon: Icon }) => {
           const on = active(pathname, href);
           return (
-            <Link key={href} href={href} className="tab" aria-current={on ? "page" : undefined}>
+            <TransitionLink key={href} href={href} className="tab" aria-current={on ? "page" : undefined}>
               <Icon size={22} weight={on ? "fill" : "regular"} aria-hidden="true" />
               <span>{label}</span>
               {href === "/saved" && savedCount > 0 && <span className="count-dot is-tab">{savedCount}</span>}
-            </Link>
+            </TransitionLink>
           );
         })}
       </nav>

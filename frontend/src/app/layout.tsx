@@ -5,6 +5,7 @@ import "@fontsource-variable/geist-mono";
 import "./globals.css";
 import "./redesign.css";
 import Nav from "@/components/Nav";
+import RouteSignal from "@/components/RouteSignal";
 
 export const metadata: Metadata = {
   title: "Elsewhere - discover what is happening",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#181411",
+  themeColor: "#0e1015",
   colorScheme: "dark",
 };
 
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <RouteSignal />
         <Nav />
         <main>{children}</main>
       </body>
