@@ -63,7 +63,7 @@
   z-index: var(--z-raised);
   margin-top: 1.5rem;
   padding-block: 0.85rem;
-  background: color-mix(in oklch, var(--ink-900) 88%, transparent);
+  background: rgb(14 16 21 / 0.9);
   backdrop-filter: blur(12px);
   border-block: 1px solid var(--line-soft);
 }

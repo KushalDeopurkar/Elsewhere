@@ -76,7 +76,7 @@ html {
   top: 0;
   z-index: var(--z-sticky);
   height: var(--nav-h);
-  background: oklch(0.195 0.009 70 / 0.86);
+  background: oklch(0.168 0.012 265 / 0.86);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid var(--line-soft);
@@ -136,13 +136,13 @@ html {
 }
 
 .topnav-link.is-ai {
-  color: var(--marigold);
+  color: var(--lilac);
 }
 
 .topnav-link.is-ai:hover,
 .topnav-link.is-ai[aria-current="page"] {
-  background: var(--marigold-wash);
-  color: var(--marigold-bright);
+  background: var(--lilac-wash);
+  color: #c4baff;
 }
 
 .topnav-end {
@@ -259,7 +259,7 @@ html {
   grid-template-columns: repeat(5, 1fr);
   height: var(--tabbar-h);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: oklch(0.195 0.009 70 / 0.94);
+  background: oklch(0.168 0.012 265 / 0.94);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--line-soft);
@@ -402,7 +402,7 @@ html {
   min-width: 2.75rem;
   padding: 0.3rem 0.45rem 0.35rem;
   border-radius: var(--r-sm);
-  background: oklch(0.195 0.009 70 / 0.88);
+  background: oklch(0.168 0.012 265 / 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   line-height: 1;
@@ -433,7 +433,7 @@ html {
   z-index: 2;
   padding: 0.25rem 0.6rem;
   border-radius: var(--r-pill);
-  background: oklch(0.195 0.009 70 / 0.88);
+  background: oklch(0.168 0.012 265 / 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-size: 0.75rem;
@@ -544,7 +544,7 @@ html {
   width: 36px;
   height: 36px;
   border-radius: var(--r-pill);
-  background: oklch(0.195 0.009 70 / 0.82);
+  background: oklch(0.168 0.012 265 / 0.82);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--text-hi);
@@ -788,8 +788,8 @@ html {
   overflow: hidden;
   padding-block: clamp(2.25rem, 6vw, 4.5rem) clamp(1.5rem, 3vw, 2.5rem);
   background:
-    radial-gradient(60rem 28rem at 85% -10%, oklch(0.82 0.16 78 / 0.13), transparent 65%),
-    radial-gradient(40rem 22rem at -10% 110%, oklch(0.62 0.15 30 / 0.12), transparent 70%);
+    radial-gradient(60rem 28rem at 85% -10%, var(--glow), transparent 65%),
+    radial-gradient(40rem 22rem at -10% 110%, rgb(255 107 87 / 0.06), transparent 70%);
 }
 
 .home-hero-inner {
@@ -1001,9 +1001,9 @@ html {
   padding: clamp(1.5rem, 4vw, 2.5rem);
   border-radius: calc(var(--r-card) + 4px);
   background:
-    radial-gradient(30rem 16rem at 100% 0%, oklch(0.82 0.16 78 / 0.28), transparent 70%),
+    radial-gradient(30rem 16rem at 100% 0%, rgb(255 107 87 / 0.18), transparent 70%),
     linear-gradient(135deg, var(--ink-800), var(--ink-850));
-  border: 1px solid oklch(0.82 0.16 78 / 0.35);
+  border: 1px solid oklch(0.71 0.19 33 / 0.35);
 }
 
 .plan-banner h2 {
@@ -1578,7 +1578,7 @@ html {
 .drawer-scrim {
   position: absolute;
   inset: 0;
-  background: oklch(0.1 0.01 70 / 0.6);
+  background: oklch(0.086 0.012 265 / 0.6);
   animation: fade-in 200ms var(--ease);
 }
 
@@ -1697,7 +1697,7 @@ html {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, transparent 25%, oklch(0.16 0.01 70 / 0.92) 100%);
+  background: linear-gradient(180deg, transparent 25%, oklch(0.138 0.012 265 / 0.92) 100%);
 }
 
 .ctile-body {
@@ -1715,7 +1715,7 @@ html {
   height: 34px;
   margin-bottom: 0.3rem;
   border-radius: 50%;
-  background: oklch(0.195 0.009 70 / 0.75);
+  background: oklch(0.168 0.012 265 / 0.75);
   color: var(--cat-hue, var(--marigold));
 }
 
@@ -2512,7 +2512,7 @@ html {
 
 .travel-legs li:first-child {
   background: var(--marigold-wash);
-  box-shadow: inset 0 0 0 1px oklch(0.82 0.16 78 / 0.35);
+  box-shadow: inset 0 0 0 1px oklch(0.71 0.19 33 / 0.35);
 }
 
 .travel-time {
@@ -2734,22 +2734,23 @@ html {
 
 .plan-cal-add.is-done {
   color: var(--marigold);
-  border-color: oklch(0.82 0.16 78 / 0.5);
+  border-color: oklch(0.71 0.19 33 / 0.5);
 }
 
 /* Home hero link into the swipe deck */
 .hero-swipe {
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 1rem;
+  margin-top: 0.55rem;
   color: var(--text-mid);
   font-size: 0.875rem;
   transition: color var(--t-hover) var(--ease);
 }
 .hero-swipe strong { color: var(--marigold); }
 .hero-swipe:hover { color: var(--text-hi); }
-.hero-swipe + .hero-swipe { margin-left: 1.25rem; }
+.home-hero-copy .hero-swipe:first-of-type { margin-top: 1.1rem; }
 
 /* ==========================================================================
    Map time scrubber
@@ -2773,7 +2774,7 @@ html {
   width: min(100%, 34rem);
   padding: 0.75rem 0.9rem 0.55rem;
   border-radius: var(--r-card);
-  background: oklch(0.195 0.009 70 / 0.88);
+  background: oklch(0.168 0.012 265 / 0.88);
   backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--line-soft);
   box-shadow: 0 16px 40px -18px oklch(0 0 0 / 0.7);
@@ -2815,7 +2816,7 @@ html {
   background: var(--ink-700);
   transition: background-color var(--t-hover) var(--ease);
 }
-.tl-bars span.is-past { background: oklch(0.82 0.16 78 / 0.35); }
+.tl-bars span.is-past { background: rgb(255 107 87 / 0.45); }
 .tl-bars span.is-now { background: var(--marigold); }
 .tl-track input[type="range"] {
   position: absolute;
@@ -2834,7 +2835,7 @@ html {
   height: 100%;
   border-radius: 2px;
   background: var(--text-hi);
-  box-shadow: 0 0 0 3px oklch(0.195 0.009 70 / 0.8);
+  box-shadow: 0 0 0 3px oklch(0.168 0.012 265 / 0.8);
 }
 .tl-track input[type="range"]::-moz-range-thumb {
   width: 4px;
@@ -2876,7 +2877,7 @@ html {
   background: var(--ink-850);
   border: 2.5px solid var(--pin-hue, var(--marigold));
   box-shadow:
-    0 0 0 4px var(--pin-halo, oklch(0.82 0.16 78 / 0.16)),
+    0 0 0 4px var(--pin-halo, oklch(0.71 0.19 33 / 0.16)),
     0 6px 16px -4px oklch(0 0 0 / 0.6);
 }
 .pin.pin-thumb img {

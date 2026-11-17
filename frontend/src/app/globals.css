@@ -14,34 +14,43 @@
    second brand color.
    ========================================================================== */
 :root {
+  /* Palette: midnight and coral. Cool ink surfaces, one warm accent.
+     (Token names kept from the earlier marigold palette to avoid churn:
+     --marigold* is now the coral brand accent.) */
+
   /* Surfaces, darkest to lightest */
-  --ink-900: oklch(0.195 0.009 70);
-  --ink-850: oklch(0.225 0.010 70);
-  --ink-800: oklch(0.262 0.011 70);
-  --ink-750: oklch(0.30 0.012 70);
-  --ink-700: oklch(0.35 0.013 70);
+  --ink-900: #0e1015;
+  --ink-850: #171a21;
+  --ink-800: #1d2029;
+  --ink-750: #232734;
+  --ink-700: #2c3140;
 
-  /* Text ramp. --text-low is held at 0.66 so secondary copy still clears
-     4.5:1 on --ink-900; anything lower goes unreadable on a phone outdoors. */
-  --text-hi: oklch(0.97 0.004 70);
-  --text-mid: oklch(0.82 0.006 70);
-  --text-low: oklch(0.70 0.008 70);
+  /* Text ramp. --text-low clears 4.5:1 on --ink-900 and --ink-850. */
+  --text-hi: #f2f3f7;
+  --text-mid: #c6cad6;
+  --text-low: #8e94a6;
 
-  /* Brand accent */
-  --marigold: oklch(0.82 0.16 78);
-  --marigold-bright: oklch(0.88 0.17 82);
-  --marigold-deep: oklch(0.70 0.17 68);
-  --on-marigold: oklch(0.20 0.03 70);
-  --marigold-wash: oklch(0.82 0.16 78 / 0.12);
+  /* Brand accent: coral */
+  --marigold: #ff6b57;
+  --marigold-bright: #ff8a7a;
+  --marigold-deep: #e5533f;
+  --on-marigold: #2a0a05;
+  --marigold-wash: rgb(255 107 87 / 0.12);
+
+  /* Secondary accent for AI features (Plan my day, vibe) */
+  --lilac: #a99bff;
+  --lilac-wash: rgb(169 155 255 / 0.12);
+  /* Ambient glow behind heroes: cool, so the coral stays the only warm note */
+  --glow: rgb(118 104 255 / 0.13);
 
   /* Semantic */
-  --live: oklch(0.78 0.19 145);
-  --danger: oklch(0.70 0.19 25);
+  --live: #3ddc97;
+  --danger: #f0567a;
 
   /* Borders */
-  --line: oklch(0.35 0.013 70 / 0.8);
-  --line-soft: oklch(0.35 0.013 70 / 0.45);
-  --line-strong: oklch(0.46 0.016 70);
+  --line: rgb(44 49 64 / 0.9);
+  --line-soft: rgb(44 49 64 / 0.55);
+  --line-strong: #3a4053;
 
   /* Shape - one radius system, applied everywhere */
   --r-card: 16px;
@@ -50,9 +59,9 @@
   --r-pill: 999px;
 
   /* Elevation. Tinted to the surface hue, never pure black. */
-  --lift-1: 0 1px 2px oklch(0.10 0.01 70 / 0.5);
-  --lift-2: 0 6px 16px oklch(0.10 0.01 70 / 0.45);
-  --lift-3: 0 18px 44px oklch(0.08 0.01 70 / 0.55);
+  --lift-1: 0 1px 2px rgb(4 5 8 / 0.55);
+  --lift-2: 0 6px 16px rgb(4 5 8 / 0.5);
+  --lift-3: 0 18px 44px rgb(2 3 6 / 0.6);
 
   /* Motion. Exponential ease-out, no bounce. */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -251,7 +260,7 @@ p {
   height: 68px;
   display: flex;
   align-items: center;
-  background: oklch(0.195 0.009 70 / 0.82);
+  background: oklch(0.168 0.012 265 / 0.82);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-bottom: 1px solid var(--line-soft);
@@ -340,7 +349,7 @@ p {
   z-index: 0;
   background: radial-gradient(
     ellipse at center,
-    oklch(0.82 0.16 78 / 0.17),
+    var(--glow),
     transparent 68%
   );
   filter: blur(26px);
@@ -646,7 +655,7 @@ p {
   inset: 0;
   background: linear-gradient(
     to top,
-    oklch(0.14 0.01 70 / 0.72),
+    oklch(0.120 0.012 265 / 0.72),
     transparent 46%
   );
 }
@@ -663,7 +672,7 @@ p {
   min-width: 3.1rem;
   padding: 0.4rem 0.5rem;
   border-radius: var(--r-control);
-  background: oklch(0.195 0.009 70 / 0.78);
+  background: oklch(0.168 0.012 265 / 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--line);
@@ -694,7 +703,7 @@ p {
   border-radius: var(--r-pill);
   font-size: 0.75rem;
   font-weight: 600;
-  background: oklch(0.195 0.009 70 / 0.8);
+  background: oklch(0.168 0.012 265 / 0.8);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--text-hi);
@@ -954,8 +963,8 @@ p {
   background: linear-gradient(
     to top,
     var(--ink-900) 4%,
-    oklch(0.195 0.009 70 / 0.65) 42%,
-    oklch(0.195 0.009 70 / 0.25)
+    oklch(0.168 0.012 265 / 0.65) 42%,
+    oklch(0.168 0.012 265 / 0.25)
   );
 }
 
@@ -1063,7 +1072,7 @@ p {
   gap: 0.4rem;
   padding: 0.45rem 0.9rem 0.45rem 0.7rem;
   border-radius: var(--r-pill);
-  background: oklch(0.195 0.009 70 / 0.6);
+  background: oklch(0.168 0.012 265 / 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--line);
@@ -1117,7 +1126,7 @@ p {
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
   border-radius: var(--r-pill);
-  background: oklch(0.195 0.009 70 / 0.8);
+  background: oklch(0.168 0.012 265 / 0.8);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--line);
@@ -1165,9 +1174,9 @@ p {
   border-radius: var(--r-pill);
   background: var(--marigold);
   color: var(--on-marigold);
-  border: 2px solid oklch(0.195 0.009 70 / 0.65);
+  border: 2px solid oklch(0.168 0.012 265 / 0.65);
   box-shadow:
-    0 0 0 6px oklch(0.82 0.16 78 / 0.16),
+    0 0 0 6px oklch(0.71 0.19 33 / 0.16),
     var(--lift-2);
   cursor: pointer;
   transition: transform var(--t-hover) var(--ease);
@@ -1185,7 +1194,7 @@ p {
 .pin-cat {
   background: var(--pin-hue, var(--marigold));
   box-shadow:
-    0 0 0 6px var(--pin-halo, oklch(0.82 0.16 78 / 0.16)),
+    0 0 0 6px var(--pin-halo, oklch(0.71 0.19 33 / 0.16)),
     var(--lift-2);
 }
 
@@ -1195,7 +1204,7 @@ p {
   width: min(22rem, 100%);
   border-radius: var(--r-card);
   overflow: hidden;
-  background: oklch(0.225 0.010 70 / 0.94);
+  background: oklch(0.194 0.012 265 / 0.94);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 1px solid var(--line);
@@ -1223,7 +1232,7 @@ p {
   display: grid;
   place-items: center;
   border-radius: var(--r-pill);
-  background: oklch(0.195 0.009 70 / 0.75);
+  background: oklch(0.168 0.012 265 / 0.75);
   color: var(--text-hi);
   border: 1px solid var(--line);
   backdrop-filter: blur(8px);
@@ -1253,7 +1262,7 @@ p {
   display: grid;
   place-items: center;
   border-radius: var(--r-control);
-  background: oklch(0.195 0.009 70 / 0.8);
+  background: oklch(0.168 0.012 265 / 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--line);
@@ -1269,7 +1278,7 @@ p {
 }
 
 .maplibregl-ctrl-attrib {
-  background: oklch(0.195 0.009 70 / 0.75) !important;
+  background: oklch(0.168 0.012 265 / 0.75) !important;
   border-radius: var(--r-sm) 0 0 0;
 }
 
@@ -1367,7 +1376,7 @@ p {
   padding: 0.35rem 0.4rem 0.35rem 0.7rem;
   border-radius: var(--r-pill);
   background: var(--marigold-wash);
-  border: 1px solid oklch(0.82 0.16 78 / 0.35);
+  border: 1px solid oklch(0.71 0.19 33 / 0.35);
   color: var(--text-hi);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -1387,7 +1396,7 @@ p {
   width: 1.15rem;
   height: 1.15rem;
   border-radius: var(--r-pill);
-  background: oklch(0.82 0.16 78 / 0.22);
+  background: oklch(0.71 0.19 33 / 0.22);
   color: var(--text-hi);
   transition: background-color var(--t-hover) var(--ease);
 }
@@ -1755,8 +1764,8 @@ p {
   color: var(--on-marigold);
   font-weight: 700;
   font-size: 0.875rem;
-  border: 2px solid oklch(0.195 0.009 70 / 0.8);
-  box-shadow: 0 0 0 6px oklch(0.82 0.16 78 / 0.2), var(--lift-2);
+  border: 2px solid oklch(0.168 0.012 265 / 0.8);
+  box-shadow: 0 0 0 6px oklch(0.71 0.19 33 / 0.2), var(--lift-2);
 }
 
 .plan-actions {

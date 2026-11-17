@@ -31,18 +31,18 @@ export const FALLBACK_STYLE_URL =
 
 /** App tokens as hex, since the MapLibre style spec does not parse oklch(). */
 const C = {
-  base: "#181411",
-  land: "#1f1b17",
-  water: "#172934",
-  park: "#1c2e20",
-  roadMinor: "#28241f",
-  roadMajor: "#322d27",
-  roadTrunk: "#443d36",
-  buildingLow: "#272320",
-  buildingHigh: "#4a423a",
-  label: "#c7c3c0",
-  labelHalo: "#120f0d",
-  boundary: "#453e37",
+  base: "#0b0d12",
+  land: "#11141b",
+  water: "#0d1a28",
+  park: "#0f1e1a",
+  roadMinor: "#1a1e27",
+  roadMajor: "#222733",
+  roadTrunk: "#2e3445",
+  buildingLow: "#171a23",
+  buildingHigh: "#2a2f3e",
+  label: "#b6bccb",
+  labelHalo: "#08090d",
+  boundary: "#333a4a",
 };
 
 const has = (id: string, ...needles: string[]) =>
