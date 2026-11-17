@@ -8,6 +8,7 @@ import Nav from "@/components/Nav";
 import RouteSignal from "@/components/RouteSignal";
 import CursorLayer from "@/components/CursorLayer";
 import PassportToast from "@/components/PassportToast";
+import SocialRoot from "@/components/SocialRoot";
 
 export const metadata: Metadata = {
   title: "Elsewhere - discover what is happening",
@@ -32,6 +33,7 @@ export default function RootLayout({
         <Nav />
         <main>{children}</main>
         <PassportToast />
+        <SocialRoot />
         <CursorLayer />
       </body>
     </html>

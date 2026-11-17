@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_PASSPORT, badges, newlyEarned, stampEvent } from "./passportCore";
+import { EMPTY_PASSPORT, badges, mergePassports, newlyEarned, stampEvent } from "./passportCore";
 import type { Event } from "./types";
 
 const ev = (over: Partial<Event>): Event => ({
@@ -36,5 +36,16 @@ describe("passport", () => {
     const after = badges(p, 3);
     expect(newlyEarned(before, after).map((b) => b.id).sort()).toEqual(["curious", "owl", "regular"]);
     expect(after.find((b) => b.id === "omnivore")).toMatchObject({ have: 3, need: 8, earned: false });
+  });
+});
+
+describe("mergePassports", () => {
+  it("unions stamps and keeps the earliest date", () => {
+    const a = { ...EMPTY_PASSPORT, cats: { music: "2026-11-10" }, night: ["1"] };
+    const b = { cats: { music: "2026-11-01", tech: "2026-11-05" }, night: ["1", "2"] };
+    const m = mergePassports(a, b);
+    expect(m.cats).toEqual({ music: "2026-11-01", tech: "2026-11-05" });
+    expect(m.night.sort()).toEqual(["1", "2"]);
+    expect(mergePassports(a, null)).toBe(a);
   });
 });

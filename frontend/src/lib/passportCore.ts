@@ -88,3 +88,23 @@ export function newlyEarned(before: Badge[], after: Badge[]): Badge[] {
   const had = new Set(before.filter((b) => b.earned).map((b) => b.id));
   return after.filter((b) => b.earned && !had.has(b.id));
 }
+
+const earliest = (a: Record<string, string>, b: Record<string, string>) => {
+  const out: Record<string, string> = { ...a };
+  for (const [k, v] of Object.entries(b)) if (!out[k] || v < out[k]) out[k] = v;
+  return out;
+};
+const union = (a: string[], b: string[]) => [...new Set([...a, ...b])].slice(0, CAP);
+
+/** Combine this device's passport with the account's: union of stamps, earliest dates kept. */
+export function mergePassports(a: Passport, b: Partial<Passport> | null | undefined): Passport {
+  if (!b) return a;
+  return {
+    cats: earliest(a.cats as Record<string, string>, (b.cats ?? {}) as Record<string, string>) as Passport["cats"],
+    cities: earliest(a.cities, b.cities ?? {}),
+    venues: earliest(a.venues, b.venues ?? {}),
+    night: union(a.night, b.night ?? []),
+    early: union(a.early, b.early ?? []),
+    free: union(a.free, b.free ?? []),
+  };
+}

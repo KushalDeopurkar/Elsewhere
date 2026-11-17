@@ -18,6 +18,7 @@ import {
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
 import SoundToggle from "./SoundToggle";
+import AccountButton from "./AccountButton";
 import { useSaved } from "@/lib/saved";
 
 const LINKS = [
@@ -92,6 +93,7 @@ export default function Nav() {
               <BookmarkSimple size={18} weight={active(pathname, "/saved") ? "fill" : "bold"} />
               {savedCount > 0 && <span className="count-dot">{savedCount > 99 ? "99+" : savedCount}</span>}
             </TransitionLink>
+            <AccountButton />
           </div>
         </div>
       </nav>

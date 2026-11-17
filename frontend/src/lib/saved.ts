@@ -20,6 +20,25 @@ export interface SavedEvent {
 
 const store = createStore<SavedEvent[]>("ee.saved.v1", []);
 
+/** Where saves are mirrored when someone is signed in (set by lib/sync). */
+type Sink = (event: Event, saved: boolean) => void;
+let sink: Sink | null = null;
+export function setSavedSink(fn: Sink | null): void {
+  sink = fn;
+}
+
+export function readSaved(): SavedEvent[] {
+  return store.read();
+}
+
+/** Add saves that came from the account (no sink echo, no stamps). */
+export function mergeSaved(items: SavedEvent[]): void {
+  const list = store.read();
+  const have = new Set(list.map((s) => s.event.id));
+  const fresh = items.filter((s) => !have.has(s.event.id));
+  if (fresh.length) store.write([...list, ...fresh].sort((a, b) => b.savedAt.localeCompare(a.savedAt)).slice(0, 200));
+}
+
 export function useSaved(): SavedEvent[] {
   return store.useValue();
 }
@@ -32,17 +51,21 @@ export function toggleSaved(event: Event): boolean {
   const list = store.read();
   if (isSaved(list, event.id)) {
     store.write(list.filter((s) => s.event.id !== event.id));
+    sink?.(event, false);
     return false;
   }
   // Keep only what the cards need; descriptions can be long.
   const snapshot: Event = { ...event, description: event.description?.slice(0, 600) ?? null };
   store.write([{ event: snapshot, savedAt: new Date().toISOString() }, ...list].slice(0, 200));
   stampPassport(event);
+  sink?.(event, true);
   return true;
 }
 
 export function removeSaved(id: string): void {
+  const hit = store.read().find((s) => s.event.id === id);
   store.write(store.read().filter((s) => s.event.id !== id));
+  if (hit) sink?.(hit.event, false);
 }
 
 /** Save without toggling: a no-op when the event is already saved. */

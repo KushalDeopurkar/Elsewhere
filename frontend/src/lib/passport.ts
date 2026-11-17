@@ -10,6 +10,16 @@ export * from "./passportCore";
 
 const store = createStore<Passport>("ee.passport.v1", EMPTY_PASSPORT);
 export const usePassport = store.useValue;
+export const readPassport = store.read;
+export function writePassport(p: Passport): void {
+  store.write(p);
+  passportSink?.(p);
+}
+let passportSink: ((p: Passport) => void) | null = null;
+/** Mirror passport changes to the account (set by lib/sync). */
+export function setPassportSink(fn: ((p: Passport) => void) | null): void {
+  passportSink = fn;
+}
 
 export interface PassportNews {
   id: number;
@@ -36,6 +46,7 @@ export function stampPassport(e: Event): void {
   const { next, fresh } = stampEvent(before, e, new Date().toISOString(), label);
   if (next === before) return;
   store.write(next);
+  passportSink?.(next);
   const earned = newlyEarned(badges(before, streak), badges(next, streak));
   const news: Omit<PassportNews, "id">[] = [
     ...earned.map((b) => ({ kind: "badge" as const, title: `Badge earned: ${b.title}`, body: b.desc })),
