@@ -3,7 +3,10 @@
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkle, ArrowRight, MapTrifold, Compass, BookmarkSimple } from "@phosphor-icons/react/ssr";
+import { Sparkle, ArrowRight, MapTrifold, Compass, BookmarkSimple, Cards, Play } from "@phosphor-icons/react/ssr";
+import dynamic from "next/dynamic";
+import KineticWord from "@/components/KineticWord";
+import { useCapable3D } from "@/hooks/useCapable3D";
 import HeroSearch from "@/components/HeroSearch";
 import HeroDeck from "@/components/HeroDeck";
 import EventCard from "@/components/EventCard";
@@ -17,6 +20,10 @@ import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
+
+// three.js only loads on screens that will show the 3D hero.
+const CityScene = dynamic(() => import("@/components/CityScene"), { ssr: false });
+const KINETIC = ["step out.", "show up.", "get lost.", "go dance.", "say yes."];
 
 const NOT_LEARNING_RE = /\b(comedy|stand.?up|brunch|party|dj|open mic)\b/i;
 const LEARN_RE = /\b(workshops?|courses?|class(es)?|masterclass(es)?|bootcamps?|learn(ing)?|training|lectures?|seminars?|webinars?|tutorials?|study)\b/i;
@@ -54,6 +61,7 @@ export default function Home() {
   const router = useRouter();
   const city = useCity();
   const saved = useSaved();
+  const use3d = useCapable3D();
 
   // Old shared plan links were /?plan=…; the planner now has its own page.
   useEffect(() => {
@@ -112,7 +120,12 @@ export default function Home() {
 
   return (
     <>
-      <section className="home-hero">
+      <section className={`home-hero${use3d ? " has-city" : ""}`}>
+        {use3d && (
+          <div className="home-city">
+            <CityScene events={all} center={city} cityName={city.name} onPick={(e) => router.push(`/events/${e.id}`)} />
+          </div>
+        )}
         <div className="shell home-hero-inner">
           <div className="home-hero-copy">
             <p className="eyebrow-live">
@@ -120,24 +133,30 @@ export default function Home() {
               {pool.loading ? "Checking what's on" : `${all.length}${all.length >= 100 ? "+" : ""} upcoming in ${city.name}`}
             </p>
             <h1 className="home-title">
-              Find your next reason to <em>step out.</em>
+              Find your next reason to <span className="sr-only">step out.</span>
+              <KineticWord words={KINETIC} />
             </h1>
             <p className="home-lede">
               Discover experiences, meet people, learn something new and explore what&apos;s happening around you.
             </p>
             <HeroSearch />
-            <Link href="/discover" className="hero-swipe">
-              <span aria-hidden="true">🃏</span> Not sure what you want? <strong>Swipe to discover</strong> →
-            </Link>
-            <Link href="/vibe" className="hero-swipe">
-              <span aria-hidden="true">✨</span> Or <strong>pick a vibe</strong> →
-            </Link>
-            <Link href="/feed" className="hero-swipe">
-              <span aria-hidden="true">▶</span> Or just <strong>scroll the feed</strong> →
-            </Link>
+            <nav className="hero-ways" aria-label="Other ways to find events">
+              <Link href="/discover" className="hero-swipe">
+                <Cards size={16} weight="bold" aria-hidden="true" /> Not sure what you want? <strong>Swipe to discover</strong>
+                <ArrowRight size={14} weight="bold" aria-hidden="true" />
+              </Link>
+              <Link href="/vibe" className="hero-swipe">
+                <Sparkle size={16} weight="bold" aria-hidden="true" /> Or <strong>pick a vibe</strong>
+                <ArrowRight size={14} weight="bold" aria-hidden="true" />
+              </Link>
+              <Link href="/feed" className="hero-swipe">
+                <Play size={16} weight="bold" aria-hidden="true" /> Or just <strong>scroll the feed</strong>
+                <ArrowRight size={14} weight="bold" aria-hidden="true" />
+              </Link>
+            </nav>
           </div>
           <div className="home-hero-art">
-            <HeroDeck events={showcase(all)} />
+            {!use3d && <HeroDeck events={showcase(all)} />}
           </div>
         </div>
       </section>
