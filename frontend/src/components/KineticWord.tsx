@@ -20,6 +20,13 @@ export default function KineticWord({ words, every = 2600 }: { words: string[]; 
   const word = words[reduce ? 0 : i];
   return (
     <em className="kinetic" aria-hidden="true">
+      {/* Invisible copies of every word share one grid cell, so the box is
+          always as wide as the longest word and the headline never reflows. */}
+      {words.map((w) => (
+        <span key={w} className="kinetic-sizer">
+          {w}
+        </span>
+      ))}
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span key={word} className="kinetic-word">
           {Array.from(word).map((ch, k) => (

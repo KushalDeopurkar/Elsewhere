@@ -26,7 +26,8 @@ import type { Event } from "@/lib/types";
 
 // three.js only loads on screens that will show the 3D hero.
 const CityScene = dynamic(() => import("@/components/CityScene"), { ssr: false });
-const KINETIC = ["step out.", "show up.", "get lost.", "go dance.", "say yes."];
+// Kept to roughly the width of "step out." so the headline stays on two lines.
+const KINETIC = ["step out.", "show up.", "get lost.", "go out.", "say yes."];
 
 const NOT_LEARNING_RE = /\b(comedy|stand.?up|brunch|party|dj|open mic)\b/i;
 const LEARN_RE = /\b(workshops?|courses?|class(es)?|masterclass(es)?|bootcamps?|learn(ing)?|training|lectures?|seminars?|webinars?|tutorials?|study)\b/i;

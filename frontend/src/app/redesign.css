@@ -2945,15 +2945,20 @@ html {
 
 .kinetic {
   position: relative;
-  display: inline-flex;
+  display: inline-grid;
   font-style: normal;
   color: var(--marigold);
   overflow: hidden;
   vertical-align: bottom;
   padding-bottom: 0.08em;
   margin-bottom: -0.08em;
+  /* Visual only: copying the headline gives the screen-reader text. */
+  user-select: none;
+  -webkit-user-select: none;
 }
-.kinetic-word { display: inline-flex; white-space: nowrap; }
+.kinetic > * { grid-area: 1 / 1; }
+.kinetic-sizer { visibility: hidden; white-space: nowrap; }
+.kinetic-word { display: inline-flex; white-space: nowrap; justify-self: start; }
 .kinetic-ch { display: inline-block; will-change: transform; }
 
 .hero-ways { display: grid; justify-items: start; gap: 0.15rem; margin-top: 1rem; }
