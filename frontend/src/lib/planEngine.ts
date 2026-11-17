@@ -349,7 +349,7 @@ function priceText(e: Event): string {
   return `₹${e.price_min}${e.price_max && e.price_max > e.price_min ? "+" : ""}`;
 }
 
-const SYSTEM_PROMPT = `You are the day planner inside EventEngine, an event discovery app for India.
+const SYSTEM_PROMPT = `You are the day planner inside Elsewhere, an event discovery app for India.
 The user describes the day they want. You build an itinerary from the CANDIDATES list only.
 
 Rules:

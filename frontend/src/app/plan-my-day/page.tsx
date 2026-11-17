@@ -5,7 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { PageHeader } from "@/components/Section";
 
 export const metadata: Metadata = {
-  title: "Plan my day with AI - EventEngine",
+  title: "Plan my day with AI - Elsewhere",
   description: "Describe your day and get real events in an order you can make, with the route on a map.",
 };
 

@@ -42,9 +42,9 @@ export default function Nav() {
     <>
       <nav className="topnav" aria-label="Main">
         <div className="shell topnav-inner">
-          <Link href="/" className="brand" aria-label="EventEngine home">
+          <Link href="/" className="brand" aria-label="Elsewhere home">
             <BrandMark className="brand-mark" />
-            <span>EventEngine</span>
+            <span>Elsewhere</span>
           </Link>
 
           <div className="topnav-links">

@@ -3,7 +3,7 @@ import AlertAction from "@/components/AlertAction";
 import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "Your alert - EventEngine",
+  title: "Your alert - Elsewhere",
   robots: { index: false },
 };
 

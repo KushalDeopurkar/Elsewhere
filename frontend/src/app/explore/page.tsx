@@ -5,7 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { PageHeader } from "@/components/Section";
 
 export const metadata: Metadata = {
-  title: "Explore events - EventEngine",
+  title: "Explore events - Elsewhere",
   description: "Search every upcoming event near you by meaning, and filter by category, date and price.",
 };
 

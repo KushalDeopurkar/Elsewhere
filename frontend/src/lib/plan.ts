@@ -155,7 +155,7 @@ export function planToIcs(plan: PlanResult, origin: string): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//EventEngine//Day Planner//EN",
+    "PRODID:-//Elsewhere//Day Planner//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ];

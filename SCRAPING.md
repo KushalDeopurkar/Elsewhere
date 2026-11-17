@@ -1,4 +1,4 @@
-# Getting real events into EventEngine
+# Getting real events into Elsewhere
 
 The scrapers work. They cannot run in the Claude cloud container because its
 network policy blocks `allevents.in` and `www.meetup.com`, and there are no

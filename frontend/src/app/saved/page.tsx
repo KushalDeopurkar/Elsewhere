@@ -3,7 +3,7 @@ import SavedView from "@/components/SavedView";
 import SiteFooter from "@/components/SiteFooter";
 import { PageHeader } from "@/components/Section";
 
-export const metadata: Metadata = { title: "Saved events - EventEngine" };
+export const metadata: Metadata = { title: "Saved events - Elsewhere" };
 
 export default function SavedPage() {
   return (

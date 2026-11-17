@@ -6,11 +6,11 @@
   <img src="https://img.shields.io/badge/MapLibre-396CB2?style=for-the-badge&logo=maplibre&logoColor=white" alt="MapLibre" />
 </p>
 
-# 🎯 EventEngine
+# 🎯 Elsewhere
 
 **Discover what's worth showing up for — across India.**
 
-EventEngine is a full-stack event discovery platform that aggregates events from multiple sources across 22+ Indian cities, with natural-language search, interactive map exploration, and smart categorization.
+Elsewhere is a full-stack event discovery platform that aggregates events from multiple sources across 22+ Indian cities, with natural-language search, interactive map exploration, and smart categorization.
 
 > 🔗 **Live:** [event-discovery-engine.vercel.app](https://event-discovery-engine.vercel.app)
 
@@ -18,7 +18,7 @@ EventEngine is a full-stack event discovery platform that aggregates events from
 
 ## What It Does
 
-EventEngine scrapes public event listings from sources like **AllEvents.in**, **District.in**, and **Meetup**, deduplicates them, and surfaces them through a clean interface with two core views:
+Elsewhere scrapes public event listings from sources like **AllEvents.in**, **District.in**, and **Meetup**, deduplicates them, and surfaces them through a clean interface with two core views:
 
 - **Search & Browse** — natural-language queries like *"free tech meetups in Bengaluru"* or *"beginner-friendly design workshops"*, filtered by date, category, and city
 - **Map View** — spatial exploration powered by MapLibre GL + PostGIS, showing events plotted on an interactive map with category filters

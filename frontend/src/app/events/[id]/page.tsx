@@ -18,9 +18,9 @@ import { categoryHref } from "@/lib/categoryPages";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const event = await getEvent(id);
-  if (!event) return { title: "Event not found - EventEngine" };
+  if (!event) return { title: "Event not found - Elsewhere" };
   return {
-    title: `${event.title} - EventEngine`,
+    title: `${event.title} - Elsewhere`,
     description: event.description?.slice(0, 160) ?? undefined,
     openGraph: event.image_url ? { images: [event.image_url] } : undefined,
   };

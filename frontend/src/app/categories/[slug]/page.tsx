@@ -15,8 +15,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const cat = categoryBySlug((await params).slug);
   return cat
-    ? { title: `${cat.label} events - EventEngine`, description: cat.blurb }
-    : { title: "Category not found - EventEngine" };
+    ? { title: `${cat.label} events - Elsewhere`, description: cat.blurb }
+    : { title: "Category not found - Elsewhere" };
 }
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {

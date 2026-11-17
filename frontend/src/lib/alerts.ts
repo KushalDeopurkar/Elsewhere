@@ -169,7 +169,7 @@ export async function handleMessage(msg: TgMessage, origin: string): Promise<voi
   if (text.startsWith("/start")) {
     const token = text.split(/\s+/)[1];
     if (!token) {
-      await sendMessage(chatId, `Hi! I'm the EventEngine alerts bot.\n\n${HELP}`);
+      await sendMessage(chatId, `Hi! I'm the Elsewhere alerts bot.\n\n${HELP}`);
       return;
     }
     const rows = await rest<AlertRow[]>(

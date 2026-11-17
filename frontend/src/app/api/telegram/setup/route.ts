@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     });
     await tg("setMyDescription", {
       description:
-        "EventEngine alerts: tell me what you're into and I'll message you when matching events are listed in your city.",
+        "Elsewhere alerts: tell me what you're into and I'll message you when matching events are listed in your city.",
     });
     const info = await tg<{ url: string; pending_update_count: number; last_error_message?: string }>(
       "getWebhookInfo",

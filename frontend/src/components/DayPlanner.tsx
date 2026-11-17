@@ -255,7 +255,7 @@ export default function DayPlanner({ city }: { city: string }) {
     const blob = new Blob([planToIcs(plan, window.location.origin)], { type: "text/calendar" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "eventengine-plan.ics";
+    a.download = "elsewhere-plan.ics";
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -270,7 +270,7 @@ export default function DayPlanner({ city }: { city: string }) {
     const url = planUrl();
     try {
       if (navigator.share) {
-        await navigator.share({ title: plan?.title ?? "My EventEngine plan", url });
+        await navigator.share({ title: plan?.title ?? "My Elsewhere plan", url });
         return;
       }
     } catch {

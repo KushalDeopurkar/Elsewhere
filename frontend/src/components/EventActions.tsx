@@ -33,7 +33,7 @@ export function EventActions({ event }: { event: Event }) {
 
   const calendar = () => {
     window.open(
-      googleCalendarLink({ event, why: "Found on EventEngine", travel: null }, window.location.origin),
+      googleCalendarLink({ event, why: "Found on Elsewhere", travel: null }, window.location.origin),
       "_blank",
       "noopener,noreferrer",
     );

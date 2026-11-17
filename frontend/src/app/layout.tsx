@@ -7,7 +7,7 @@ import "./redesign.css";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "EventEngine - discover what is happening",
+  title: "Elsewhere - discover what is happening",
   description:
     "Hackathons, workshops, matches, exhibitions and meetups across every category, gathered from across the web and mapped.",
 };

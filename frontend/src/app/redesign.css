@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EventEngine redesign layer. Loaded after globals.css; reuses its tokens.
+   Elsewhere redesign layer. Loaded after globals.css; reuses its tokens.
    ========================================================================== */
 :root {
   --nav-h: 64px;

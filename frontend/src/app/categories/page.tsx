@@ -4,7 +4,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { PageHeader } from "@/components/Section";
 
 export const metadata: Metadata = {
-  title: "Categories - EventEngine",
+  title: "Categories - Elsewhere",
   description: "Technology, startups, workshops, arts, sports, music, food, wellness, outdoors and more.",
 };
 

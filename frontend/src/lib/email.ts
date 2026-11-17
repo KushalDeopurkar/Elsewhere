@@ -57,7 +57,7 @@ export async function sendEmail(opts: {
     method: "POST",
     headers: { "api-key": key, "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({
-      sender: { name: "EventEngine", email: from },
+      sender: { name: "Elsewhere", email: from },
       to: [{ email: opts.to }],
       subject: opts.subject,
       htmlContent: opts.html,
@@ -154,7 +154,7 @@ function scope(query: string, city: string | null): string {
 export function confirmEmail(o: { query: string; city: string | null; confirmUrl: string }) {
   const what = scope(o.query, o.city);
   return {
-    subject: `Confirm your EventEngine alert: ${o.query}`.slice(0, 120),
+    subject: `Confirm your Elsewhere alert: ${o.query}`.slice(0, 120),
     html: layout(
       `<tr><td style="padding:0 4px;font-size:15px;line-height:1.6;color:${C.mid};">
 You asked to get an email when new events matching <b style="color:${C.ink};">${escapeHtml(what)}</b> are listed.
@@ -185,7 +185,7 @@ export function matchesEmail(o: {
     o.kind === "welcome"
       ? `Alert on: ${o.query}`
       : `${o.events.length} new event${o.events.length === 1 ? "" : "s"} for ${o.query}`;
-  const footer = `You're getting this because you turned on an EventEngine alert for ${escapeHtml(what)}. <a href="${o.unsubscribeUrl}" style="color:${C.low};">Turn off this alert</a>.`;
+  const footer = `You're getting this because you turned on an Elsewhere alert for ${escapeHtml(what)}. <a href="${o.unsubscribeUrl}" style="color:${C.low};">Turn off this alert</a>.`;
   return {
     subject: subject.slice(0, 120),
     html: layout(
