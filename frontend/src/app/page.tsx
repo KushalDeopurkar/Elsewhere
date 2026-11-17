@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Sparkle, ArrowRight, MapTrifold, Compass, BookmarkSimple, Cards, Play } from "@phosphor-icons/react/ssr";
 import dynamic from "next/dynamic";
 import KineticWord from "@/components/KineticWord";
+import ScrollStory from "@/components/ScrollStory";
 import { useCapable3D } from "@/hooks/useCapable3D";
 import HeroSearch from "@/components/HeroSearch";
 import HeroDeck from "@/components/HeroDeck";
@@ -191,6 +192,8 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      <ScrollStory events={all} />
 
       {soon.length > 0 && (
         <section className="shell sec">
