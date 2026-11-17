@@ -42,3 +42,8 @@ export function toggleSaved(event: Event): boolean {
 export function removeSaved(id: string): void {
   store.write(store.read().filter((s) => s.event.id !== id));
 }
+
+/** Save without toggling: a no-op when the event is already saved. */
+export function ensureSaved(event: Event): void {
+  if (!isSaved(store.read(), event.id)) toggleSaved(event);
+}

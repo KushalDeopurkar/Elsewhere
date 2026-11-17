@@ -148,6 +148,17 @@ export default function DayPlanner({ city }: { city: string }) {
     notes: "",
   });
   const set = (patch: Partial<Details>) => setDetails((d) => ({ ...d, ...patch }));
+
+  // /plan-my-day?interests=music,food pre-selects interests (from Discover).
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("interests");
+    if (!raw) return;
+    const valid = new Set(CATEGORIES.map((c) => c.value));
+    const picked = raw.split(",").filter((v): v is EventCategory => valid.has(v as EventCategory));
+    // Reading the URL has to wait for the client; this runs once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (picked.length) setDetails((d) => ({ ...d, interests: picked }));
+  }, []);
   const composed = composeRequest(details, city);
   const [lastPrompt, setLastPrompt] = useState("");
   const savedPlans = useSavedPlans();

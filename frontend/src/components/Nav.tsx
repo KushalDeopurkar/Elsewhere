@@ -10,6 +10,7 @@ import {
   Sparkle,
   BookmarkSimple,
   MagnifyingGlass,
+  Cards,
 } from "@phosphor-icons/react/ssr";
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
@@ -17,6 +18,7 @@ import { useSaved } from "@/lib/saved";
 
 const LINKS = [
   { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/discover", label: "Discover", icon: Cards },
   { href: "/categories", label: "Categories", icon: SquaresFour },
   { href: "/map", label: "Map", icon: MapTrifold },
   { href: "/plan-my-day", label: "Plan My Day", icon: Sparkle },
@@ -26,7 +28,7 @@ const TABS = [
   { href: "/", label: "Home", icon: House },
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/plan-my-day", label: "Plan", icon: Sparkle },
-  { href: "/map", label: "Map", icon: MapTrifold },
+  { href: "/discover", label: "Swipe", icon: Cards },
   { href: "/saved", label: "Saved", icon: BookmarkSimple },
 ];
 

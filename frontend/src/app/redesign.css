@@ -2736,3 +2736,16 @@ html {
   color: var(--marigold);
   border-color: oklch(0.82 0.16 78 / 0.5);
 }
+
+/* Home hero link into the swipe deck */
+.hero-swipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  color: var(--text-mid);
+  font-size: 0.875rem;
+  transition: color var(--t-hover) var(--ease);
+}
+.hero-swipe strong { color: var(--marigold); }
+.hero-swipe:hover { color: var(--text-hi); }

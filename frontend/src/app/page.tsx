@@ -126,6 +126,9 @@ export default function Home() {
               Discover experiences, meet people, learn something new and explore what&apos;s happening around you.
             </p>
             <HeroSearch />
+            <Link href="/discover" className="hero-swipe">
+              <span aria-hidden="true">🃏</span> Not sure what you want? <strong>Swipe to discover</strong> →
+            </Link>
           </div>
           <div className="home-hero-art">
             <HeroDeck events={showcase(all)} />
