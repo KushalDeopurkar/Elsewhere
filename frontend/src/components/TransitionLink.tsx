@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ComponentProps, MouseEvent } from "react";
 import { canTransition, transitionTo, type TransitionKind } from "@/lib/transitions";
+import { rememberPreview, type EventPreview } from "@/lib/eventPreview";
 
 /**
  * A next/link that animates the page change. With kind="event" it looks for
@@ -11,14 +12,16 @@ import { canTransition, transitionTo, type TransitionKind } from "@/lib/transiti
  */
 export default function TransitionLink({
   kind = "page",
+  preview,
   onClick,
   ...props
-}: ComponentProps<typeof Link> & { kind?: TransitionKind }) {
+}: ComponentProps<typeof Link> & { kind?: TransitionKind; preview?: EventPreview }) {
   const router = useRouter();
   const href = typeof props.href === "string" ? props.href : (props.href.pathname ?? "/");
 
   const handle = (e: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(e);
+    if (preview) rememberPreview(preview);
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (props.target && props.target !== "_self") return;
     if (!canTransition()) return; // let Link navigate normally

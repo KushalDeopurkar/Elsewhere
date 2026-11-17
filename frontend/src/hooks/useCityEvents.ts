@@ -5,6 +5,8 @@ import { searchEvents } from "@/lib/api";
 import type { Event, EventCategory } from "@/lib/types";
 import type { CityPoint } from "@/lib/cities";
 
+const RETRY_DELAYS = [3000, 8000, 15000];
+
 interface Result {
   key: string;
   events: Event[];
@@ -48,6 +50,20 @@ export function useCityEvents(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, nonce]);
+
+  // A cold API answers its first requests with errors, which drops us to
+  // the bundled sample set. Retry with backoff until live data arrives.
+  const attempt = useRef(0);
+  useEffect(() => {
+    attempt.current = 0;
+  }, [key]);
+  const failed = result?.key === key && (result.isSample || Boolean(result.error));
+  useEffect(() => {
+    if (!failed || attempt.current >= RETRY_DELAYS.length) return;
+    const t = window.setTimeout(() => setNonce((n) => n + 1), RETRY_DELAYS[attempt.current]);
+    attempt.current += 1;
+    return () => window.clearTimeout(t);
+  }, [failed, result]);
 
   const ready = result?.key === key;
   return {

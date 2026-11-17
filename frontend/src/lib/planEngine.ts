@@ -566,14 +566,38 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
         .filter((s) => s.id && byId.has(s.id) && !seen.has(s.id) && seen.add(s.id))
         .map((s) => ({ event: byId.get(s.id!)!, why: (s.why ?? "").trim() || "Fits your request" }));
 
-      const { stops, dropped } = buildSchedule(picks, { budget });
+      let { stops, dropped } = buildSchedule(picks, { budget });
+      // When the AI's picks clash, top the day back up with rule-based picks
+      // from the same day so a three-stop request doesn't end at one stop.
+      let toppedUp = false;
+      if (dropped > 0 && stops.length > 0 && stops.length < picks.length) {
+        const sameDay = dayKey(Date.parse(stops[0].event.start_time));
+        const extra = planWithRules(pool, sameDay, budget).picks.filter((p) => !seen.has(p.event.id));
+        const refill = buildSchedule([...picks, ...extra], { budget, maxStops: picks.length });
+        if (refill.stops.length > stops.length) {
+          stops = refill.stops;
+          dropped = Math.max(0, picks.length - refill.stops.filter((s) => seen.has(s.event.id)).length);
+          toppedUp = true;
+        }
+      }
       if (stops.length > 0) {
         const notes = [plan.note?.trim() || null];
-        if (dropped > 0) notes.push(`${dropped} suggestion${dropped > 1 ? "s" : ""} dropped for clashing times or budget.`);
+        if (dropped > 0)
+          notes.push(
+            `${dropped} AI suggestion${dropped > 1 ? "s" : ""} clashed on time or budget${toppedUp ? ", so similar events filled the gaps" : ""}.`,
+          );
+        // The AI wrote its summary for the stops it picked; if some were
+        // dropped, describe the plan that is actually on screen instead.
+        const summary =
+          dropped > 0
+            ? `${stops.length} stop${stops.length === 1 ? "" : "s"}, ordered so you can make each one: ${stops
+                .map((s) => s.event.title.split(/[|:–-]/)[0].trim())
+                .join(", then ")}.`
+            : plan.summary?.trim() || "";
         return {
           ...base,
           title: plan.title?.trim() || "Your day, planned",
-          summary: plan.summary?.trim() || "",
+          summary,
           note: notes.filter(Boolean).join(" ") || null,
           stops,
           totalCost: stops.reduce((sum, s) => sum + lowestPrice(s.event), 0),

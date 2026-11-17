@@ -29,6 +29,8 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
   ),
 });
 
+const RETRY_DELAYS = [3000, 8000, 15000];
+
 export default function MapPage() {
   const [allEvents, setEvents] = useState<Event[]>([]);
   const [now] = useState(() => Date.now());
@@ -51,12 +53,22 @@ export default function MapPage() {
   const bounds = useRef<MapBounds | null>(null);
   const requestId = useRef(0);
 
-  const load = useCallback(async (next: MapBounds, cat: EventCategory | null) => {
+  const load = useCallback((next: MapBounds, cat: EventCategory | null) => {
     const id = ++requestId.current;
-    const res = await getMapEvents(next, cat ?? undefined);
-    if (id !== requestId.current) return;
-    setEvents(res.events);
-    setIsSample(res.isSample);
+    // The API sleeps when idle and can fail its first requests while it
+    // wakes. Retry quietly so live events replace the sample set.
+    const run = async (attempt: number) => {
+      const res = await getMapEvents(next, cat ?? undefined);
+      if (id !== requestId.current) return;
+      setEvents(res.events);
+      setIsSample(res.isSample);
+      if (res.isSample && attempt < RETRY_DELAYS.length) {
+        window.setTimeout(() => {
+          if (id === requestId.current) run(attempt + 1);
+        }, RETRY_DELAYS[attempt]);
+      }
+    };
+    run(0);
   }, []);
 
   const onBoundsChange = useCallback(

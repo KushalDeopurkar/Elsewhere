@@ -47,7 +47,7 @@
 .vibe-mood.is-on::before { opacity: 1; }
 .vibe-mood:focus-visible { outline: 2px solid var(--marigold); outline-offset: 3px; }
 .vibe-mood > * { position: relative; }
-.vibe-emoji { font-size: 1.9rem; line-height: 1; margin-bottom: 0.45rem; display: inline-block; }
+.vibe-emoji { line-height: 1; margin-bottom: 0.45rem; display: inline-flex; color: var(--hue); }
 .vibe-mood-name { color: var(--text-hi); font-weight: 700; font-size: 1.05rem; }
 .vibe-mood-line { color: var(--text-low); font-size: 0.8125rem; }
 .vibe-mood.is-chill { --hue: oklch(0.78 0.13 160); }
@@ -134,7 +134,7 @@
 }
 @keyframes vibe-shimmer { to { background-position: -200% 0; } }
 .vibe-empty { padding: 3rem 1rem; text-align: center; color: var(--text-mid); }
-.vibe-empty-emoji { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.vibe-empty-emoji { margin: 0 auto 0.5rem; color: var(--text-low); }
 .vibe-more { display: flex; justify-content: center; margin-top: 1.75rem; }
 .vibe-swipe-cta { margin-top: 2.5rem; text-align: center; color: var(--text-low); }
 .vibe-swipe-cta a { color: var(--marigold); font-weight: 600; }
@@ -195,7 +195,6 @@
   .vibe-head { padding-top: 1.25rem; }
   .vibe-moods { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
   .vibe-mood { padding: 0.8rem; }
-  .vibe-emoji { font-size: 1.5rem; }
   .vibe-controls { grid-template-columns: 1fr; gap: 0.75rem; }
   .vibe-when { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .vibe-controls-wrap { position: static; }

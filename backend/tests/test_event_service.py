@@ -116,3 +116,32 @@ def test_get_in_bounds_empty_result(service, mock_supabase):
     results = service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0)
 
     assert results == []
+
+
+def test_get_in_bounds_merges_details(service, mock_supabase):
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = [
+        {"id": "uuid-1", "title": "A", "lat": 19.08, "lng": 72.88, "is_free": False},
+        {"id": "uuid-2", "title": "B", "lat": 19.09, "lng": 72.89, "is_free": True},
+    ]
+    mock_supabase.rpc.return_value = mock_rpc
+    details = MagicMock()
+    details.data = [{"id": "uuid-1", "image_url": "https://x/a.jpg", "price_min": 499, "end_time": None}]
+    mock_supabase.table.return_value.select.return_value.in_.return_value.execute.return_value = details
+
+    results = service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0)
+
+    assert results[0]["image_url"] == "https://x/a.jpg"
+    assert results[0]["price_min"] == 499
+    assert "end_time" not in results[0]
+    assert results[1] == {"id": "uuid-2", "title": "B", "lat": 19.09, "lng": 72.89, "is_free": True}
+    mock_supabase.table.return_value.select.return_value.in_.assert_called_once_with("id", ["uuid-1", "uuid-2"])
+
+
+def test_get_in_bounds_keeps_rows_when_details_fail(service, mock_supabase):
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = [{"id": "uuid-1", "title": "A"}]
+    mock_supabase.rpc.return_value = mock_rpc
+    mock_supabase.table.return_value.select.side_effect = RuntimeError("boom")
+
+    assert service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0) == [{"id": "uuid-1", "title": "A"}]

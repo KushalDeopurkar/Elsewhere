@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowsClockwise, DiceFive, Heart, MapPin, X } from "@phosphor-icons/react";
+import { ArrowsClockwise, Brain, Champagne, DiceFive, Fire, Heart, Leaf, Lightning, MapPin, Palette, X, type Icon } from "@phosphor-icons/react";
 import EventCard from "./EventCard";
 import EventImage from "./EventImage";
 import { useCity } from "@/lib/cityPref";
@@ -36,6 +36,14 @@ const WHENS: { id: When; label: string }[] = [
   { id: "week", label: "Next 7 days" },
 ];
 const PAGE = 24;
+const VIBE_ICON: Record<VibeId, Icon> = {
+  chill: Leaf,
+  social: Champagne,
+  learn: Brain,
+  wild: Fire,
+  creative: Palette,
+  active: Lightning,
+};
 
 const nearestIndex = (steps: number[], v: number) =>
   steps.reduce((best, s, i) => (Math.abs(s - v) < Math.abs(steps[best] - v) ? i : best), 0);
@@ -90,6 +98,7 @@ export default function VibeView() {
         <div className="vibe-moods" role="group" aria-label="Moods">
           {VIBES.map((v) => {
             const on = f.vibes.includes(v.id);
+            const VIcon = VIBE_ICON[v.id];
             return (
               <motion.button
                 key={v.id}
@@ -106,7 +115,7 @@ export default function VibeView() {
                   animate={on && !reduce ? { scale: [1, 1.35, 1], rotate: [0, -10, 0] } : { scale: 1 }}
                   transition={{ duration: 0.45 }}
                 >
-                  {v.emoji}
+                  <VIcon size={28} weight={on ? "fill" : "duotone"} />
                 </motion.span>
                 <span className="vibe-mood-name">{v.label}</span>
                 <span className="vibe-mood-line">{v.line}</span>
@@ -195,7 +204,7 @@ export default function VibeView() {
           </div>
         ) : hits.length === 0 ? (
           <div className="vibe-empty">
-            <p className="vibe-empty-emoji" aria-hidden="true">🫥</p>
+            <MapPin className="vibe-empty-emoji" size={40} weight="duotone" aria-hidden="true" />
             <p>Nothing fits all of that. Try a bigger budget, more distance, or another day.</p>
           </div>
         ) : (
@@ -282,18 +291,27 @@ function Surprise({ hits, reduce, onClose }: { hits: VibeHit[]; reduce: boolean;
     [hits, reduce],
   );
 
+  // Latest callbacks in refs, so a parent re-render (the URL sync, a count
+  // update) never restarts the spin or drops the Escape handler.
+  const spinRef = useRef(spin);
+  const closeCb = useRef(onClose);
   useEffect(() => {
-    // First spin starts as the dialog opens; the timer chain owns state after this.
-    const t = window.setTimeout(() => spin(), 0);
+    spinRef.current = spin;
+    closeCb.current = onClose;
+  });
+  useEffect(() => {
+    const t = window.setTimeout(() => spinRef.current(), 0);
     closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeCb.current();
+    };
     window.addEventListener("keydown", onKey);
     return () => {
       window.clearTimeout(t);
       if (timer.current) window.clearTimeout(timer.current);
       window.removeEventListener("keydown", onKey);
     };
-  }, [spin, onClose]);
+  }, []);
 
   const e = landed?.event;
   return (

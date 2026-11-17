@@ -92,7 +92,11 @@ export function applyDarkTheme(map: MapLibreMap): void {
         paint(map, id, "background-color", C.base);
         break;
       case "fill":
+        // Patterned fills (sand, wetland, scrub) ignore fill-color and stay
+        // pale on the dark map; drop the pattern so the colour applies.
+        paint(map, id, "fill-pattern", null);
         paint(map, id, "fill-color", fillColorFor(id));
+        paint(map, id, "fill-opacity", has(id, "building") ? 0.9 : 1);
         paint(map, id, "fill-outline-color", C.base);
         break;
       case "line":

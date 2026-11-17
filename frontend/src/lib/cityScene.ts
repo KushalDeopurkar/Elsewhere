@@ -82,17 +82,23 @@ export interface Beacon {
 
 export function beacons(events: Event[], center: { lat: number; lng: number }, now: number): Beacon[] {
   const out: Beacon[] = [];
-  const seen = new Set<string>();
+  const count = new Map<string, number>();
   for (const e of events) {
     if (e.lat == null || e.lng == null) continue;
-    // Many venues geocode to the same point; nudge duplicates apart.
+    // Many listings share a venue, and imprecise ones sit on the city
+    // centre. Fan duplicates out on a small golden-angle spiral so each
+    // beacon stays visible and hoverable; centre-pinned ones spread wider.
     const key = `${e.lat.toFixed(4)},${e.lng.toFixed(4)}`;
+    const k = count.get(key) ?? 0;
+    count.set(key, k + 1);
     let [x, z] = project(e.lat, e.lng, center);
-    if (seen.has(key)) {
-      x += ((e.id.charCodeAt(0) % 7) - 3) * 0.08;
-      z += ((e.id.charCodeAt(e.id.length - 1) % 7) - 3) * 0.08;
+    if (k > 0) {
+      const atCentre = Math.hypot(x, z) < 0.05;
+      const r = (atCentre ? 0.42 : 0.2) * Math.sqrt(k);
+      const a = k * 2.39996;
+      x += Math.cos(a) * r;
+      z += Math.sin(a) * r;
     }
-    seen.add(key);
     if (Math.hypot(x, z) > RADIUS_UNITS * 1.1) continue;
     const hours = (Date.parse(e.start_time) - now) / 3_600_000;
     const h = hours <= 0 ? 3.2 : hours <= 24 ? 2.6 : hours <= 72 ? 1.8 : 1.1;

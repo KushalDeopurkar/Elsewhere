@@ -3322,12 +3322,10 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   background:
     radial-gradient(60rem 30rem at 30% 0%, var(--tint-glow, var(--glow)), transparent 70%),
     radial-gradient(40rem 24rem at 90% 10%, var(--tint-wash, transparent), transparent 70%);
+  transition: background 900ms var(--ease);
   animation: tint-in 900ms var(--ease) both;
 }
 @keyframes tint-in { from { opacity: 0; } }
-.detail.has-tint .detail-media { border-color: var(--tint-wash); box-shadow: 0 40px 90px -40px var(--tint-glow); }
-.detail.has-tint .detail-kicker { color: var(--tint-accent); }
-.detail.has-tint .detail-kicker svg { color: var(--tint-accent); }
 
 /* ==========================================================================
    First-visit intro (components/Preloader.tsx)
@@ -3364,3 +3362,9 @@ html.no-intro .intro { display: none; }
 .intro-line { color: var(--text-mid); font-size: clamp(1rem, 0.9rem + 0.5vw, 1.35rem); }
 .intro-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--ink-800); }
 .intro-bar span { display: block; height: 100%; background: var(--marigold); transform-origin: left; transition: transform 120ms linear; }
+
+/* Event page loading state (app/events/[id]/loading.tsx) */
+.detail.is-loading .skel-crumbs { display: block; width: 14rem; height: 0.9rem; border-radius: var(--r-sm); }
+.detail.is-loading .skel-line { display: block; width: 55%; height: 1rem; margin-top: 0.75rem; border-radius: var(--r-sm); }
+.detail.is-loading .skel-title { display: block; width: 80%; height: 2.4rem; margin-top: 0.6rem; border-radius: var(--r-sm); }
+.detail.is-loading .skel-aside { display: block; min-height: 18rem; border-radius: var(--r-card); }

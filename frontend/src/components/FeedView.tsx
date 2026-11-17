@@ -101,10 +101,11 @@ export default function FeedView() {
       const root = scroller.current;
       if (!root) return;
       const slides = root.querySelectorAll<HTMLElement>(".feed-slide");
-      const target = slides[Math.max(0, Math.min(slides.length - 1, active + delta))];
+      const here = Math.round(root.scrollTop / Math.max(1, root.clientHeight));
+      const target = slides[Math.max(0, Math.min(slides.length - 1, here + delta))];
       target?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     },
-    [active, reduce],
+    [reduce],
   );
 
   const like = useCallback((e: Event) => {

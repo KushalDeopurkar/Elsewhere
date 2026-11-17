@@ -37,6 +37,7 @@ export default function TonightList({ events, city }: { events: Event[]; city: s
           <li key={e.id}>
             <TransitionLink
               href={`/events/${e.id}`}
+              preview={e}
               className="tonight-row"
               data-reveal-img={e.image_url ?? undefined}
               data-cursor="Open"

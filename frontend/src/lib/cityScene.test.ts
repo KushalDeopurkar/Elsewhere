@@ -39,8 +39,10 @@ describe("beacons", () => {
     expect(out.map((b) => b.event.id)).toEqual(["near", "later"]);
     expect(out[0].h).toBeGreaterThan(out[1].h);
   });
-  it("nudges events at the same venue apart", () => {
-    const out = beacons([ev("a", 19.08, 72.88), ev("b", 19.08, 72.88)], C, 0);
-    expect(out[0].x === out[1].x && out[0].z === out[1].z).toBe(false);
+  it("fans events at the same venue apart, all distinct", () => {
+    const out = beacons(Array.from({ length: 12 }, (_, i) => ev(`e${i}`, 19.08, 72.88)), C, 0);
+    const keys = new Set(out.map((b) => `${b.x.toFixed(3)},${b.z.toFixed(3)}`));
+    expect(keys.size).toBe(12);
+    for (const b of out) expect(Math.hypot(b.x - out[0].x, b.z - out[0].z)).toBeLessThan(1);
   });
 });

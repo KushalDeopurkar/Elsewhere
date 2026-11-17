@@ -64,7 +64,7 @@ export default function EventCard({
           {badge && <span className="ecard-badge">{badge}</span>}
         </p>
         <h3 className="ecard-title">
-          <TransitionLink kind="event" href={`/events/${event.id}`} className="ecard-link" prefetch={false}>
+          <TransitionLink kind="event" preview={event} href={`/events/${event.id}`} className="ecard-link" prefetch={false}>
             {event.title}
           </TransitionLink>
         </h3>
