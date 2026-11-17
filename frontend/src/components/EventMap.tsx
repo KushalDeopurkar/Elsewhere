@@ -223,9 +223,28 @@ export default function EventMap({
       el.style.setProperty("--pin-hue", hue.color);
       el.style.setProperty("--pin-halo", hue.halo);
       el.setAttribute("aria-label", event.title);
-      el.innerHTML =
+      const dot =
         '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
         '<circle cx="12" cy="12" r="5"/></svg>';
+      if (event.image_url) {
+        // Thumbnail pin: the event's image in a ring of its category colour.
+        // Falls back to the plain dot if the image will not load.
+        el.classList.add("pin-thumb");
+        const img = document.createElement("img");
+        img.src = event.image_url;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.draggable = false;
+        img.addEventListener("error", () => {
+          el.classList.remove("pin-thumb");
+          el.innerHTML = dot;
+        });
+        el.appendChild(img);
+      } else {
+        el.innerHTML = dot;
+      }
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
         cb.current.onSelect(event);

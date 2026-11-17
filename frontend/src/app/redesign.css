@@ -2866,3 +2866,30 @@ html {
 }
 .tl-skip { margin-left: 0.4rem; color: var(--marigold); font-weight: 600; font-size: 0.75rem; }
 .tl-skip:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Thumbnail pins: event image inside a category-coloured ring. */
+.pin.pin-thumb {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  overflow: visible;
+  background: var(--ink-850);
+  border: 2.5px solid var(--pin-hue, var(--marigold));
+  box-shadow:
+    0 0 0 4px var(--pin-halo, oklch(0.82 0.16 78 / 0.16)),
+    0 6px 16px -4px oklch(0 0 0 / 0.6);
+}
+.pin.pin-thumb img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.pin-anchor.is-active .pin.pin-thumb {
+  transform: scale(1.35);
+  box-shadow:
+    0 0 0 4px var(--pin-hue, var(--marigold)),
+    0 10px 24px -6px oklch(0 0 0 / 0.7);
+}
+.pin-anchor.is-live .pin.pin-thumb::after { inset: -8px; }
