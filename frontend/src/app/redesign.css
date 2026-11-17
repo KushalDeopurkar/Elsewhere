@@ -3222,7 +3222,6 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .cur-ring.is-shown { opacity: 1; }
 .cur-ring.is-hover { width: 54px; height: 54px; margin: -27px 0 0 -27px; border-color: var(--marigold); background: rgb(255 107 87 / 0.1); }
 .cur-ring.is-text { opacity: 0; }
-.cur-ring.is-down { scale: 0.85; }
 .cur-ring span {
   color: var(--on-marigold);
   font-size: 0.6875rem;
@@ -3240,12 +3239,11 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   border-radius: 14px;
   overflow: hidden;
   opacity: 0;
-  scale: 0.85;
   transform-origin: 0 100%;
   box-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.75);
-  transition: opacity 240ms var(--ease), scale 300ms var(--ease);
+  transition: opacity 240ms var(--ease);
 }
-.cur-reveal.is-shown { opacity: 1; scale: 1; }
+.cur-reveal.is-shown { opacity: 1; }
 .cur-reveal img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Magnetic elements: translate is set inline; keep their own transitions. */

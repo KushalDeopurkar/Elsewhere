@@ -46,6 +46,13 @@ export default function CursorLayer() {
     const rp = { x: -100, y: -100 };
     const vp = { x: -100, y: -100, vx: 0 };
     let magEl: HTMLElement | null = null;
+    // Scales are folded into the inline transform. The CSS \`scale\`
+    // property applies on top of the translate, so it would scale the
+    // pointer position too and throw the ring off across the screen.
+    let down = false;
+    let ringS = 1;
+    let revealOn = false;
+    let revealS = 0.85;
     let revealSrc = "";
     let shown = false;
     let raf = 0;
@@ -79,7 +86,8 @@ export default function CursorLayer() {
       if (src !== revealSrc) {
         revealSrc = src;
         if (src) ri.src = src;
-        rv.classList.toggle("is-shown", Boolean(src));
+        revealOn = Boolean(src);
+        rv.classList.toggle("is-shown", revealOn);
       }
 
       const m = t?.closest(MAGNETIC) as HTMLElement | null;
@@ -97,11 +105,16 @@ export default function CursorLayer() {
       r.classList.remove("is-shown");
       d.classList.remove("is-shown");
       rv.classList.remove("is-shown");
+      revealOn = false;
       revealSrc = "";
       setMag(null);
     };
-    const onDown = () => r.classList.add("is-down");
-    const onUp = () => r.classList.remove("is-down");
+    const onDown = () => {
+      down = true;
+    };
+    const onUp = () => {
+      down = false;
+    };
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
@@ -111,10 +124,12 @@ export default function CursorLayer() {
       vp.x += (p.x - vp.x) * 0.12;
       vp.y += (p.y - vp.y) * 0.12;
       vp.vx = vp.vx * 0.8 + (vp.x - px) * 0.2;
+      ringS += ((down ? 0.82 : 1) - ringS) * 0.3;
+      revealS += ((revealOn ? 1 : 0.85) - revealS) * 0.18;
       d.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
-      r.style.transform = `translate3d(${rp.x}px, ${rp.y}px, 0)`;
+      r.style.transform = `translate3d(${rp.x}px, ${rp.y}px, 0) scale(${ringS.toFixed(3)})`;
       const tilt = Math.max(-12, Math.min(12, vp.vx * 0.6));
-      rv.style.transform = `translate3d(${vp.x + 40}px, ${vp.y - 120}px, 0) rotate(${tilt.toFixed(2)}deg)`;
+      rv.style.transform = `translate3d(${vp.x + 40}px, ${vp.y - 120}px, 0) rotate(${tilt.toFixed(2)}deg) scale(${revealS.toFixed(3)})`;
     };
     raf = requestAnimationFrame(frame);
 
