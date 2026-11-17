@@ -237,7 +237,30 @@ function build(seed: Seed): Event {
   };
 }
 
-export const DEMO_EVENTS: Event[] = SEEDS.map(build).sort(
+/** One sample shows what an enriched listing looks like (tiers and details). */
+function withSampleTiers(e: Event): Event {
+  if (e.title !== "Basement Tapes: Live Session") return e;
+  const end = new Date(Date.parse(e.start_time) - 2 * 3_600_000).toISOString();
+  return {
+    ...e,
+    tickets: [
+      { name: "Early Bird", price: 1200, currency: "INR", available: false, sales_end: null, url: null },
+      { name: "General Admission", price: 1500, currency: "INR", available: true, sales_end: end, url: null },
+      { name: "VIP (terrace + 2 drinks)", price: 2800, currency: "INR", available: true, sales_end: end, url: null },
+    ],
+    details: {
+      about:
+        "A lounge-jazz and psych set in the harbour warehouse, with a support slot and a late DJ session on the terrace.\n\nDoors open an hour before the first set. The terrace bar runs till late.\n\nThis is a sample listing used when live data is unavailable.",
+      duration: "4 hours",
+      age: "21+",
+      language: "English",
+      organizer: "Sample Events Co.",
+      notes: ["Photo ID required", "No re-entry"],
+    },
+  };
+}
+
+export const DEMO_EVENTS: Event[] = SEEDS.map(build).map(withSampleTiers).sort(
   (a, b) => Date.parse(a.start_time) - Date.parse(b.start_time),
 );
 

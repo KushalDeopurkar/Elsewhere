@@ -153,3 +153,25 @@ def test_upsert_decodes_html_entities(service, mock_supabase, sample_event_data)
     row = mock_supabase.table().upsert.call_args[0][0][0]
     assert row["title"] == "Finance & Tech & More"
     assert row["location_name"] == "Rock 'n' Roll Cafe"
+
+
+def test_search_falls_back_when_enrich_columns_missing(service, mock_supabase):
+    mock_supabase.rpc.return_value.execute.return_value.data = [{"id": "u1", "title": "A"}]
+    ok = MagicMock()
+    ok.data = [{"id": "u1", "image_url": "https://x/a.jpg"}]
+    calls = []
+
+    def select(cols):
+        calls.append(cols)
+        m = MagicMock()
+        if "tickets" in cols:
+            m.in_.return_value.execute.side_effect = RuntimeError("column events.tickets does not exist")
+        else:
+            m.in_.return_value.execute.return_value = ok
+        return m
+
+    mock_supabase.table.return_value.select.side_effect = select
+    from app.models.event import EventSearchParams
+    rows = service.search(EventSearchParams(q="x"))
+    assert rows == [{"id": "u1", "title": "A", "image_url": "https://x/a.jpg"}]
+    assert "tickets" in calls[0] and "tickets" not in calls[1]

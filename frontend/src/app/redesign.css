@@ -3407,3 +3407,63 @@ html.no-intro .intro { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
+
+/* ==========================================================================
+   Event page: about, good to know, ticket tiers
+   ========================================================================== */
+.about { display: grid; gap: 0.9rem; }
+.about-p { margin: 0; }
+.about-more { justify-self: start; min-height: 2.75rem; color: var(--marigold); font-weight: 600; font-size: 0.9375rem; }
+.about-more:hover { color: var(--marigold-bright); }
+.about-more:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; border-radius: var(--r-sm); }
+
+.know { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.75rem; margin: 0; }
+.know > div { padding: 0.8rem 0.9rem; border-radius: var(--r-control); background: var(--ink-850); border: 1px solid var(--line-soft); }
+.know dt { color: var(--text-low); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.know dd { margin: 0.2rem 0 0; color: var(--text-hi); font-size: 0.9375rem; font-weight: 600; }
+.know-notes { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: 0.9rem 0 0; }
+.know-notes li { padding: 0.3rem 0.7rem; border-radius: var(--r-pill); background: var(--ink-800); border: 1px solid var(--line-soft); color: var(--text-mid); font-size: 0.8125rem; }
+
+.tickets { margin: 0.25rem 0 1rem; }
+.tickets-title { display: flex; align-items: baseline; justify-content: space-between; color: var(--text-hi); font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem; }
+.tickets-title span { color: var(--text-low); font-size: 0.8125rem; font-weight: 500; }
+.tickets-list { display: grid; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
+.ticket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem 0.75rem 0.7rem 0.9rem;
+  border-radius: var(--r-control);
+  background: var(--ink-800);
+  border: 1px solid var(--line-soft);
+  transition: border-color var(--t-hover) var(--ease);
+}
+.ticket:hover { border-color: var(--line-strong); }
+.ticket.is-out { opacity: 0.7; }
+.ticket-main { display: grid; gap: 0.15rem; min-width: 0; }
+.ticket-name { color: var(--text-hi); font-weight: 600; font-size: 0.9375rem; overflow-wrap: anywhere; }
+.ticket-note { font-size: 0.75rem; font-weight: 600; }
+.ticket-note.is-out { color: var(--danger); }
+.ticket-note.is-soon { color: var(--marigold-bright); }
+.ticket-note.is-info { color: var(--text-low); font-weight: 500; }
+.ticket-price { color: var(--text-hi); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ticket.is-out .ticket-price { text-decoration: line-through; color: var(--text-low); }
+.ticket-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border-radius: var(--r-pill);
+  background: var(--marigold);
+  color: var(--on-marigold);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ticket-book:hover { background: var(--marigold-bright); }
+.ticket-book:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+.ticket-book.is-disabled { background: transparent; color: var(--text-low); padding: 0 0.4rem; }
+.tickets-note { margin-top: 0.6rem; color: var(--text-low); font-size: 0.75rem; line-height: 1.45; }
+.ecard-tiers { margin-left: 0.4rem; color: var(--text-low); font-weight: 500; }

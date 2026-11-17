@@ -8,6 +8,7 @@ Usage:
     python run_scrapers.py --source allevents  # run only AllEvents scraper
     python run_scrapers.py --city mumbai       # only scrape Mumbai
     python run_scrapers.py --dry-run           # scrape but don't upsert
+    python run_scrapers.py --enrich-only       # fetch descriptions + ticket tiers
 
 Environment variables required:
     SUPABASE_URL
@@ -54,7 +55,24 @@ async def main():
     parser.add_argument("--city", default=None, help="Scrape only this city")
     parser.add_argument("--dry-run", action="store_true",
                         help="Scrape but don't upsert to database")
+    parser.add_argument("--enrich-only", action="store_true",
+                        help="Skip scraping; fetch event pages for descriptions and ticket tiers")
+    parser.add_argument("--limit", type=int, default=150,
+                        help="Max event pages to enrich per run")
     args = parser.parse_args()
+
+    if args.enrich_only:
+        if not os.environ.get("SUPABASE_URL") or not os.environ.get("SUPABASE_KEY"):
+            logger.error("SUPABASE_URL and SUPABASE_KEY environment variables required")
+            sys.exit(1)
+        from app.database import get_supabase_service
+        from app.enrich.enricher import enrich
+
+        stats = await enrich(get_supabase_service(), limit=args.limit)
+        logger.info(f"Enrich: {stats}")
+        print(f"::notice::Enriched {stats['enriched']} of {stats['picked']} event pages "
+              f"({stats['with_tiers']} with ticket tiers, {stats['failed']} failed)")
+        return
 
     # Build scrapers based on selection
     scrapers = []

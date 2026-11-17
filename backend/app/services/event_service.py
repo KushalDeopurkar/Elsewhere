@@ -67,14 +67,15 @@ class EventService:
         }
 
         result = self.client.rpc("search_events", rpc_params).execute()
-        return result.data or []
+        # Cards need the tier count and range, not the long details.
+        return self._with_details(result.data or [], "tickets")
 
     def get_by_id(self, event_id: str) -> Optional[Dict]:
         """Get single event by UUID via RPC (extracts lat/lng from coords)."""
         result = self.client.rpc(
             "get_event_by_id", {"p_id": event_id}
         ).execute()
-        rows = result.data or []
+        rows = self._with_details(result.data or [], "tickets,details")
         return rows[0] if rows else None
 
     def get_in_bounds(
@@ -113,18 +114,24 @@ class EventService:
 
     _DETAIL_COLUMNS = "id,image_url,end_time,price_min,price_max,is_free,url,address,city,source"
 
-    def _with_details(self, rows: List[Dict]) -> List[Dict]:
+    def _with_details(self, rows: List[Dict], extra: str = "") -> List[Dict]:
+        """Merge columns the RPCs don't return, by id, in one query.
+
+        `extra` asks for the enrich-pass columns (tickets, details). If the
+        database hasn't had migration 008 yet those don't exist, so the
+        query is retried without them rather than losing everything.
+        """
         ids = [r["id"] for r in rows if r.get("id")]
         if not ids:
             return rows
-        try:
-            extra = (
-                self.client.table("events")
-                .select(self._DETAIL_COLUMNS)
-                .in_("id", ids)
-                .execute()
-            )
-            by_id = {e["id"]: e for e in (extra.data or []) if isinstance(e, dict) and e.get("id")}
-        except Exception:  # noqa: BLE001 - the slim rows are still useful
+        by_id: Dict[str, Dict] = {}
+        for cols in ([f"{self._DETAIL_COLUMNS},{extra}"] if extra else []) + [self._DETAIL_COLUMNS]:
+            try:
+                res = self.client.table("events").select(cols).in_("id", ids).execute()
+                by_id = {e["id"]: e for e in (res.data or []) if isinstance(e, dict) and e.get("id")}
+                break
+            except Exception:  # noqa: BLE001 - fall back to fewer columns, then to slim rows
+                continue
+        if not by_id:
             return rows
         return [{**r, **{k: v for k, v in by_id.get(r["id"], {}).items() if v is not None}} for r in rows]

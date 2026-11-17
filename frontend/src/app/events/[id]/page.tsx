@@ -16,6 +16,8 @@ import { priceLine } from "@/lib/money";
 import { categoryHref } from "@/lib/categoryPages";
 import { Suspense } from "react";
 import PosterTintStyle from "@/components/PosterTintStyle";
+import TicketList from "@/components/TicketList";
+import AboutText from "@/components/AboutText";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -35,6 +37,11 @@ const SOURCE_NAMES: Record<string, string> = {
   sample: "Sample data",
 };
 
+/** Request time, for "sales end today" badges. Outside the component on purpose. */
+function requestTime(): number {
+  return Date.now();
+}
+
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const event = await getEvent(id);
@@ -42,9 +49,20 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   const meta = CATEGORIES.find((c) => c.value === event.category);
   const hue = getCategoryColor(event.category);
-  const where = [event.location_name, event.address].filter(Boolean).join(", ");
+  const d = event.details ?? {};
+  const tickets = event.tickets ?? [];
+  // Unknown price is not "free": only say so when the source does.
+  const free = event.is_free || event.price_min === 0 || (tickets.length > 0 && tickets.every((t) => t.price === 0));
+  const priceKnown = free || event.price_min != null || tickets.some((t) => t.price != null);
+  const where = [event.location_name, event.address || d.address].filter(Boolean).join(", ");
+  const about = d.about && d.about.length > (event.description?.length ?? 0) ? d.about : event.description;
+  const facts = [
+    d.duration && { k: "Duration", v: d.duration },
+    d.age && { k: "Age", v: d.age },
+    d.language && { k: "Language", v: d.language },
+    d.organizer && { k: "Organiser", v: d.organizer },
+  ].filter(Boolean) as { k: string; v: string }[];
   const source = SOURCE_NAMES[event.source] ?? event.source;
-  const free = event.is_free || (event.price_min ?? 0) === 0;
   const mapsUrl =
     event.lat != null && event.lng != null
       ? `https://www.google.com/maps/search/?api=1&query=${event.lat},${event.lng}`
@@ -94,17 +112,40 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
               <h1 className="detail-title">{event.title}</h1>
               <ul className="detail-tags" aria-label="Tags">
                 <li>{meta?.label ?? event.category}</li>
-                <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>
+                {priceKnown && <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>}
                 {event.city && <li>{event.city}</li>}
                 <li>via {source}</li>
               </ul>
               <EventActions event={event} />
             </header>
 
-            {event.description && (
+            {about && (
               <section className="detail-section">
                 <h2 className="detail-h2">About this event</h2>
-                <p className="prose">{event.description}</p>
+                <AboutText text={about} />
+              </section>
+            )}
+
+            {(facts.length > 0 || (d.notes?.length ?? 0) > 0) && (
+              <section className="detail-section">
+                <h2 className="detail-h2">Good to know</h2>
+                {facts.length > 0 && (
+                  <dl className="know">
+                    {facts.map((f) => (
+                      <div key={f.k}>
+                        <dt>{f.k}</dt>
+                        <dd>{f.v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {d.notes && d.notes.length > 0 && (
+                  <ul className="know-notes">
+                    {d.notes.map((n) => (
+                      <li key={n}>{n}</li>
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
 
@@ -148,9 +189,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 <dd>{source}</dd>
               </div>
             </dl>
+            {tickets.length > 0 && (
+              <TicketList tickets={tickets} fallbackUrl={event.url} sourceName={source} now={requestTime()} />
+            )}
             {event.url ? (
               <a className="btn btn-primary btn-lg booking-cta" href={event.url} target="_blank" rel="noopener noreferrer">
-                {free ? "Register" : "Get tickets"} <ArrowSquareOut size={16} weight="bold" />
+                {free ? "Register" : tickets.length > 1 ? `See all options on ${source}` : "Get tickets"}{" "}
+                <ArrowSquareOut size={16} weight="bold" />
               </a>
             ) : (
               <Link className="btn btn-ghost booking-cta" href="/map">Find it on the map</Link>

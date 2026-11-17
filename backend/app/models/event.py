@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Dict
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 from enum import Enum
@@ -82,11 +82,14 @@ class EventResponse(BaseModel):
     source: Optional[str] = None
     distance_km: Optional[float] = None
     relevance: Optional[float] = None
+    # From the enrich pass (migration 008); absent until it has run.
+    tickets: Optional[List[Dict[str, Any]]] = None
 
 
 class EventDetailResponse(EventResponse):
     """Returned by get-by-id endpoint. Adds timestamps."""
     source_id: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

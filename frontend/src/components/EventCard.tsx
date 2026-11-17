@@ -62,6 +62,7 @@ export default function EventCard({
         <p className="ecard-kicker">
           {meta?.label ?? event.category}
           {badge && <span className="ecard-badge">{badge}</span>}
+          {(event.tickets?.length ?? 0) > 1 && <span className="ecard-tiers">{event.tickets!.length} ticket types</span>}
         </p>
         <h3 className="ecard-title">
           <TransitionLink kind="event" preview={event} href={`/events/${event.id}`} className="ecard-link" prefetch={false}>

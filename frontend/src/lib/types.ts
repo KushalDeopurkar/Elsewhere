@@ -24,6 +24,30 @@ export interface Event {
    * without it and are treated as in-person. Adding it needs a migration.
    */
   format?: EventFormat;
+  /** Ticket tiers from the event's own page (enrich pass). Null until fetched. */
+  tickets?: Ticket[] | null;
+  /** Long description and facts from the event's own page (detail endpoint only). */
+  details?: EventDetails | null;
+}
+
+export interface Ticket {
+  name: string;
+  price: number | null;
+  currency: string | null;
+  /** true in stock, false sold out, null unknown */
+  available: boolean | null;
+  sales_end: string | null;
+  url: string | null;
+}
+
+export interface EventDetails {
+  about?: string;
+  duration?: string;
+  organizer?: string;
+  address?: string;
+  age?: string;
+  language?: string;
+  notes?: string[];
 }
 
 export type EventFormat = "in_person" | "online" | "hybrid";
