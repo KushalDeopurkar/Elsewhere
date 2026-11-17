@@ -12,6 +12,7 @@ import {
   MagnifyingGlass,
   Cards,
   Smiley,
+  Play,
 } from "@phosphor-icons/react/ssr";
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
@@ -21,6 +22,7 @@ const LINKS = [
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/discover", label: "Discover", icon: Cards },
   { href: "/vibe", label: "Vibe", icon: Smiley },
+  { href: "/feed", label: "Feed", icon: Play },
   { href: "/categories", label: "Categories", icon: SquaresFour },
   { href: "/map", label: "Map", icon: MapTrifold },
   { href: "/plan-my-day", label: "Plan My Day", icon: Sparkle },

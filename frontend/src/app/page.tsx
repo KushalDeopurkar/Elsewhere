@@ -132,6 +132,9 @@ export default function Home() {
             <Link href="/vibe" className="hero-swipe">
               <span aria-hidden="true">✨</span> Or <strong>pick a vibe</strong> →
             </Link>
+            <Link href="/feed" className="hero-swipe">
+              <span aria-hidden="true">▶</span> Or just <strong>scroll the feed</strong> →
+            </Link>
           </div>
           <div className="home-hero-art">
             <HeroDeck events={showcase(all)} />
