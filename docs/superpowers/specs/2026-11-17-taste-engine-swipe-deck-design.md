@@ -1,7 +1,7 @@
 # Taste engine + swipe deck (Elsewhere, engagement piece 1 of 4)
 
 Date: 2026-11-17
-Status: approved design, awaiting spec review
+Status: approved design, spec under user review
 
 ## Goal
 
@@ -109,8 +109,10 @@ Hook loop UI:
   categories with bars, preferred time slot and price band. Tap to continue.
 - End of deck: shortlist screen with this session's saves as cards, buttons
   "Plan my day with these" (links to `/plan-my-day` with the selected
-  category interests preset through the existing query params), "Share on
-  WhatsApp" (existing `share.ts`), "Keep swiping" (refetches next page,
+  category interests preset: new `?interests=music,food` query param that
+  `PlanMyDayView` reads to pre-select interest chips; the planner has no
+  query params today), "Share on WhatsApp" (`whatsappUrl` from `share.ts`,
+  text listing the shortlisted titles and links), "Keep swiping" (refetches next page,
   excluding seen), and "Reset my taste".
 
 ### 3. Entry points
@@ -137,7 +139,9 @@ profile on the following "Keep swiping" fetch.
 
 ## Testing
 
-- Unit tests (`taste.test.ts`): weight updates per signal, clamping, price
+- Add Vitest as a dev dependency with an `npm test` script; the frontend has
+  no test runner today.
+- Unit tests (`src/lib/taste.test.ts`): weight updates per signal, clamping, price
   band and slot bucketing, cold-start score of 50, reasons text, `rankForDeck`
   excludes seen and past events and inserts explore picks.
 - Browser check on the deployed preview at 1440 px and 375 px: drag save,
