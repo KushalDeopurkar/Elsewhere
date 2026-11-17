@@ -24,6 +24,13 @@ class EventCategory(str, Enum):
     OTHER = "other"
 
 
+class EventSort(str, Enum):
+    """Result ordering for event search."""
+    RELEVANCE = "relevance"
+    DATE = "date"
+    DISTANCE = "distance"
+
+
 class EventCreate(BaseModel):
     """Used by scrapers to insert new events."""
     title: str
@@ -42,6 +49,7 @@ class EventCreate(BaseModel):
     price_min: Optional[float] = None
     price_max: Optional[float] = None
     is_free: bool = False
+    is_online: bool = False
     source: str
     source_id: str
     raw_data: Optional[Dict] = None
@@ -79,6 +87,7 @@ class EventResponse(BaseModel):
     price_min: Optional[float] = None
     price_max: Optional[float] = None
     is_free: bool = False
+    is_online: bool = False
     source: Optional[str] = None
     distance_km: Optional[float] = None
     relevance: Optional[float] = None
@@ -100,5 +109,8 @@ class EventSearchParams(BaseModel):
     radius_km: float = 25.0
     from_time: Optional[datetime] = None
     to_time: Optional[datetime] = None
+    free_only: Optional[bool] = None
+    online_only: Optional[bool] = None
+    sort_by: EventSort = EventSort.RELEVANCE
     limit: int = Field(default=50, ge=1, le=100)
     offset: int = Field(default=0, ge=0)

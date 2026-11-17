@@ -12,6 +12,7 @@ from app.models.event import (
     EventDetailResponse,
     EventResponse,
     EventSearchParams,
+    EventSort,
 )
 from app.models.schemas import ApiResponse, Meta
 from app.services.event_service import EventService
@@ -52,6 +53,18 @@ def search_events(
     radius_km: float = 25.0,
     from_time: Optional[datetime] = None,
     to_time: Optional[datetime] = None,
+    free_only: Optional[bool] = Query(
+        default=None,
+        description="True for free events only. Omit for no price constraint.",
+    ),
+    online_only: Optional[bool] = Query(
+        default=None,
+        description=(
+            "True for online events only, False for in-person only. "
+            "Omit for no format constraint."
+        ),
+    ),
+    sort_by: EventSort = Query(default=EventSort.RELEVANCE),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     service: EventService = Depends(get_event_service),
@@ -64,6 +77,9 @@ def search_events(
         radius_km=radius_km,
         from_time=from_time or datetime.now(timezone.utc),
         to_time=to_time,
+        free_only=free_only,
+        online_only=online_only,
+        sort_by=sort_by,
         limit=limit,
         offset=offset,
     )
@@ -81,7 +97,9 @@ def map_events(
     north: float = Query(...),
     east: float = Query(...),
     from_time: Optional[datetime] = None,
+    to_time: Optional[datetime] = None,
     category: Optional[EventCategory] = None,
+    q: Optional[str] = None,
     max_results: int = Query(default=200, ge=1, le=500),
     service: EventService = Depends(get_event_service),
 ):
@@ -91,7 +109,9 @@ def map_events(
         north=north,
         east=east,
         from_time=from_time,
+        to_time=to_time,
         category=category.value if category else None,
+        q=q,
         max_results=max_results,
     )
     # Map events return a subset of fields; EventResponse handles missing fields via defaults

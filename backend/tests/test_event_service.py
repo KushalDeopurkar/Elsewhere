@@ -1,7 +1,9 @@
+from datetime import datetime, timezone
+
 import pytest
 from unittest.mock import MagicMock
 
-from app.models.event import EventCreate, EventSearchParams
+from app.models.event import EventCreate, EventSearchParams, EventSort
 from app.services.event_service import EventService
 
 
@@ -59,6 +61,9 @@ def test_search_calls_rpc(service, mock_supabase):
             "radius_km": 25.0,
             "from_time": params.from_time.isoformat() if params.from_time else None,
             "to_time": None,
+            "free_only": None,
+            "online_only": None,
+            "sort_by": "relevance",
             "page_limit": 50,
             "page_offset": 0,
         },
@@ -116,3 +121,74 @@ def test_get_in_bounds_empty_result(service, mock_supabase):
     results = service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0)
 
     assert results == []
+
+
+def test_search_passes_facets_and_sort_to_rpc(service, mock_supabase):
+    """free_only/online_only/sort_by must reach the RPC, not be dropped."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.search(
+        EventSearchParams(free_only=True, online_only=False, sort_by=EventSort.DATE)
+    )
+
+    rpc_params = mock_supabase.rpc.call_args[0][1]
+    assert rpc_params["free_only"] is True
+    assert rpc_params["online_only"] is False
+    assert rpc_params["sort_by"] == "date"
+
+
+def test_search_unset_facets_are_none(service, mock_supabase):
+    """An unset facet must be NULL so the RPC applies no constraint."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.search(EventSearchParams(q="jazz"))
+
+    rpc_params = mock_supabase.rpc.call_args[0][1]
+    assert rpc_params["free_only"] is None
+    assert rpc_params["online_only"] is None
+    assert rpc_params["sort_by"] == "relevance"
+
+
+def test_get_in_bounds_passes_time_window(service, mock_supabase):
+    """The map's day filter must reach the RPC as a real bounded window."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    start = datetime(2026, 10, 31, tzinfo=timezone.utc)
+    end = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    service.get_in_bounds(
+        south=19.0, west=72.8, north=19.2, east=73.0, from_time=start, to_time=end
+    )
+
+    rpc_params = mock_supabase.rpc.call_args[0][1]
+    assert rpc_params["from_time"] == start.isoformat()
+    assert rpc_params["to_time"] == end.isoformat()
+
+
+def test_get_in_bounds_passes_query(service, mock_supabase):
+    """Map search must reach the RPC so it uses the same index as /search."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0, q="hackathon")
+
+    assert mock_supabase.rpc.call_args[0][1]["query"] == "hackathon"
+
+
+def test_get_in_bounds_unset_refinements_are_none(service, mock_supabase):
+    """No upper bound and no keyword mean no constraint, not empty results."""
+    mock_rpc = MagicMock()
+    mock_rpc.execute.return_value.data = []
+    mock_supabase.rpc.return_value = mock_rpc
+
+    service.get_in_bounds(south=19.0, west=72.8, north=19.2, east=73.0)
+
+    rpc_params = mock_supabase.rpc.call_args[0][1]
+    assert rpc_params["to_time"] is None
+    assert rpc_params["query"] is None
