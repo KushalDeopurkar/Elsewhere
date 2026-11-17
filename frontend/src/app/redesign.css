@@ -2749,3 +2749,4 @@ html {
 }
 .hero-swipe strong { color: var(--marigold); }
 .hero-swipe:hover { color: var(--text-hi); }
+.hero-swipe + .hero-swipe { margin-left: 1.25rem; }
