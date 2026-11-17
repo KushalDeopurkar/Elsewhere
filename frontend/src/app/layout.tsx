@@ -6,6 +6,7 @@ import "./globals.css";
 import "./redesign.css";
 import Nav from "@/components/Nav";
 import RouteSignal from "@/components/RouteSignal";
+import CursorLayer from "@/components/CursorLayer";
 
 export const metadata: Metadata = {
   title: "Elsewhere - discover what is happening",
@@ -29,6 +30,7 @@ export default function RootLayout({
         <RouteSignal />
         <Nav />
         <main>{children}</main>
+        <CursorLayer />
       </body>
     </html>
   );

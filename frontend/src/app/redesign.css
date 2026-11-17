@@ -3188,3 +3188,122 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+/* ==========================================================================
+   Cursor companion (components/CursorLayer.tsx). System cursor stays.
+   ========================================================================== */
+.cur { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+.cur-dot,
+.cur-ring,
+.cur-reveal { position: fixed; left: 0; top: 0; will-change: transform; }
+.cur-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--marigold);
+  opacity: 0;
+  transition: opacity 200ms var(--ease);
+}
+.cur-ring {
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1.5px solid rgb(242 243 247 / 0.45);
+  opacity: 0;
+  transition:
+    width 260ms var(--ease), height 260ms var(--ease), margin 260ms var(--ease),
+    background-color 260ms var(--ease), border-color 260ms var(--ease), opacity 200ms var(--ease);
+}
+.cur-dot.is-shown,
+.cur-ring.is-shown { opacity: 1; }
+.cur-ring.is-hover { width: 54px; height: 54px; margin: -27px 0 0 -27px; border-color: var(--marigold); background: rgb(255 107 87 / 0.1); }
+.cur-ring.is-text { opacity: 0; }
+.cur-ring.is-down { scale: 0.85; }
+.cur-ring span {
+  color: var(--on-marigold);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 180ms var(--ease);
+}
+.cur-ring.has-label { width: auto; min-width: 0; height: 28px; margin: 16px 0 0 14px; padding: 0 0.75rem; border-color: var(--marigold); background: var(--marigold); }
+.cur-ring.has-label span { opacity: 1; }
+.cur-reveal {
+  width: 12rem;
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  overflow: hidden;
+  opacity: 0;
+  scale: 0.85;
+  transform-origin: 0 100%;
+  box-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.75);
+  transition: opacity 240ms var(--ease), scale 300ms var(--ease);
+}
+.cur-reveal.is-shown { opacity: 1; scale: 1; }
+.cur-reveal img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Magnetic elements: translate is set inline; keep their own transitions. */
+.has-cursor :is([data-magnetic], .btn-primary, .icon-btn, .tl-open, .tl-play, .disc-btn) {
+  transition:
+    translate 240ms var(--ease), transform var(--t-tap) var(--ease), background-color var(--t-hover) var(--ease),
+    border-color var(--t-hover) var(--ease), color var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease);
+}
+
+/* ==========================================================================
+   Home: "Next up" editorial list
+   ========================================================================== */
+.tonight-kicker { color: var(--marigold); font-size: 0.8125rem; font-weight: 600; }
+.tonight-title { margin-top: 0.25rem; color: var(--text-hi); font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.6rem); font-weight: 700; letter-spacing: -0.025em; }
+.tonight-list { list-style: none; padding: 0; margin: 1.5rem 0 0; border-top: 1px solid var(--line); }
+.tonight-list li { border-bottom: 1px solid var(--line); }
+.tonight-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto auto 1.5rem;
+  gap: 1.25rem;
+  align-items: center;
+  min-height: 4.5rem;
+  padding: 1.1rem 0.25rem;
+  color: var(--text-hi);
+  transition: color var(--t-hover) var(--ease);
+}
+.tonight-thumb { display: none; }
+.tonight-n { color: var(--text-low); font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 0.8125rem; }
+.tonight-main { display: grid; gap: 0.2rem; min-width: 0; }
+.tonight-name {
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.25rem, 0.9rem + 1.2vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: translate 380ms var(--ease), color var(--t-hover) var(--ease);
+}
+.tonight-meta { color: var(--text-low); font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tonight-when { color: var(--text-mid); font-size: 0.9375rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tonight-price { padding: 0.25rem 0.65rem; border-radius: var(--r-pill); background: var(--ink-800); color: var(--text-mid); font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
+.tonight-arrow { color: var(--text-low); transition: translate 380ms var(--ease), color var(--t-hover) var(--ease), rotate 380ms var(--ease); }
+.tonight-row:hover .tonight-name,
+.tonight-row:focus-visible .tonight-name { translate: 0.6rem 0; color: var(--marigold-bright); }
+.tonight-row:hover .tonight-arrow,
+.tonight-row:focus-visible .tonight-arrow { color: var(--marigold); rotate: 45deg; }
+.tonight-list:has(.tonight-row:hover) .tonight-row:not(:hover) .tonight-name { color: var(--text-low); }
+.tonight-row:focus-visible { outline: 2px solid var(--marigold); outline-offset: -2px; border-radius: var(--r-sm); }
+
+@media (max-width: 760px) {
+  .tonight-row { grid-template-columns: 3.25rem minmax(0, 1fr) auto; gap: 0.85rem; padding: 0.85rem 0; }
+  .tonight-n, .tonight-price, .tonight-arrow { display: none; }
+  .tonight-thumb { display: block; border-radius: var(--r-sm); overflow: hidden; }
+  .tonight-name { font-size: 1.05rem; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .tonight-when { font-size: 0.8125rem; align-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tonight-name, .tonight-arrow { transition: none; }
+}

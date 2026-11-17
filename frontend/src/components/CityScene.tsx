@@ -384,7 +384,7 @@ export default function CityScene({
   }, [events, center, cityName]);
 
   return (
-    <div className="city3d" ref={wrap}>
+    <div className="city3d" ref={wrap} data-cursor={hover ? "Open" : "Drag"}>
       {hover && (
         <div
           className="city3d-tip"

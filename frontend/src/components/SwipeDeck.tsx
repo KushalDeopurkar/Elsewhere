@@ -360,6 +360,7 @@ function TopCard({
   return (
     <motion.article
       className="disc-card is-top"
+      data-cursor="Drag"
       style={{ x, y, rotate, zIndex: 3 }}
       drag={!reduce}
       dragElastic={0.9}

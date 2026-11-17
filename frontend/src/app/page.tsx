@@ -7,6 +7,7 @@ import { Sparkle, ArrowRight, MapTrifold, Compass, BookmarkSimple, Cards, Play }
 import dynamic from "next/dynamic";
 import KineticWord from "@/components/KineticWord";
 import ScrollStory from "@/components/ScrollStory";
+import TonightList from "@/components/TonightList";
 import { useCapable3D } from "@/hooks/useCapable3D";
 import HeroSearch from "@/components/HeroSearch";
 import HeroDeck from "@/components/HeroDeck";
@@ -194,6 +195,8 @@ export default function Home() {
       </section>
 
       <ScrollStory events={all} />
+
+      <TonightList events={all} city={city.name} />
 
       {soon.length > 0 && (
         <section className="shell sec">

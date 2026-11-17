@@ -195,7 +195,7 @@ export default function FeedView() {
             <section key={e.id} className="feed-slide" data-i={i} aria-label={`${i + 1}: ${e.title}`}>
               {e.image_url && <img className="feed-backdrop" src={e.image_url} alt="" aria-hidden="true" referrerPolicy="no-referrer" />}
               <div className="feed-frame">
-                <div className="feed-card" onPointerUp={(ev) => onTap(e, ev)} onDoubleClick={(ev) => ev.preventDefault()}>
+                <div className="feed-card" data-cursor="Double-click" onPointerUp={(ev) => onTap(e, ev)} onDoubleClick={(ev) => ev.preventDefault()}>
                   <EventImage src={e.image_url} alt="" category={e.category} ratio="9 / 16" priority={i < 2} className="feed-img" />
                   <AnimatePresence>
                     {burst?.id === e.id && (
