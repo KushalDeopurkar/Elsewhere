@@ -8,7 +8,7 @@ import { useCapable3D } from "@/hooks/useCapable3D";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
-import { useCity } from "@/lib/cityPref";
+import { onCityRepick, useCity } from "@/lib/cityPref";
 import { CategoryRail } from "@/components/FilterRail";
 import type { MapHandle } from "@/components/EventMap";
 import { getMapEvents, MapBounds } from "@/lib/api";
@@ -116,6 +116,16 @@ export default function MapPage() {
       el.classList.add("is-on");
     }
   }, [city]);
+
+  // Picking the city that's already selected (say after dragging away)
+  // brings the map back to it.
+  useEffect(
+    () =>
+      onCityRepick(() => {
+        if (ready.current) handle.current?.flyToPoint(city.lat, city.lng);
+      }),
+    [city],
+  );
 
   const listed = [...events]
     .sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time))

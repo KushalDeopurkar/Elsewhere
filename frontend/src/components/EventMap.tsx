@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LngLatBounds, MapLibreMap, Marker, setWorkerUrl, GeoJSONSource } from "maplibre-gl";
+import { LngLat, LngLatBounds, MapLibreMap, Marker, setWorkerUrl, GeoJSONSource } from "maplibre-gl";
 import type { RouteLine } from "@/components/TravelTime";
 import { Event } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -26,7 +26,7 @@ const prefersReducedMotion = () =>
 
 export interface MapHandle {
   flyToEvent: (event: Event) => void;
-  /** With `travel`, the camera pulls out to the country and back in (changing city). */
+  /** With `travel` (or when the view is far away), the camera hops between cities. */
   flyToPoint: (lat: number, lng: number, travel?: boolean) => void;
 }
 
@@ -129,7 +129,9 @@ export default function EventMap({
         },
         flyToPoint: (lat, lng, travel = false) => {
           const city = lightsOn.current;
-          if (travel && !prefersReducedMotion()) {
+          // A far drag away counts as travel too: hop back rather than pan.
+          const far = instance.getCenter().distanceTo(new LngLat(lng, lat)) > 80_000;
+          if ((travel || far) && !prefersReducedMotion()) {
             // Changing city: lift until both cities are on screen, glide
             // across with the map visible the whole way, settle in.
             cityHop(instance, {
@@ -143,8 +145,9 @@ export default function EventMap({
           }
           instance.flyTo({
             center: [lng, lat],
-            zoom: 11.5,
+            zoom: city ? 12 : 11.5,
             pitch: city ? 60 : 45,
+            bearing: city ? -20 : instance.getBearing(),
             duration: prefersReducedMotion() ? 0 : 1400,
             essential: true,
           });
