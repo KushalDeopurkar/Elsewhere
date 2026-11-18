@@ -13,6 +13,9 @@ import {
   add3DBuildings,
 } from "@/lib/mapTheme";
 import type { MapBounds } from "@/lib/api";
+import { formatWhen } from "@/lib/formatDate";
+import { priceBadge } from "@/lib/money";
+import type { CityLights } from "@/lib/cityLightsLayer";
 
 // Must be set before the first Map is constructed. See
 // scripts/copy-maplibre-worker.mjs for why the worker is served from public/.
@@ -24,7 +27,8 @@ const prefersReducedMotion = () =>
 
 export interface MapHandle {
   flyToEvent: (event: Event) => void;
-  flyToPoint: (lat: number, lng: number) => void;
+  /** With `travel`, the camera pulls out to the country and back in (changing city). */
+  flyToPoint: (lat: number, lng: number, travel?: boolean) => void;
 }
 
 export default function EventMap({
@@ -36,7 +40,10 @@ export default function EventMap({
   onError,
   route = null,
   liveIds = null,
+  cityLights = false,
 }: {
+  /** Draw the 3D city of lights (streets and event beams) over the map. Desktop only. */
+  cityLights?: boolean;
   route?: RouteLine | null;
   /** Pins for these events pulse: they are on at the scrubbed moment. */
   liveIds?: ReadonlySet<string> | null;
@@ -56,6 +63,9 @@ export default function EventMap({
   const [bearing, setBearing] = useState<number>(DEFAULT_VIEW.bearing);
   const [styleRev, setStyleRev] = useState(0);
   const originPin = useRef<Marker | null>(null);
+  const lights = useRef<CityLights | null>(null);
+  const lightsOn = useRef(cityLights);
+  const [tip, setTip] = useState<{ x: number; y: number; event: Event } | null>(null);
 
   // Callbacks are held in refs so the map is built exactly once; re-creating
   // a GL context on every parent render would thrash the GPU.
@@ -118,11 +128,27 @@ export default function EventMap({
             essential: true,
           });
         },
-        flyToPoint: (lat, lng) => {
+        flyToPoint: (lat, lng, travel = false) => {
+          const city = lightsOn.current;
+          if (travel && !prefersReducedMotion()) {
+            // Changing city: lift out to see the country, cross it, and drop
+            // back into the new city's lights.
+            instance.flyTo({
+              center: [lng, lat],
+              zoom: city ? 12 : 11.5,
+              pitch: city ? 60 : 45,
+              bearing: city ? -20 : instance.getBearing(),
+              curve: 1.9,
+              speed: 0.55,
+              minZoom: 4.3,
+              essential: true,
+            });
+            return;
+          }
           instance.flyTo({
             center: [lng, lat],
             zoom: 11.5,
-            pitch: 45,
+            pitch: city ? 60 : 45,
             duration: prefersReducedMotion() ? 0 : 1400,
             essential: true,
           });
@@ -194,6 +220,76 @@ export default function EventMap({
       map.current = null;
     };
   }, []);
+
+  // City lights: a three.js layer in the map's own GL context. Added when
+  // switched on (and again after a basemap swap), removed when off so the
+  // map stops repainting every frame.
+  useEffect(() => {
+    lightsOn.current = cityLights;
+    const instance = map.current;
+    if (!instance || !loaded) return;
+    instance.getContainer().classList.toggle("is-lights", cityLights);
+    let alive = true;
+    const onMoveEnd = () => lights.current?.refreshStreets();
+    const onIdle = () => lights.current?.refreshStreets();
+    if (cityLights) {
+      void import("@/lib/cityLightsLayer").then(({ createCityLights, CITY_LIGHTS_LAYER }) => {
+        if (!alive || !map.current) return;
+        if (!lights.current) lights.current = createCityLights(instance);
+        if (!instance.getLayer(CITY_LIGHTS_LAYER)) instance.addLayer(lights.current.layer);
+        // Streets come from loaded tiles: sample again once they're in.
+        instance.once("idle", onIdle);
+        if (instance.getPitch() < 45) instance.easeTo({ pitch: 60, bearing: -20, duration: prefersReducedMotion() ? 0 : 900 });
+      });
+      instance.on("moveend", onMoveEnd);
+    } else {
+      void import("@/lib/cityLightsLayer").then(({ CITY_LIGHTS_LAYER }) => {
+        if (map.current?.getLayer(CITY_LIGHTS_LAYER)) map.current.removeLayer(CITY_LIGHTS_LAYER);
+        setTip(null);
+      });
+    }
+    return () => {
+      alive = false;
+      instance.off("moveend", onMoveEnd);
+      instance.off("idle", onIdle);
+    };
+  }, [cityLights, loaded, styleRev]);
+
+  useEffect(() => {
+    lights.current?.setEvents(events, liveIds, selectedId, Date.now());
+  }, [events, liveIds, selectedId, cityLights, loaded]);
+
+  // Hover to peek, click to open, on the light beams.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !loaded || !cityLights) return;
+    const canvas = instance.getCanvas();
+    const at = (e: MouseEvent) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const onMove = (e: MouseEvent) => {
+      const p = at(e);
+      const hit = lights.current?.pick(p.x, p.y) ?? null;
+      canvas.style.cursor = hit ? "pointer" : "";
+      setTip((t) => (hit ? { ...p, event: hit } : t ? null : t));
+    };
+    const onClick = (e: MouseEvent) => {
+      const p = at(e);
+      const hit = lights.current?.pick(p.x, p.y);
+      if (hit) cb.current.onSelect(hit);
+    };
+    const onLeave = () => setTip(null);
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("click", onClick);
+    canvas.addEventListener("mouseleave", onLeave);
+    return () => {
+      canvas.removeEventListener("mousemove", onMove);
+      canvas.removeEventListener("click", onClick);
+      canvas.removeEventListener("mouseleave", onLeave);
+      canvas.style.cursor = "";
+    };
+  }, [cityLights, loaded]);
 
   // Reconcile markers against the event list: add what is new, drop what is
   // gone, and leave untouched pins alone so they do not flicker on refetch.
@@ -382,6 +478,18 @@ export default function EventMap({
   return (
     <>
       <div ref={container} className="map-canvas" />
+      {tip && cityLights && (
+        <div
+          className="city3d-tip map-light-tip"
+          style={{ left: tip.x, top: tip.y, "--cat": getCategoryColor(tip.event.category).color } as React.CSSProperties}
+          aria-hidden="true"
+        >
+          <strong>{tip.event.title}</strong>
+          <span>
+            {formatWhen(tip.event.start_time)} · {priceBadge(tip.event)}
+          </span>
+        </div>
+      )}
       <div className="map-tools">
         <button type="button" className="map-tool" onClick={() => nudge(1)} aria-label="Zoom in">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">

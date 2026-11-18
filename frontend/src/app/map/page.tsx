@@ -5,7 +5,6 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold, Cube } from "@phosphor-icons/react/ssr";
 import { useCapable3D } from "@/hooks/useCapable3D";
-import { useSky } from "@/hooks/useSky";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
@@ -27,16 +26,6 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
   loading: () => (
     <div className="map-status">
       <p className="panel-title">Loading the map</p>
-    </div>
-  ),
-});
-
-// The 3D city view (desktop only); three.js loads only when it is opened.
-const CityScene = dynamic(() => import("@/components/CityScene"), {
-  ssr: false,
-  loading: () => (
-    <div className="map-status">
-      <p className="panel-title">Lighting up the city</p>
     </div>
   ),
 });
@@ -108,12 +97,25 @@ export default function MapPage() {
   // Follow the location selector: fly to the chosen city once the map is up.
   const city = useCity();
   const can3d = useCapable3D();
-  const sky = useSky();
-  const [view3d, setView3d] = useState(false);
-  const show3d = can3d && view3d;
+  // City lights over the map: on by default where the device can carry it.
+  const [lightsPref, setLightsPref] = useState<boolean | null>(null);
+  const lightsOn = can3d && (lightsPref ?? true);
+  const flyLabel = useRef<HTMLParagraphElement>(null);
   const ready = useRef(false);
+  // Changing city flies across the country to it, with a title card.
+  const lastCity = useRef(city.name);
   useEffect(() => {
-    if (ready.current) handle.current?.flyToPoint(city.lat, city.lng);
+    const moved = lastCity.current !== city.name;
+    lastCity.current = city.name;
+    if (!ready.current) return;
+    handle.current?.flyToPoint(city.lat, city.lng, moved);
+    const el = flyLabel.current;
+    if (moved && el && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.textContent = `Flying to ${city.name}`;
+      el.classList.remove("is-on");
+      void el.offsetWidth;
+      el.classList.add("is-on");
+    }
   }, [city]);
 
   const listed = [...events]
@@ -175,10 +177,9 @@ export default function MapPage() {
         </button>
       </div>
 
-    <div className={`map-page${show3d ? " is-3d" : ""}`}>
-      {/* The 2D map stays mounted under the 3D view: it still follows the
-          city picker and fetches the events in view. */}
+    <div className={`map-page${lightsOn ? " is-lights" : ""}`}>
       <EventMap
+        cityLights={lightsOn}
         events={events}
         selectedId={selected?.id ?? null}
         onSelect={pick}
@@ -192,32 +193,20 @@ export default function MapPage() {
         liveIds={at?.live ?? null}
       />
 
-      {show3d && (
-        <div className="map-3d">
-          <CityScene
-            variant="full"
-            events={events}
-            center={city}
-            cityName={city.name}
-            sky={sky}
-            selectedId={selected?.id ?? null}
-            onPick={pick}
-          />
-        </div>
-      )}
+      <p className="map-fly" ref={flyLabel} aria-hidden="true" />
 
       {can3d && (
         <div className="map-dim" role="group" aria-label="Map style">
-          <button type="button" aria-pressed={!show3d} onClick={() => setView3d(false)}>
-            <MapTrifold size={15} weight="bold" aria-hidden="true" /> Map
+          <button type="button" aria-pressed={!lightsOn} onClick={() => setLightsPref(false)}>
+            <MapTrifold size={15} weight="bold" aria-hidden="true" /> Pins
           </button>
-          <button type="button" aria-pressed={show3d} onClick={() => setView3d(true)}>
-            <Cube size={15} weight="bold" aria-hidden="true" /> 3D city
+          <button type="button" aria-pressed={lightsOn} onClick={() => setLightsPref(true)}>
+            <Cube size={15} weight="bold" aria-hidden="true" /> City lights
           </button>
         </div>
       )}
 
-      {mapError && !show3d && (
+      {mapError && (
         <div className="map-status">
           <div className="panel is-error" role="alert">
             <WarningCircle size={30} weight="duotone" className="panel-icon" />

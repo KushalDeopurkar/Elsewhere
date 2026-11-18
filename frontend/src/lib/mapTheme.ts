@@ -123,7 +123,7 @@ export function applyDarkTheme(map: MapLibreMap): void {
 }
 
 /** Name of the first vector source in the style, whatever the style calls it. */
-function vectorSourceId(map: MapLibreMap): string | null {
+export function vectorSourceId(map: MapLibreMap): string | null {
   const sources = map.getStyle()?.sources ?? {};
   for (const [id, src] of Object.entries(sources)) {
     if ((src as { type?: string })?.type === "vector") return id;

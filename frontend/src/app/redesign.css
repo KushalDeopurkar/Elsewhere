@@ -5086,39 +5086,33 @@ body { transition: background-color 600ms ease; }
 }
 
 /* ==========================================================================
-   Map: 3D city view (CityScene variant="full")
+   Map: city lights over the real map (lib/cityLightsLayer.ts)
    ========================================================================== */
-.map-3d {
+/* Lights mode: the beams replace the photo pins. */
+.map-canvas.is-lights .pin-anchor { display: none; }
+.map-light-tip { z-index: 5; }
+.map-fly {
   position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    radial-gradient(70rem 40rem at 50% 70%, rgb(118 104 255 / 0.12), transparent 70%),
-    var(--ink-900);
-  animation: map3d-in 500ms ease both;
-}
-@keyframes map3d-in { from { opacity: 0; } }
-.city-full { position: absolute; inset: 0; }
-.city-full .city3d { position: absolute; inset: 0; }
-.city-full .city3d-fly { top: 38%; left: 0; right: 0; text-align: center; font-size: clamp(1.6rem, 3vw, 2.6rem); }
-.city-full-hint {
-  position: absolute;
-  right: 1rem;
-  bottom: 4.25rem;
+  top: 40%;
+  left: 0;
+  right: 0;
+  z-index: 3;
   margin: 0;
-  padding: 0.35rem 0.8rem;
-  border-radius: var(--r-pill);
-  background: rgb(14 16 21 / 0.8);
-  border: 1px solid var(--line-soft);
-  color: var(--text-low);
-  font-size: 0.75rem;
-  white-space: nowrap;
+  text-align: center;
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.6rem, 3.2vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-hi);
+  text-shadow: 0 4px 30px rgb(0 0 0 / 0.7);
+  opacity: 0;
   pointer-events: none;
 }
+.map-fly.is-on { animation: fly-label 3.2s ease both; }
 .map-dim {
   position: absolute;
   bottom: 1rem;
-  right: 1rem;
+  right: 4.5rem;
   z-index: calc(var(--z-overlay) + 1);
   display: flex;
   padding: 3px;
@@ -5140,7 +5134,3 @@ body { transition: background-color 600ms ease; }
 }
 .map-dim button[aria-pressed="true"] { background: var(--marigold); color: var(--on-marigold); }
 .map-dim button:focus-visible { outline: 2px solid var(--text-hi); outline-offset: 2px; }
-/* The 2D map's zoom and compass don't apply to the 3D view. */
-.map-page.is-3d .map-tools,
-.map-page.is-3d .maplibregl-ctrl-bottom-right,
-.map-page.is-3d .maplibregl-ctrl-bottom-left { visibility: hidden; }
