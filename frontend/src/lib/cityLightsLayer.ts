@@ -74,7 +74,7 @@ const RIPPLE_VERT = /* glsl */ `
     vColor = aColor;
     vPhase = aPhase;
     vBoost = aBoost;
-    vec3 p = vec3(aCenter + aCorner * uRadius * (0.8 + 0.5 * aBoost), 2.0);
+    vec3 p = vec3(aCenter + aCorner * uRadius * (1.0 + 0.4 * aBoost), 2.0);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }
 `;
@@ -89,13 +89,13 @@ const RIPPLE_FRAG = /* glsl */ `
   void main() {
     float d = length(vUv);
     if (d > 1.0) discard;
-    float speed = 0.35 + 0.3 * vBoost;
-    float t1 = fract(uTime * speed + vPhase);
-    float t2 = fract(uTime * speed + vPhase + 0.5);
-    float rings = ring(d, t1, 0.07) * (1.0 - t1) + ring(d, t2, 0.07) * (1.0 - t2);
-    float core = smoothstep(0.35, 0.0, d) * (0.45 + 0.3 * vBoost);
-    float a = (rings * (0.7 + 0.5 * vBoost) + core) * uOpacity;
-    gl_FragColor = vec4(vColor * (0.75 + core), a);
+    // One thin ring drifting outward, plus a small steady dot at the venue.
+    // Kept faint on purpose: only live and selected events stand out.
+    float t = fract(uTime * (0.22 + 0.18 * vBoost) + vPhase);
+    float ring = smoothstep(0.05, 0.0, abs(d - t)) * (1.0 - t);
+    float dot = smoothstep(0.13, 0.07, d);
+    float a = (ring * (0.4 + 0.4 * vBoost) + dot * (0.55 + 0.3 * vBoost)) * uOpacity;
+    gl_FragColor = vec4(vColor, a);
   }
 `;
 
@@ -145,7 +145,8 @@ export function createCityLights(map: MapLibreMap): CityLights {
     depthWrite: false,
     // Local y runs south, which flips the quads' winding: draw both faces.
     side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
+    // Normal blending: overlapping venues don't add up into white blobs.
+    blending: THREE.NormalBlending,
   });
 
   let origin = MercatorCoordinate.fromLngLat(map.getCenter(), 0);
@@ -326,11 +327,12 @@ export function createCityLights(map: MapLibreMap): CityLights {
       const far = Math.min(1, Math.max(0, (zoom - 8.5) / 2));
       streetMat.uniforms.uScale.value = z;
       streetMat.uniforms.uTime.value = t;
-      streetMat.uniforms.uOpacity.value = intro * far;
-      // Ripples hold a steady size on screen (~90px across) at any zoom.
-      rippleMat.uniforms.uRadius.value = 1200 * Math.pow(2, 12.5 - zoom);
+      streetMat.uniforms.uOpacity.value = 0.75 * intro * far;
+      // Ripples hold a modest size on screen (~45px across) at any zoom and
+      // fade out when zoomed out to the whole metro, where they'd crowd.
+      rippleMat.uniforms.uRadius.value = 560 * Math.pow(2, 12.5 - zoom);
       rippleMat.uniforms.uTime.value = t;
-      rippleMat.uniforms.uOpacity.value = far;
+      rippleMat.uniforms.uOpacity.value = Math.min(1, Math.max(0, (zoom - 10.2) / 1.3));
 
       const model = new THREE.Matrix4().makeTranslation(origin.x, origin.y, 0).scale(new THREE.Vector3(scale, scale, scale));
       mvp.fromArray(args.defaultProjectionData.mainMatrix as unknown as number[]).multiply(model);

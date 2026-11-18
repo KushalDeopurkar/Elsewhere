@@ -5091,20 +5091,19 @@ body { transition: background-color 600ms ease; }
 /* Lights mode: the photo pins float above their ground ripples on a thin
    lit tether. The anchor stays where MapLibre puts it (on the venue); only
    the pin is lifted, via the independent translate property. */
-.map-canvas.is-lights .pin { translate: 0 -46px; }
+.map-canvas.is-lights .pin { translate: 0 -38px; scale: 0.78; }
 .map-canvas.is-lights .pin-anchor::before {
   content: "";
   position: absolute;
-  left: calc(50% - 1px);
+  left: calc(50% - 0.75px);
   bottom: 50%;
-  width: 2px;
-  height: 46px;
-  border-radius: 1px;
-  background: linear-gradient(to top, transparent, var(--pin-hue, var(--marigold)));
-  opacity: 0.85;
+  width: 1.5px;
+  height: 38px;
+  background: var(--pin-hue, var(--marigold));
+  opacity: 0.6;
   pointer-events: none;
 }
-.map-canvas.is-lights .pin-anchor.is-active::before { opacity: 1; width: 3px; left: calc(50% - 1.5px); }
+.map-canvas.is-lights .pin-anchor.is-active::before { opacity: 0.9; }
 .map-fly {
   position: absolute;
   top: 40%;
