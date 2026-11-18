@@ -4905,3 +4905,182 @@ body { transition: background-color 600ms ease; }
 .tdial.is-night .tdial-hand circle { fill: var(--lilac); }
 .tdial-hub { fill: var(--text-hi); }
 @media (prefers-reduced-motion: reduce) { .tdial-hand { transition: none; } }
+
+/* ==========================================================================
+   Poster wall behind the board (desktop only, components/PosterWall.tsx)
+   ========================================================================== */
+.home-hero.has-board .home-hero-art { position: relative; isolation: isolate; }
+.home-hero.has-board .board { z-index: 1; }
+.pwall {
+  position: absolute;
+  inset: -18% -12%;
+  z-index: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  animation: pwall-in 1.6s ease 200ms forwards;
+  -webkit-mask-image: radial-gradient(closest-side, #000 45%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 45%, transparent 100%);
+  transform: rotate(-6deg);
+}
+@keyframes pwall-in { to { opacity: 0.42; } }
+.pwall-col { display: flex; flex-direction: column; gap: 14px; animation: pwall-up 90s linear infinite; will-change: transform; }
+.pwall-col.is-1 { animation-name: pwall-down; animation-duration: 110s; }
+.pwall-col.is-2 { animation-duration: 75s; }
+.pwall-col img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 12px;
+  filter: grayscale(0.55) contrast(1.05) brightness(0.8);
+}
+.pwall.is-paused .pwall-col { animation-play-state: paused; }
+@keyframes pwall-up { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
+@keyframes pwall-down { from { transform: translate3d(0, -50%, 0); } to { transform: translate3d(0, 0, 0); } }
+
+/* ==========================================================================
+   Monthly recap (/recap, components/RecapView.tsx)
+   ========================================================================== */
+.rc {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(60rem 40rem at 85% 0%, color-mix(in oklch, var(--cat-hue, var(--marigold)) 30%, transparent), transparent 70%),
+    radial-gradient(50rem 40rem at 0% 100%, rgb(169 155 255 / 0.18), transparent 70%),
+    #0b0c10;
+  color: var(--text-hi);
+}
+.rc-top { position: absolute; inset: 0 0 auto; z-index: 3; padding: max(0.9rem, env(safe-area-inset-top)) 1rem 0; }
+.rc-bars { display: flex; gap: 5px; max-width: 40rem; margin: 0 auto; }
+.rc-bar { flex: 1; height: 3px; border-radius: 2px; background: rgb(255 255 255 / 0.2); overflow: hidden; }
+.rc-fill { display: block; height: 100%; background: #fff; transform: scaleX(0); transform-origin: left; }
+.rc-fill.is-done { transform: scaleX(1); }
+.rc-fill.is-on { animation: story-progress linear forwards; }
+.rc-fill.is-paused { animation-play-state: paused; }
+.rc-head { display: flex; align-items: center; gap: 0.25rem; max-width: 40rem; margin: 0.5rem auto 0; color: var(--text-low); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.rc-head > span { margin-right: auto; }
+.rc-nav {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 30%;
+  display: grid;
+  align-items: center;
+  color: var(--text-low);
+}
+.rc-nav.is-prev { left: 0; justify-items: start; padding-left: 1rem; }
+.rc-nav.is-next { right: 0; justify-items: end; padding-right: 1rem; }
+.rc-nav:disabled { opacity: 0; }
+.rc-nav:focus-visible { outline: 2px solid var(--marigold); outline-offset: -4px; }
+@media (hover: none) { .rc-nav svg { display: none; } }
+.rc-stage { position: relative; z-index: 2; width: min(40rem, 100% - 3rem); pointer-events: none; }
+.rc-stage a, .rc-stage button { pointer-events: auto; }
+.rc-slide { position: relative; display: grid; gap: 1rem; }
+.rc-slide > * { animation: stage-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rc-slide > *:nth-child(2) { animation-delay: 120ms; }
+.rc-slide > *:nth-child(3) { animation-delay: 240ms; }
+.rc-slide > *:nth-child(4) { animation-delay: 360ms; }
+.rc-kicker { margin: 0; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--marigold-bright); }
+.rc-big {
+  margin: 0;
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+.rc-big em { font-style: normal; color: var(--marigold); }
+.rc-num {
+  margin: 0;
+  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(6rem, 30vw, 12rem);
+  line-height: 0.85;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: var(--marigold);
+  font-variant-numeric: tabular-nums;
+}
+.rc-line { margin: 0; font-size: 1.125rem; color: var(--text-mid); max-width: 32ch; }
+.rc-cat { display: flex; align-items: center; gap: 0.75rem; color: var(--cat-hue, var(--text-hi)); }
+.rc-slide.is-world { min-height: 16rem; align-content: center; }
+.rc-slide.is-world .cworld { inset: -40% -20%; mask-image: none; -webkit-mask-image: none; opacity: 0.8; }
+.rc-stamps { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.rc-stamps li {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: 6.5rem;
+  padding: 1rem 0.5rem 0.75rem;
+  border-radius: 14px;
+  border: 2px solid var(--cat-hue);
+  color: var(--cat-hue);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  animation: stamp-slam 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.rc-stamps li span { color: var(--text-hi); }
+.rc-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.75rem; margin: 0; }
+.rc-stats div { display: flex; flex-direction: column-reverse; gap: 0.2rem; padding: 1rem; border-radius: var(--r-card); background: rgb(29 32 41 / 0.8); border: 1px solid var(--line-soft); }
+.rc-stats dt { color: var(--text-mid); font-size: 0.875rem; }
+.rc-stats dd { margin: 0; font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif; font-size: 2.6rem; font-weight: 700; line-height: 1; }
+.rc-persona { color: var(--marigold); }
+.rc-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
+.rc-actions .btn { min-height: 46px; }
+.rc-more { color: var(--text-mid); font-weight: 600; justify-self: start; min-height: 44px; display: inline-flex; align-items: center; }
+.rc.is-empty .rc-slide { width: min(36rem, 100% - 3rem); }
+
+@keyframes stamp-slam {
+  0% { opacity: 0; transform: scale(1.9) rotate(-14deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(3deg); }
+  100% { transform: scale(1) rotate(var(--tilt, 0deg)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rc-fill.is-on { animation: none; }
+  .rc-slide > *, .rc-stamps li { animation: none; }
+}
+.pp-recap {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-card);
+  background: linear-gradient(120deg, var(--marigold-wash), rgb(169 155 255 / 0.1));
+  border: 1px solid var(--line);
+  transition: border-color var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+}
+.pp-recap:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+.pp-recap:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+.pp-recap svg { color: var(--marigold); flex-shrink: 0; }
+.pp-recap span:not(.pp-recap-go) { display: grid; flex: 1; }
+.pp-recap strong { color: var(--text-hi); }
+.pp-recap small { color: var(--text-mid); }
+.pp-recap-go { color: var(--marigold-bright); font-weight: 700; white-space: nowrap; }
+
+/* Passport: fresh stamps slam onto the page with an ink ring; bars fill. */
+.pp-stamp.is-fresh { animation: stamp-slam 560ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0ms) both; position: relative; }
+.pp-stamp.is-fresh::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 2px solid var(--cat-hue);
+  opacity: 0;
+  animation: ink-ring 700ms ease-out calc(var(--d, 0ms) + 260ms) both;
+  pointer-events: none;
+}
+@keyframes ink-ring { 0% { opacity: 0.8; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.18); } }
+.pp-bar > span { animation: bar-fill 900ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both; }
+@keyframes bar-fill { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .pp-stamp.is-fresh, .pp-stamp.is-fresh::after, .pp-bar > span { animation: none; }
+}

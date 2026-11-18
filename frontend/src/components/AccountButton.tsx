@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserCircle, Users, GearSix, SignOut, Medal, ListBullets } from "@phosphor-icons/react/ssr";
+import { UserCircle, Users, GearSix, SignOut, Medal, ListBullets, FilmSlate } from "@phosphor-icons/react/ssr";
 import Avatar from "./Avatar";
 import { openSignIn, signOut, socialConfigured, useAuth } from "@/lib/auth";
 
@@ -65,6 +65,9 @@ export default function AccountButton() {
           )}
           <button role="menuitem" type="button" onClick={() => go("/passport")}>
             <Medal size={18} weight="bold" aria-hidden="true" /> Passport
+          </button>
+          <button role="menuitem" type="button" onClick={() => go("/recap")}>
+            <FilmSlate size={18} weight="bold" aria-hidden="true" /> Your month recap
           </button>
           <button role="menuitem" type="button" onClick={() => go("/settings")}>
             <GearSix size={18} weight="bold" aria-hidden="true" /> Edit profile

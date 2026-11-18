@@ -1,13 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Fire, MapPin } from "@phosphor-icons/react/ssr";
+import { Check, Fire, MapPin, FilmSlate } from "@phosphor-icons/react/ssr";
 import CategoryIcon from "./CategoryIcon";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { categoryHref } from "@/lib/categoryPages";
 import { badges, resetPassport, usePassport } from "@/lib/passport";
 import { useStreak } from "@/lib/streak";
+
+// Stamps you've already seen land here without the slam.
+const SEEN_KEY = "ee.pp.seen.v1";
+const readSeen = (): string[] => {
+  try {
+    return JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+};
 
 const DATE = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" });
 
@@ -24,8 +35,38 @@ export default function PassportView() {
   const cities = Object.keys(p.cities);
   const earned = list.filter((b) => b.earned).length;
 
+  // New stamps since your last visit get stamped onto the page; then they
+  // count as seen. (Deferred a tick so the first paint matches the server.)
+  const gotKey = cats.filter((c) => p.cats[c.value]).map((c) => c.value).join(",");
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!gotKey) return;
+    const have = gotKey.split(",");
+    const seen = new Set(readSeen());
+    const t = window.setTimeout(() => {
+      const next = new Set(have.filter((v) => !seen.has(v)));
+      if (next.size) setFresh(next);
+      try {
+        localStorage.setItem(SEEN_KEY, JSON.stringify(have));
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [gotKey]);
+  let freshIndex = 0;
+
   return (
     <div className="passport">
+      <Link href="/recap" className="pp-recap">
+        <FilmSlate size={22} weight="duotone" aria-hidden="true" />
+        <span>
+          <strong>Your month in Elsewhere</strong>
+          <small>A one-minute replay of what you explored. Shareable.</small>
+        </span>
+        <span className="pp-recap-go" aria-hidden="true">Play →</span>
+      </Link>
+
       <div className="pp-stats">
         <p><strong>{got}</strong>/{cats.length} stamps</p>
         <p><strong>{earned}</strong>/{list.length} badges</p>
@@ -43,8 +84,15 @@ export default function PassportView() {
               <li key={c.value}>
                 <Link
                   href={categoryHref(c.value)}
-                  className={`pp-stamp${at ? " is-got" : ""}`}
-                  style={{ "--cat-hue": hue.color, "--cat-wash": hue.wash, "--tilt": `${((i * 37) % 11) - 5}deg` } as React.CSSProperties}
+                  className={`pp-stamp${at ? " is-got" : ""}${fresh.has(c.value) ? " is-fresh" : ""}`}
+                  style={
+                    {
+                      "--cat-hue": hue.color,
+                      "--cat-wash": hue.wash,
+                      "--tilt": `${((i * 37) % 11) - 5}deg`,
+                      "--d": fresh.has(c.value) ? `${250 + freshIndex++ * 220}ms` : "0ms",
+                    } as React.CSSProperties
+                  }
                   aria-label={`${c.label}: ${at ? `stamped ${DATE.format(new Date(at))}` : "not stamped yet"}`}
                 >
                   <span className="pp-ring">

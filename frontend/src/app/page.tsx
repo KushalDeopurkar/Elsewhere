@@ -12,6 +12,7 @@ import Preloader from "@/components/Preloader";
 import { useSky } from "@/hooks/useSky";
 import HeroSearch from "@/components/HeroSearch";
 import DepartureBoard from "@/components/DepartureBoard";
+import PosterWall from "@/components/PosterWall";
 import EventCard from "@/components/EventCard";
 import Rail from "@/components/Rail";
 import CategoryTile from "@/components/CategoryTile";
@@ -160,6 +161,7 @@ export default function Home() {
             </nav>
           </div>
           <div className="home-hero-art">
+            <PosterWall events={all} />
             <DepartureBoard events={all} city={city.name} loading={pool.loading} night={sky === "night" || sky === "dusk"} />
           </div>
         </div>
