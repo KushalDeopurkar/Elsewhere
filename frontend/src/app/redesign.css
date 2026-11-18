@@ -4861,7 +4861,7 @@ a.board-link:focus-visible .board-thumb {
   opacity: 0;
   pointer-events: none;
 }
-.map-fly.is-on { animation: fly-label 1.7s ease both; }
+.map-fly.is-on { animation: fly-label 2.2s ease both; }
 .map-dim {
   position: absolute;
   bottom: 1rem;

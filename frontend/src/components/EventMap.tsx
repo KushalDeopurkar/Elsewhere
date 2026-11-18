@@ -14,6 +14,7 @@ import {
 } from "@/lib/mapTheme";
 import type { MapBounds } from "@/lib/api";
 import type { CityLights } from "@/lib/cityLightsLayer";
+import { cityHop, isHopFrame } from "@/lib/cityHop";
 
 // Must be set before the first Map is constructed. See
 // scripts/copy-maplibre-worker.mjs for why the worker is served from public/.
@@ -92,7 +93,8 @@ export default function EventMap({
 
     map.current = instance;
 
-    const reportBounds = () => {
+    const reportBounds = (e?: unknown) => {
+      if (isHopFrame(e)) return; // mid-hop between cities
       const b = instance.getBounds();
       cb.current.onBoundsChange({
         south: b.getSouth(),
@@ -128,17 +130,14 @@ export default function EventMap({
         flyToPoint: (lat, lng, travel = false) => {
           const city = lightsOn.current;
           if (travel && !prefersReducedMotion()) {
-            // Changing city: a quick hop. A short lift (not out to the whole
-            // country) and a fixed duration, so it lands in about 1.6s.
-            instance.flyTo({
+            // Changing city: lift until both cities are on screen, glide
+            // across with the map visible the whole way, settle in.
+            cityHop(instance, {
               center: [lng, lat],
               zoom: city ? 12 : 11.5,
               pitch: city ? 60 : 45,
               bearing: city ? -20 : instance.getBearing(),
-              curve: 1.3,
-              minZoom: 6.5,
-              duration: 1600,
-              essential: true,
+              duration: 2200,
             });
             return;
           }
@@ -227,7 +226,12 @@ export default function EventMap({
     if (!instance || !loaded) return;
     instance.getContainer().classList.toggle("is-lights", cityLights);
     let alive = true;
-    const onMoveEnd = () => lights.current?.refreshStreets();
+    const onMoveEnd = (e: unknown) => {
+      if (isHopFrame(e)) return;
+      lights.current?.refreshStreets();
+      // A new city's road tiles are still arriving: sample again once they're in.
+      instance.once("idle", () => lights.current?.refreshStreets());
+    };
     const onIdle = () => lights.current?.refreshStreets();
     if (cityLights) {
       void import("@/lib/cityLightsLayer").then(({ createCityLights, CITY_LIGHTS_LAYER }) => {
