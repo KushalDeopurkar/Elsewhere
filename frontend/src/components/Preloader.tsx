@@ -7,13 +7,13 @@
  * It is server-rendered so it covers the page from the first paint, and a
  * tiny inline script hides it before paint for repeat visits in the same
  * session and for reduced motion. A CSS timeout lifts it even if scripts
- * fail. Click or Escape skips it. Decorative: aria-hidden.
+ * fail. Click or Escape skips it. Once per device, and short (about 1.2s with the lift). Decorative: aria-hidden.
  */
 import { useEffect, useRef, useState } from "react";
 import BrandMark from "./BrandMark";
 
 const KEY = "ee.intro.v1";
-const GATE = `try{if(sessionStorage.getItem("${KEY}")||matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("no-intro")}catch(e){document.documentElement.classList.add("no-intro")}`;
+const GATE = `try{if(localStorage.getItem("${KEY}")||matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("no-intro")}catch(e){document.documentElement.classList.add("no-intro")}`;
 
 export default function Preloader({ count, loading, city }: { count: number; loading: boolean; city: string }) {
   const [shown, setShown] = useState(0);
@@ -31,7 +31,7 @@ export default function Preloader({ count, loading, city }: { count: number; loa
       return () => window.clearTimeout(t);
     }
     try {
-      sessionStorage.setItem(KEY, "1");
+      localStorage.setItem(KEY, "1");
     } catch {
       /* private mode: show again next time, harmless */
     }
@@ -39,11 +39,11 @@ export default function Preloader({ count, loading, city }: { count: number; loa
     let raf = 0;
     const tick = (now: number) => {
       const el = now - started.current;
-      const p = Math.min(1, el / 1000);
+      const p = Math.min(1, el / 650);
       const eased = 1 - Math.pow(1 - p, 3);
       setShown(Math.round(target.current * eased));
-      if (p < 1 || (target.current === 0 && el < 1400)) raf = requestAnimationFrame(tick);
-      else window.setTimeout(() => setLeaving(true), 260);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else window.setTimeout(() => setLeaving(true), 150);
     };
     raf = requestAnimationFrame(tick);
     const skip = (e: Event) => {

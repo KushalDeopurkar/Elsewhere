@@ -13,15 +13,14 @@ import {
   friendsAtEvent,
   listIdsContaining,
   listsOf,
-  myStatus,
   setInList,
-  setStatus,
   type List,
   type PersonLite,
   type Status,
 } from "@/lib/social";
 import { recordSignal } from "@/lib/taste";
 import { sfx } from "@/lib/sound";
+import { useMyStatus } from "@/lib/going";
 
 /**
  * Going / Interested, how many people are, which of your friends are, and
@@ -30,33 +29,30 @@ import { sfx } from "@/lib/sound";
 export default function EventSocial({ event }: { event: Event }) {
   const { session } = useAuth();
   const uid = session?.user.id ?? null;
-  const [status, setMine] = useState<Status | null>(null);
   const [counts, setCounts] = useState<{ going: number; interested: number } | null>(null);
   const [friends, setFriends] = useState<(PersonLite & { status: Status })[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const enabled = socialConfigured && isRealEvent(event);
+  const [{ status }, setMine] = useMyStatus(event.id, enabled);
 
   const load = useCallback(async () => {
     try {
-      const [c, mine, fr] = await Promise.all([
-        eventCounts(event.id),
-        uid ? myStatus(event.id) : Promise.resolve(null),
-        uid ? friendsAtEvent(event.id) : Promise.resolve([]),
-      ]);
+      const [c, fr] = await Promise.all([eventCounts(event.id), uid ? friendsAtEvent(event.id) : Promise.resolve([])]);
       setCounts(c);
-      setMine(mine);
       setFriends(fr);
     } catch {
       setCounts(null);
     }
   }, [event.id, uid]);
 
+  // Load, and refresh the counts whenever your own status changes (from
+  // here or from the sticky action bar).
   useEffect(() => {
     if (!enabled) return;
-    const t = window.setTimeout(() => void load(), 0);
+    const t = window.setTimeout(() => void load(), status === undefined ? 0 : 400);
     return () => window.clearTimeout(t);
-  }, [enabled, load]);
+  }, [enabled, load, status]);
 
   if (!enabled) return null;
 
@@ -64,7 +60,6 @@ export default function EventSocial({ event }: { event: Event }) {
     if (!uid) return openSignIn(next === "going" ? "to say you're going" : "to mark this as interested");
     const value = status === next ? null : next;
     const prev = status;
-    setMine(value);
     setBusy(true);
     setError(null);
     // Optimistic counts.
@@ -76,13 +71,12 @@ export default function EventSocial({ event }: { event: Event }) {
       return n;
     });
     try {
-      await setStatus(event.id, value);
+      await setMine(value);
       if (value) {
         recordSignal(event, "save");
         sfx("pop");
       }
     } catch (e) {
-      setMine(prev);
       setError(e instanceof Error ? e.message : "Couldn't save that.");
       void load();
     } finally {

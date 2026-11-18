@@ -4,16 +4,14 @@ import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sparkle, ArrowRight, MapTrifold, Compass, BookmarkSimple, Cards, Play } from "@phosphor-icons/react/ssr";
-import dynamic from "next/dynamic";
 import KineticWord from "@/components/KineticWord";
 import ScrollStory from "@/components/ScrollStory";
 import TonightList from "@/components/TonightList";
 import WeekendStories from "@/components/WeekendStories";
 import Preloader from "@/components/Preloader";
-import { useCapable3D } from "@/hooks/useCapable3D";
 import { useSky } from "@/hooks/useSky";
 import HeroSearch from "@/components/HeroSearch";
-import HeroDeck from "@/components/HeroDeck";
+import DepartureBoard from "@/components/DepartureBoard";
 import EventCard from "@/components/EventCard";
 import Rail from "@/components/Rail";
 import CategoryTile from "@/components/CategoryTile";
@@ -27,7 +25,6 @@ import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/li
 import type { Event } from "@/lib/types";
 
 // three.js only loads on screens that will show the 3D hero.
-const CityScene = dynamic(() => import("@/components/CityScene"), { ssr: false });
 // Kept to roughly the width of "step out." so the headline stays on two lines.
 const KINETIC = ["step out.", "show up.", "get lost.", "go out.", "say yes."];
 
@@ -67,7 +64,6 @@ export default function Home() {
   const router = useRouter();
   const city = useCity();
   const saved = useSaved();
-  const use3d = useCapable3D();
   const sky = useSky();
 
   // Old shared plan links were /?plan=…; the planner now has its own page.
@@ -128,7 +124,7 @@ export default function Home() {
   return (
     <>
       <Preloader count={all.length} loading={pool.loading} city={city.name} />
-      <section className={`home-hero${use3d ? " has-city" : ""}`} data-sky={sky}>
+      <section className="home-hero has-board" data-sky={sky}>
         <div className="home-sky" aria-hidden="true" />
         <div className="shell home-hero-inner">
           <div className="home-hero-copy">
@@ -164,11 +160,7 @@ export default function Home() {
             </nav>
           </div>
           <div className="home-hero-art">
-            {use3d ? (
-              <CityScene events={all} center={city} cityName={city.name} sky={sky} onPick={(e) => router.push(`/events/${e.id}`)} />
-            ) : (
-              <HeroDeck events={showcase(all)} />
-            )}
+            <DepartureBoard events={all} city={city.name} loading={pool.loading} night={sky === "night" || sky === "dusk"} />
           </div>
         </div>
       </section>

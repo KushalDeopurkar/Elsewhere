@@ -24,6 +24,8 @@ import { SalesCountdown, StartCountdown } from "@/components/LiveCountdown";
 import CategoryAmbient from "@/components/CategoryAmbient";
 import PassportStamp from "@/components/PassportStamp";
 import EventSocial from "@/components/EventSocial";
+import EventActionBar from "@/components/EventActionBar";
+import TicketStub from "@/components/TicketStub";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -32,7 +34,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${event.title} - Elsewhere`,
     description: event.description?.slice(0, 160) ?? undefined,
-    openGraph: event.image_url ? { images: [event.image_url] } : undefined,
+    // The share image comes from ./opengraph-image.tsx.
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -92,6 +95,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         {/* Poster colour streams in after first paint; category colour until then. */}
         <CategoryAmbient category={event.category} />
         <PassportStamp event={event} />
+        <TicketStub event={event} />
+        <EventActionBar
+          event={event}
+          price={priceLine(event)}
+          ctaLabel={free ? "Register" : "Get tickets"}
+        />
         <Suspense fallback={null}>
           <PosterTintStyle url={event.image_url} scope={event.id} />
         </Suspense>

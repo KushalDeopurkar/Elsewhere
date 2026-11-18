@@ -3,7 +3,6 @@
 import TransitionLink from "./TransitionLink";
 import { usePathname } from "next/navigation";
 import {
-  House,
   Compass,
   SquaresFour,
   MapTrifold,
@@ -14,6 +13,8 @@ import {
   Smiley,
   Play,
   Medal,
+  Ticket,
+  UserCircle,
 } from "@phosphor-icons/react/ssr";
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
@@ -31,12 +32,14 @@ const LINKS = [
   { href: "/plan-my-day", label: "Plan My Day", icon: Sparkle },
 ];
 
+// Fewer, stronger doors on phones: tonight, discover, map, saved, you.
+// Explore stays one tap away through the search icon in the top bar.
 const TABS = [
-  { href: "/", label: "Home", icon: House },
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/plan-my-day", label: "Plan", icon: Sparkle },
-  { href: "/discover", label: "Swipe", icon: Cards },
+  { href: "/", label: "Tonight", icon: Ticket },
+  { href: "/discover", label: "Discover", icon: Cards },
+  { href: "/map", label: "Map", icon: MapTrifold },
   { href: "/saved", label: "Saved", icon: BookmarkSimple },
+  { href: "/me", label: "You", icon: UserCircle },
 ];
 
 function active(pathname: string, href: string): boolean {
