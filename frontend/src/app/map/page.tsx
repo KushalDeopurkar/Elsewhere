@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
+import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold, Cube } from "@phosphor-icons/react/ssr";
+import { useCapable3D } from "@/hooks/useCapable3D";
+import { useSky } from "@/hooks/useSky";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
@@ -25,6 +27,16 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
   loading: () => (
     <div className="map-status">
       <p className="panel-title">Loading the map</p>
+    </div>
+  ),
+});
+
+// The 3D city view (desktop only); three.js loads only when it is opened.
+const CityScene = dynamic(() => import("@/components/CityScene"), {
+  ssr: false,
+  loading: () => (
+    <div className="map-status">
+      <p className="panel-title">Lighting up the city</p>
     </div>
   ),
 });
@@ -95,6 +107,10 @@ export default function MapPage() {
 
   // Follow the location selector: fly to the chosen city once the map is up.
   const city = useCity();
+  const can3d = useCapable3D();
+  const sky = useSky();
+  const [view3d, setView3d] = useState(false);
+  const show3d = can3d && view3d;
   const ready = useRef(false);
   useEffect(() => {
     if (ready.current) handle.current?.flyToPoint(city.lat, city.lng);
@@ -159,7 +175,9 @@ export default function MapPage() {
         </button>
       </div>
 
-    <div className="map-page">
+    <div className={`map-page${show3d ? " is-3d" : ""}`}>
+      {/* The 2D map stays mounted under the 3D view: it still follows the
+          city picker and fetches the events in view. */}
       <EventMap
         events={events}
         selectedId={selected?.id ?? null}
@@ -174,7 +192,32 @@ export default function MapPage() {
         liveIds={at?.live ?? null}
       />
 
-      {mapError && (
+      {show3d && (
+        <div className="map-3d">
+          <CityScene
+            variant="full"
+            events={events}
+            center={city}
+            cityName={city.name}
+            sky={sky}
+            selectedId={selected?.id ?? null}
+            onPick={pick}
+          />
+        </div>
+      )}
+
+      {can3d && (
+        <div className="map-dim" role="group" aria-label="Map style">
+          <button type="button" aria-pressed={!show3d} onClick={() => setView3d(false)}>
+            <MapTrifold size={15} weight="bold" aria-hidden="true" /> Map
+          </button>
+          <button type="button" aria-pressed={show3d} onClick={() => setView3d(true)}>
+            <Cube size={15} weight="bold" aria-hidden="true" /> 3D city
+          </button>
+        </div>
+      )}
+
+      {mapError && !show3d && (
         <div className="map-status">
           <div className="panel is-error" role="alert">
             <WarningCircle size={30} weight="duotone" className="panel-icon" />

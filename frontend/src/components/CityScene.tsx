@@ -110,12 +110,18 @@ export default function CityScene({
   cityName,
   onPick,
   sky = "night",
+  variant = "lens",
+  selectedId = null,
 }: {
   events: Event[];
   center: { lat: number; lng: number };
   cityName: string;
   onPick: (e: Event) => void;
   sky?: SkyPhase;
+  /** "lens": the framed home-hero version with a Next up card; "full": fills its box (the map's 3D view). */
+  variant?: "lens" | "full";
+  /** Full variant: the event picked in the side list, whose light is enlarged. */
+  selectedId?: string | null;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Hover | null>(null);
@@ -144,14 +150,14 @@ export default function CityScene({
   const [held, setHeld] = useState(false);
   const featured = nextUp.length ? nextUp[step % nextUp.length] : null;
   useEffect(() => {
-    featuredId.current = featured?.id ?? null;
-  }, [featured]);
+    featuredId.current = variant === "full" ? selectedId : (featured?.id ?? null);
+  }, [featured, variant, selectedId]);
   useEffect(() => {
-    if (held || nextUp.length < 2) return;
+    if (variant === "full" || held || nextUp.length < 2) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = window.setInterval(() => setStep((s) => s + 1), NEXT_MS);
     return () => window.clearInterval(id);
-  }, [held, nextUp.length]);
+  }, [variant, held, nextUp.length]);
   const skyRef = useRef(sky);
   useEffect(() => {
     skyRef.current = sky;
@@ -272,8 +278,13 @@ export default function CityScene({
     let cardAt = { x: 0, y: 0, n: 0 };
     let intro = 0; // 0..1 fade/rise when data changes
 
+    let lastSeed = Number.NaN;
+    let bIntro = 0; // beacons fade in on their own when only the events change
     const setData = (list: Beacon[], seed: number) => {
-      for (const o of [lights, heads, beams]) {
+      // Same city (e.g. the map's timeline stepping an hour): keep the street
+      // lights and the camera settled, and only swap the event beacons.
+      const sameCity = seed === lastSeed && lights !== null;
+      for (const o of sameCity ? [heads, beams] : [lights, heads, beams]) {
         if (o) {
           world.remove(o);
           o.geometry.dispose();
@@ -282,8 +293,16 @@ export default function CityScene({
       current = list;
       indexOf = new Map(list.map((b, i) => [b.event.id, i]));
       lastFeat = -1;
-      intro = 0;
+      bIntro = 0;
+      if (!sameCity) {
+        intro = 0;
+        lastSeed = seed;
+        buildLights(seed);
+      }
+      buildBeacons(list);
+    };
 
+    const buildLights = (seed: number) => {
       const { positions, glow } = cityLights(seed, 12000);
       const lg = new THREE.BufferGeometry();
       lg.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -306,6 +325,9 @@ export default function CityScene({
       lg.setAttribute("aPhase", new THREE.BufferAttribute(lPh, 1));
       lights = new THREE.Points(lg, lightsMat);
       world.add(lights);
+    };
+
+    const buildBeacons = (list: Beacon[]) => {
 
       const m = list.length;
       const hPos = new Float32Array(m * 3);
@@ -455,6 +477,8 @@ export default function CityScene({
       clock.t += dt;
       intro = Math.min(1, intro + dt * 0.9);
       const ease = 1 - Math.pow(1 - intro, 3);
+      bIntro = Math.min(1, bIntro + dt * 3);
+      const bEase = 1 - Math.pow(1 - bIntro, 3);
 
       mouse.x += (mouse.tx - mouse.x) * 0.05;
       mouse.y += (mouse.ty - mouse.y) * 0.05;
@@ -489,14 +513,14 @@ export default function CityScene({
 
       for (const m of [lightsMat, headMat]) {
         m.uniforms.uTime.value = clock.t;
-        m.uniforms.uOpacity.value = ease * cityVis * (m === lightsMat ? skyK : 1);
+        m.uniforms.uOpacity.value = ease * cityVis * (m === lightsMat ? skyK : bEase);
       }
       indiaMat.uniforms.uOpacity.value = mapVis;
       pinMat.uniforms.uTime.value = clock.t;
       pinMat.uniforms.uOpacity.value = mapVis;
       arcMat.opacity = mapVis;
       for (const m of [indiaMat, pinMat]) m.uniforms.uPixel.value = pixel;
-      beamMat.opacity = 0.85 * ease * cityVis;
+      beamMat.opacity = 0.85 * ease * cityVis * bEase;
       glowMat.uniforms.uOpacity.value = ease * cityVis * skyK;
       if (hovered >= 0 && !dragging) showHover(hovered);
 
@@ -602,6 +626,33 @@ export default function CityScene({
   const label = sky === "night" || sky === "dusk" ? `Tonight in ${cityName}` : `${cityName}, live`;
   const count = events.length;
   const cd = featured && now ? startCountdown(featured.start_time, featured.end_time, now, { hasTime: true }) : null;
+
+  const tip = hover && (
+    <div
+      className="city3d-tip"
+      style={{ left: hover.x, top: hover.y, "--cat": getCategoryColor(hover.b.event.category).color } as React.CSSProperties}
+      aria-hidden="true"
+    >
+      <strong>{hover.b.event.title}</strong>
+      <span>
+        {formatWhen(hover.b.event.start_time)} · {priceBadge(hover.b.event)}
+      </span>
+    </div>
+  );
+
+  if (variant === "full") {
+    return (
+      <div className="city-full">
+        <div className="city3d" ref={wrap} data-cursor={hover ? "Open" : "Drag"}>
+          {tip}
+        </div>
+        <p className="city3d-fly" ref={flyLabel} aria-hidden="true" />
+        <p className="city-full-hint" aria-hidden="true">
+          {count} lit up in {cityName} · hover a light · drag to spin · switch city to fly
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="city-stage" onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)}>
