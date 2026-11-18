@@ -13,8 +13,6 @@ import {
   add3DBuildings,
 } from "@/lib/mapTheme";
 import type { MapBounds } from "@/lib/api";
-import { formatWhen } from "@/lib/formatDate";
-import { priceBadge } from "@/lib/money";
 import type { CityLights } from "@/lib/cityLightsLayer";
 
 // Must be set before the first Map is constructed. See
@@ -65,7 +63,6 @@ export default function EventMap({
   const originPin = useRef<Marker | null>(null);
   const lights = useRef<CityLights | null>(null);
   const lightsOn = useRef(cityLights);
-  const [tip, setTip] = useState<{ x: number; y: number; event: Event } | null>(null);
 
   // Callbacks are held in refs so the map is built exactly once; re-creating
   // a GL context on every parent render would thrash the GPU.
@@ -131,16 +128,16 @@ export default function EventMap({
         flyToPoint: (lat, lng, travel = false) => {
           const city = lightsOn.current;
           if (travel && !prefersReducedMotion()) {
-            // Changing city: lift out to see the country, cross it, and drop
-            // back into the new city's lights.
+            // Changing city: a quick hop. A short lift (not out to the whole
+            // country) and a fixed duration, so it lands in about 1.6s.
             instance.flyTo({
               center: [lng, lat],
               zoom: city ? 12 : 11.5,
               pitch: city ? 60 : 45,
               bearing: city ? -20 : instance.getBearing(),
-              curve: 1.9,
-              speed: 0.55,
-              minZoom: 4.3,
+              curve: 1.3,
+              minZoom: 6.5,
+              duration: 1600,
               essential: true,
             });
             return;
@@ -245,7 +242,6 @@ export default function EventMap({
     } else {
       void import("@/lib/cityLightsLayer").then(({ CITY_LIGHTS_LAYER }) => {
         if (map.current?.getLayer(CITY_LIGHTS_LAYER)) map.current.removeLayer(CITY_LIGHTS_LAYER);
-        setTip(null);
       });
     }
     return () => {
@@ -258,38 +254,6 @@ export default function EventMap({
   useEffect(() => {
     lights.current?.setEvents(events, liveIds, selectedId, Date.now());
   }, [events, liveIds, selectedId, cityLights, loaded]);
-
-  // Hover to peek, click to open, on the light beams.
-  useEffect(() => {
-    const instance = map.current;
-    if (!instance || !loaded || !cityLights) return;
-    const canvas = instance.getCanvas();
-    const at = (e: MouseEvent) => {
-      const r = canvas.getBoundingClientRect();
-      return { x: e.clientX - r.left, y: e.clientY - r.top };
-    };
-    const onMove = (e: MouseEvent) => {
-      const p = at(e);
-      const hit = lights.current?.pick(p.x, p.y) ?? null;
-      canvas.style.cursor = hit ? "pointer" : "";
-      setTip((t) => (hit ? { ...p, event: hit } : t ? null : t));
-    };
-    const onClick = (e: MouseEvent) => {
-      const p = at(e);
-      const hit = lights.current?.pick(p.x, p.y);
-      if (hit) cb.current.onSelect(hit);
-    };
-    const onLeave = () => setTip(null);
-    canvas.addEventListener("mousemove", onMove);
-    canvas.addEventListener("click", onClick);
-    canvas.addEventListener("mouseleave", onLeave);
-    return () => {
-      canvas.removeEventListener("mousemove", onMove);
-      canvas.removeEventListener("click", onClick);
-      canvas.removeEventListener("mouseleave", onLeave);
-      canvas.style.cursor = "";
-    };
-  }, [cityLights, loaded]);
 
   // Reconcile markers against the event list: add what is new, drop what is
   // gone, and leave untouched pins alone so they do not flicker on refetch.
@@ -312,6 +276,7 @@ export default function EventMap({
       // pin drifts away from its coordinate while the map moves.
       const anchor = document.createElement("div");
       anchor.className = "pin-anchor";
+      anchor.style.setProperty("--pin-hue", hue.color);
 
       const el = document.createElement("button");
       el.type = "button";
@@ -478,18 +443,6 @@ export default function EventMap({
   return (
     <>
       <div ref={container} className="map-canvas" />
-      {tip && cityLights && (
-        <div
-          className="city3d-tip map-light-tip"
-          style={{ left: tip.x, top: tip.y, "--cat": getCategoryColor(tip.event.category).color } as React.CSSProperties}
-          aria-hidden="true"
-        >
-          <strong>{tip.event.title}</strong>
-          <span>
-            {formatWhen(tip.event.start_time)} · {priceBadge(tip.event)}
-          </span>
-        </div>
-      )}
       <div className="map-tools">
         <button type="button" className="map-tool" onClick={() => nudge(1)} aria-label="Zoom in">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">

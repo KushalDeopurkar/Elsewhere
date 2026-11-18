@@ -4,8 +4,10 @@
  * "City lights" on the real map: a three.js layer drawn inside MapLibre's
  * own WebGL context, georeferenced in metres. Street lights are sampled
  * from the actual road lines in the loaded vector tiles (warm on main
- * roads, cool on side streets), and every event is a beam of light rising
- * from its real venue, coloured by category, taller the sooner it starts.
+ * roads, cool on side streets), and every event sends soft rings of
+ * light rippling across the ground from its real venue, in its category
+ * colour (brighter and faster when it's on now or selected). The photo
+ * pins float above the ripples (styled in CSS).
  * Buildings (MapLibre's fill-extrusions) share the depth buffer, so the
  * skyline hides lights behind it.
  *
@@ -54,6 +56,49 @@ const FRAG = /* glsl */ `
   }
 `;
 
+// Ground ripples: one quad per event lying flat on the map; the fragment
+// shader draws two expanding rings and a soft core.
+const RIPPLE_VERT = /* glsl */ `
+  attribute vec2 aCenter;
+  attribute vec2 aCorner;
+  attribute vec3 aColor;
+  attribute float aPhase;
+  attribute float aBoost;
+  uniform float uRadius;
+  varying vec2 vUv;
+  varying vec3 vColor;
+  varying float vPhase;
+  varying float vBoost;
+  void main() {
+    vUv = aCorner;
+    vColor = aColor;
+    vPhase = aPhase;
+    vBoost = aBoost;
+    vec3 p = vec3(aCenter + aCorner * uRadius * (0.8 + 0.5 * aBoost), 2.0);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }
+`;
+const RIPPLE_FRAG = /* glsl */ `
+  uniform float uTime;
+  uniform float uOpacity;
+  varying vec2 vUv;
+  varying vec3 vColor;
+  varying float vPhase;
+  varying float vBoost;
+  float ring(float d, float r, float w) { return smoothstep(w, 0.0, abs(d - r)); }
+  void main() {
+    float d = length(vUv);
+    if (d > 1.0) discard;
+    float speed = 0.35 + 0.3 * vBoost;
+    float t1 = fract(uTime * speed + vPhase);
+    float t2 = fract(uTime * speed + vPhase + 0.5);
+    float rings = ring(d, t1, 0.07) * (1.0 - t1) + ring(d, t2, 0.07) * (1.0 - t2);
+    float core = smoothstep(0.35, 0.0, d) * (0.45 + 0.3 * vBoost);
+    float a = (rings * (0.7 + 0.5 * vBoost) + core) * uOpacity;
+    gl_FragColor = vec4(vColor * (0.75 + core), a);
+  }
+`;
+
 const pointsMaterial = (pulse: boolean) =>
   new THREE.ShaderMaterial({
     uniforms: { uScale: { value: 1 }, uTime: { value: 0 }, uPulse: { value: pulse ? 1 : 0 }, uOpacity: { value: 1 } },
@@ -83,8 +128,6 @@ function cssColor(css: string): THREE.Color {
 export interface CityLights {
   layer: CustomLayerInterface;
   setEvents: (events: Event[], liveIds: ReadonlySet<string> | null, selectedId: string | null, now: number) => void;
-  /** Screen-space hit test for event beams: returns the event under (x, y) CSS px, if any. */
-  pick: (x: number, y: number) => Event | null;
   /** Re-sample the streets around the current view (call after the map settles somewhere new). */
   refreshStreets: () => void;
 }
@@ -94,16 +137,21 @@ export function createCityLights(map: MapLibreMap): CityLights {
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
   const streetMat = pointsMaterial(false);
-  const headMat = pointsMaterial(true);
-  const beamMat = pointsMaterial(false);
+  const rippleMat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uOpacity: { value: 1 }, uRadius: { value: 300 } },
+    vertexShader: RIPPLE_VERT,
+    fragmentShader: RIPPLE_FRAG,
+    transparent: true,
+    depthWrite: false,
+    // Local y runs south, which flips the quads' winding: draw both faces.
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
 
   let origin = MercatorCoordinate.fromLngLat(map.getCenter(), 0);
   let scale = origin.meterInMercatorCoordinateUnits();
   let streets: THREE.Points | null = null;
-  let heads: THREE.Points | null = null;
-  let beams: THREE.Points | null = null;
-  let beaconEvents: Event[] = [];
-  let beaconPos: Float32Array = new Float32Array(0);
+  let ripples: THREE.Mesh | null = null;
   let lastEvents: { events: Event[]; live: ReadonlySet<string> | null; sel: string | null; now: number } = { events: [], live: null, sel: null, now: 0 };
   const clock = new THREE.Clock();
   let intro = 0;
@@ -114,79 +162,57 @@ export function createCityLights(map: MapLibreMap): CityLights {
     return [(m.x - origin.x) / scale, (m.y - origin.y) / scale];
   };
 
-  const dispose = (o: THREE.Points | null) => {
+  const dispose = (o: THREE.Points | THREE.Mesh | null) => {
     if (!o) return;
     scene.remove(o);
     o.geometry.dispose();
   };
 
-  /** Beam height in metres: tall enough to read at city zoom, by how soon it starts. */
-  const heightFor = (e: Event, live: boolean, now: number) => {
-    const hrs = (Date.parse(e.start_time) - now) / 3_600_000;
-    return live || hrs <= 0 ? 2000 : hrs <= 24 ? 1500 : hrs <= 72 ? 1000 : 650;
-  };
-
   function buildBeacons() {
-    dispose(heads);
-    dispose(beams);
-    const { events, live, sel, now } = lastEvents;
+    dispose(ripples);
+    ripples = null;
+    const { events, live, sel } = lastEvents;
     const list = events.filter((e) => e.lat != null && e.lng != null);
-    beaconEvents = list;
     const n = list.length;
-    const hPos = new Float32Array(n * 3);
-    const hCol = new Float32Array(n * 3);
-    const hSize = new Float32Array(n);
-    const hPh = new Float32Array(n);
-    // Each beam is a column of soft points (WebGL lines are 1px thin), with
-    // a pool of light where it meets the ground.
-    const STEPS = 30;
-    const per = STEPS + 1;
-    const bPos = new Float32Array(n * per * 3);
-    const bCol = new Float32Array(n * per * 3);
-    const bSize = new Float32Array(n * per);
-    const bPh = new Float32Array(n * per);
+    if (!n) return;
+    const corners = [-1, -1, 1, -1, 1, 1, -1, 1];
+    const center = new Float32Array(n * 8);
+    const corner = new Float32Array(n * 8);
+    const color = new Float32Array(n * 12);
+    const phase = new Float32Array(n * 4);
+    const boost = new Float32Array(n * 4);
+    const index: number[] = [];
     list.forEach((e, i) => {
       const [x, y] = toLocal(e.lng!, e.lat!);
-      const isLive = live?.has(e.id) ?? false;
-      const h = heightFor(e, isLive, now);
       const c = cssColor(getCategoryColor(e.category).color);
-      hPos.set([x, y, h], i * 3);
-      hCol.set([c.r, c.g, c.b], i * 3);
-      hSize[i] = e.id === sel ? 40 : isLive ? 32 : 26;
-      hPh[i] = (i * 1.7) % 6.28;
-      const k = e.id === sel ? 1.25 : 1;
-      for (let j = 0; j < STEPS; j++) {
-        const f = j / (STEPS - 1);
-        const o = (i * per + j) * 3;
-        bPos.set([x, y, h * f], o);
-        const fade = (1 - f * 0.75) * k;
-        bCol.set([c.r * fade, c.g * fade, c.b * fade], o);
-        bSize[i * per + j] = (e.id === sel ? 13 : 10) * (1 - f * 0.45);
-        bPh[i * per + j] = hPh[i];
+      const b = e.id === sel ? 1 : live?.has(e.id) ? 0.7 : 0;
+      for (let v = 0; v < 4; v++) {
+        const k = i * 4 + v;
+        center[k * 2] = x;
+        center[k * 2 + 1] = y;
+        corner[k * 2] = corners[v * 2];
+        corner[k * 2 + 1] = corners[v * 2 + 1];
+        color[k * 3] = c.r;
+        color[k * 3 + 1] = c.g;
+        color[k * 3 + 2] = c.b;
+        phase[k] = (i * 0.618) % 1;
+        boost[k] = b;
       }
-      const g = (i * per + STEPS) * 3;
-      bPos.set([x, y, 2], g);
-      bCol.set([c.r * 0.55, c.g * 0.55, c.b * 0.55], g);
-      bSize[i * per + STEPS] = e.id === sel ? 90 : 64;
-      bPh[i * per + STEPS] = hPh[i];
+      const o = i * 4;
+      index.push(o, o + 1, o + 2, o, o + 2, o + 3);
     });
-    beaconPos = hPos;
-    const hg = new THREE.BufferGeometry();
-    hg.setAttribute("position", new THREE.BufferAttribute(hPos, 3));
-    hg.setAttribute("aColor", new THREE.BufferAttribute(hCol, 3));
-    hg.setAttribute("aSize", new THREE.BufferAttribute(hSize, 1));
-    hg.setAttribute("aPhase", new THREE.BufferAttribute(hPh, 1));
-    heads = new THREE.Points(hg, headMat);
-    heads.frustumCulled = false;
-    scene.add(heads);
-    const bg = new THREE.BufferGeometry();
-    bg.setAttribute("position", new THREE.BufferAttribute(bPos, 3));
-    bg.setAttribute("aColor", new THREE.BufferAttribute(bCol, 3));
-    bg.setAttribute("aSize", new THREE.BufferAttribute(bSize, 1));
-    bg.setAttribute("aPhase", new THREE.BufferAttribute(bPh, 1));
-    beams = new THREE.Points(bg, beamMat);
-    beams.frustumCulled = false;
-    scene.add(beams);
+    const g = new THREE.BufferGeometry();
+    // three wants a "position" attribute; the shader places vertices itself.
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 12), 3));
+    g.setAttribute("aCenter", new THREE.BufferAttribute(center, 2));
+    g.setAttribute("aCorner", new THREE.BufferAttribute(corner, 2));
+    g.setAttribute("aColor", new THREE.BufferAttribute(color, 3));
+    g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+    g.setAttribute("aBoost", new THREE.BufferAttribute(boost, 1));
+    g.setIndex(index);
+    ripples = new THREE.Mesh(g, rippleMat);
+    ripples.frustumCulled = false;
+    scene.add(ripples);
     map.triggerRepaint();
   }
 
@@ -283,9 +309,9 @@ export function createCityLights(map: MapLibreMap): CityLights {
     },
     onRemove() {
       dispose(streets);
-      dispose(heads);
-      dispose(beams);
-      streets = heads = beams = null;
+      dispose(ripples);
+      streets = null;
+      ripples = null;
       renderer?.dispose();
       renderer = null;
     },
@@ -301,12 +327,10 @@ export function createCityLights(map: MapLibreMap): CityLights {
       streetMat.uniforms.uScale.value = z;
       streetMat.uniforms.uTime.value = t;
       streetMat.uniforms.uOpacity.value = intro * far;
-      headMat.uniforms.uScale.value = Math.max(0.6, z);
-      headMat.uniforms.uTime.value = t;
-      headMat.uniforms.uOpacity.value = far;
-      beamMat.uniforms.uScale.value = Math.max(0.6, z);
-      beamMat.uniforms.uTime.value = t;
-      beamMat.uniforms.uOpacity.value = 0.85 * far;
+      // Ripples hold a steady size on screen (~90px across) at any zoom.
+      rippleMat.uniforms.uRadius.value = 1200 * Math.pow(2, 12.5 - zoom);
+      rippleMat.uniforms.uTime.value = t;
+      rippleMat.uniforms.uOpacity.value = far;
 
       const model = new THREE.Matrix4().makeTranslation(origin.x, origin.y, 0).scale(new THREE.Vector3(scale, scale, scale));
       mvp.fromArray(args.defaultProjectionData.mainMatrix as unknown as number[]).multiply(model);
@@ -327,30 +351,6 @@ export function createCityLights(map: MapLibreMap): CityLights {
       if (!renderer) return;
       if (recentre()) buildBeacons();
       buildStreets();
-    },
-    pick(x, y) {
-      if (!beaconEvents.length) return null;
-      const canvas = map.getCanvas();
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      const v = new THREE.Vector4();
-      let best = -1;
-      let bestD = 18 * 18;
-      for (let i = 0; i < beaconEvents.length; i++) {
-        // Test against the beam's top and its foot, whichever is nearer.
-        for (const zz of [beaconPos[i * 3 + 2], beaconPos[i * 3 + 2] * 0.5]) {
-          v.set(beaconPos[i * 3], beaconPos[i * 3 + 1], zz, 1).applyMatrix4(mvp);
-          if (v.w <= 0) continue;
-          const sx = ((v.x / v.w + 1) / 2) * w;
-          const sy = ((1 - v.y / v.w) / 2) * h;
-          const d = (sx - x) ** 2 + (sy - y) ** 2;
-          if (d < bestD) {
-            bestD = d;
-            best = i;
-          }
-        }
-      }
-      return best >= 0 ? beaconEvents[best] : null;
     },
   };
 }
