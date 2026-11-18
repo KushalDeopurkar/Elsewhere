@@ -21,11 +21,9 @@ import AboutText from "@/components/AboutText";
 import TrailerMedia from "@/components/TrailerMedia";
 import RevealTitle from "@/components/RevealTitle";
 import { SalesCountdown, StartCountdown } from "@/components/LiveCountdown";
-import CategoryAmbient from "@/components/CategoryAmbient";
 import PassportStamp from "@/components/PassportStamp";
 import EventSocial from "@/components/EventSocial";
 import EventActionBar from "@/components/EventActionBar";
-import TicketStub from "@/components/TicketStub";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -93,9 +91,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         }
       >
         {/* Poster colour streams in after first paint; category colour until then. */}
-        <CategoryAmbient category={event.category} />
         <PassportStamp event={event} />
-        <TicketStub event={event} />
         <EventActionBar
           event={event}
           price={priceLine(event)}

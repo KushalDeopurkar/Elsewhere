@@ -16,7 +16,6 @@ import { supabase } from "@/lib/supabase";
 import { buildRecap } from "@/lib/recap";
 import { CATEGORIES, type EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { sfx } from "@/lib/sound";
 
 const SLIDE_MS = 5500;
 const labelOf = (c: EventCategory) => CATEGORIES.find((x) => x.value === c)?.label ?? c;
@@ -91,7 +90,6 @@ export default function RecapView() {
   const go = useCallback(
     (d: number) => {
       setI((x) => Math.max(0, Math.min(last, x + d)));
-      sfx("tick");
     },
     [last],
   );
@@ -117,7 +115,7 @@ export default function RecapView() {
           <h1 className="rc-big">Nothing to recap yet</h1>
           <p className="rc-line">Save, swipe or mark events Going this month and your recap builds itself.</p>
           <div className="rc-actions">
-            <Link href="/discover" className="btn btn-primary">Start swiping</Link>
+            <Link href="/explore" className="btn btn-primary">Explore events</Link>
             <Link href="/" className="btn btn-ghost">Back home</Link>
           </div>
         </div>

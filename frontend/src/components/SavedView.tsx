@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookmarkSimple, Trash, Info } from "@phosphor-icons/react/ssr";
+import { BookmarkSimple, Trash, Sparkle } from "@phosphor-icons/react/ssr";
 import EventCard from "./EventCard";
 import ShareCard from "./ShareCard";
 import { EmptyState, SectionHeader } from "./Section";
@@ -33,14 +33,13 @@ export default function SavedView() {
 
   return (
     <>
-      <p className="notice notice-quiet">
-        <Info size={15} weight="fill" /> Saved on this device. Sign-in to sync across devices isn&apos;t available yet.
-      </p>
-
       <section className="sec-tight">
         <SectionHeader title={`Upcoming (${upcoming.length})`} />
         {upcoming.length > 0 && (
           <div className="saved-share">
+            <Link href="/plan-my-day" className="btn btn-primary">
+              <Sparkle size={16} weight="fill" aria-hidden="true" /> Plan my day
+            </Link>
             <ShareCard ids={upcoming.map((s) => s.event.id)} title="On my list" kicker="Coming up" label="Share my list as a card" />
           </div>
         )}

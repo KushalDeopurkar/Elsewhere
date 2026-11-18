@@ -5,7 +5,6 @@ import ExploreView from "@/components/ExploreView";
 import SiteFooter from "@/components/SiteFooter";
 import CategoryIcon from "@/components/CategoryIcon";
 import CategoryWorld from "@/components/CategoryWorld";
-import CategoryAmbient from "@/components/CategoryAmbient";
 import { PageHeader } from "@/components/Section";
 import { CATEGORY_PAGES, categoryBySlug } from "@/lib/categoryPages";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -30,7 +29,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     <>
       <div className="cat-hero" style={{ "--cat-hue": hue.color, "--cat-wash": hue.wash } as React.CSSProperties}>
         <CategoryWorld category={cat.value} />
-        <CategoryAmbient category={cat.value} />
         <PageHeader
           title={
             <>
@@ -39,7 +37,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
             </>
           }
           lede={cat.blurb}
-          crumbs={[{ label: "Home", href: "/" }, { label: "Categories", href: "/categories" }, { label: cat.label }]}
+          crumbs={[{ label: "Home", href: "/" }, { label: cat.label }]}
         />
       </div>
       <Suspense fallback={<div className="shell explore-fallback" />}>

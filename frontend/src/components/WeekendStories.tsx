@@ -14,7 +14,6 @@ import { useNow } from "@/lib/clock";
 import { createStore } from "@/lib/clientStore";
 import { rememberPreview } from "@/lib/eventPreview";
 import { recordSignal } from "@/lib/taste";
-import { playAmbient, sfx, stopAmbient } from "@/lib/sound";
 import SaveButton from "./SaveButton";
 import "./stories.css";
 
@@ -125,16 +124,13 @@ function StoryPlayer({
 
   useEffect(() => {
     markSeen(event.id);
-    playAmbient(event.category);
-  }, [event.id, event.category, markSeen]);
-  useEffect(() => stopAmbient, []);
+  }, [event.id, markSeen]);
 
   const go = useCallback(
     (delta: number) => {
       const next = index + delta;
       if (next < 0) return setIndex(0);
       if (next >= stories.length) return onClose();
-      sfx("tick");
       setIndex(next);
     },
     [index, stories.length, onClose],
@@ -143,7 +139,6 @@ function StoryPlayer({
   const openEvent = useCallback(() => {
     recordSignal(event, "open");
     rememberPreview(event);
-    sfx("whoosh");
     onClose();
     router.push(`/events/${event.id}`);
   }, [event, onClose, router]);

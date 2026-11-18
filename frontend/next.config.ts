@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
   },
+  // Pages folded into others when the site was simplified.
+  async redirects() {
+    return [
+      { source: "/vibe", destination: "/explore", permanent: false },
+      { source: "/feed", destination: "/explore", permanent: false },
+      { source: "/discover", destination: "/explore", permanent: false },
+      { source: "/categories", destination: "/explore", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       {

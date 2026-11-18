@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import TimeDial from "./TimeDial";
-import { Pause, Play, X, ClockCountdown, MoonStars } from "@phosphor-icons/react";
+import { Pause, Play, X, MoonStars } from "@phosphor-icons/react";
 import type { Event } from "@/lib/types";
 import { HOUR, WEEK_HOURS, busyness, momentLabel } from "@/lib/timeline";
 
@@ -40,8 +40,8 @@ export default function TimeScrubber({
   shown: number;
   live: number;
 }) {
-  // "Play tonight" runs slower, from the evening (or now, if it's already
-  // evening) until 3 am; "Play the week" sweeps all seven days.
+  // "Play tonight" runs slowly from the evening (or now, if it's already
+  // evening) until 3 am. The scrubber still reaches across the whole week.
   const [stopAt, setStopAt] = useState(WEEK_HOURS - 1);
   const startHod = Math.floor((start + IST) / HOUR) % 24;
   const hod = (startHod + hour) % 24;
@@ -95,18 +95,6 @@ export default function TimeScrubber({
           }}
         >
           <MoonStars size={16} weight="bold" aria-hidden="true" /> Play tonight
-        </button>
-        <button
-          type="button"
-          className="tl-open is-alt"
-          onClick={() => {
-            setStopAt(WEEK_HOURS - 1);
-            setOn(true);
-            setHour(0);
-            setPlaying(true);
-          }}
-        >
-          <ClockCountdown size={16} weight="bold" aria-hidden="true" /> Play the week
         </button>
       </div>
     );

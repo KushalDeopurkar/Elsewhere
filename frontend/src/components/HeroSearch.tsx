@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlass, Sparkle, ArrowRight } from "@phosphor-icons/react/ssr";
 import { rememberSearch } from "@/lib/cityPref";
-import VoiceButton from "./VoiceButton";
 
 const CHIPS = [
   "Free tech events this weekend",
@@ -44,7 +43,6 @@ export default function HeroSearch() {
           aria-label="Describe what you want to do"
           enterKeyHint="search"
         />
-        <VoiceButton onInterim={setQ} onFinal={go} />
         <button type="submit" className="btn btn-primary hsearch-go">
           <MagnifyingGlass size={17} weight="bold" />
           <span>Search</span>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold, Cube } from "@phosphor-icons/react/ssr";
+import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
 import { useCapable3D } from "@/hooks/useCapable3D";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
@@ -97,9 +97,8 @@ export default function MapPage() {
   // Follow the location selector: fly to the chosen city once the map is up.
   const city = useCity();
   const can3d = useCapable3D();
-  // City lights over the map: on by default where the device can carry it.
-  const [lightsPref, setLightsPref] = useState<boolean | null>(null);
-  const lightsOn = can3d && (lightsPref ?? true);
+  // City lights over the map wherever the device can carry it; pins otherwise.
+  const lightsOn = can3d;
   const flyLabel = useRef<HTMLParagraphElement>(null);
   const ready = useRef(false);
   // Changing city flies across the country to it, with a title card.
@@ -194,17 +193,6 @@ export default function MapPage() {
       />
 
       <p className="map-fly" ref={flyLabel} aria-hidden="true" />
-
-      {can3d && (
-        <div className="map-dim" role="group" aria-label="Map style">
-          <button type="button" aria-pressed={!lightsOn} onClick={() => setLightsPref(false)}>
-            <MapTrifold size={15} weight="bold" aria-hidden="true" /> Pins
-          </button>
-          <button type="button" aria-pressed={lightsOn} onClick={() => setLightsPref(true)}>
-            <Cube size={15} weight="bold" aria-hidden="true" /> City lights
-          </button>
-        </div>
-      )}
 
       {mapError && (
         <div className="map-status">

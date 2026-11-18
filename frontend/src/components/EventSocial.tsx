@@ -19,7 +19,6 @@ import {
   type Status,
 } from "@/lib/social";
 import { recordSignal } from "@/lib/taste";
-import { sfx } from "@/lib/sound";
 import { useMyStatus } from "@/lib/going";
 
 /**
@@ -74,7 +73,6 @@ export default function EventSocial({ event }: { event: Event }) {
       await setMine(value);
       if (value) {
         recordSignal(event, "save");
-        sfx("pop");
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't save that.");

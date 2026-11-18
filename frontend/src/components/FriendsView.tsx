@@ -9,7 +9,6 @@ import { openSignIn, socialConfigured, useAuth, type Profile } from "@/lib/auth"
 import { connections, eventsByIds, follow, friendsUpcoming, searchPeople, unfollow, type FriendPlan } from "@/lib/social";
 import { formatWhen } from "@/lib/formatDate";
 import type { Event } from "@/lib/types";
-import { sfx } from "@/lib/sound";
 
 /**
  * Find people, see who follows you, and what your friends are up to.
@@ -83,7 +82,6 @@ export default function FriendsView() {
       await unfollow(p.id).catch(() => setFollowing((l) => [...l, p]));
     } else {
       setFollowing((l) => [...l, p]);
-      sfx("pop");
       await follow(p.id).catch(() => setFollowing((l) => l.filter((x) => x.id !== p.id)));
     }
   };

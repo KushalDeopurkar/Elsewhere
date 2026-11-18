@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DownloadSimple, ImageSquare, ShareNetwork, X } from "@phosphor-icons/react/ssr";
-import { sfx } from "@/lib/sound";
 
 type Format = "story" | "square";
 
@@ -42,7 +41,6 @@ export default function ShareCard({ ids, title, kicker, label = "Share card" }: 
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       }
-      sfx("pop");
     } catch {
       /* cancelled or failed; the download link still works */
     } finally {

@@ -27,7 +27,6 @@ import {
 import { EMPTY_PASSPORT, badges, mergePassports, readPassport, type Passport } from "@/lib/passport";
 import { CATEGORIES, type Event } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { sfx } from "@/lib/sound";
 
 type Tab = "plans" | "lists" | "passport";
 const VIS_LABEL: Record<Visibility, string> = { private: "Only you", friends: "Friends", public: "Anyone with the link" };
@@ -102,7 +101,6 @@ export default function ProfileView({ username }: { username: string }) {
         await follow(profile.id);
         setRel(rel === "follower" ? "friends" : "following");
         setStats((s) => ({ ...s, followers: s.followers + 1, friends: rel === "follower" ? s.friends + 1 : s.friends }));
-        sfx("pop");
         if (rel === "follower") void load(); // now friends: their plans become visible
       }
     } finally {
@@ -218,7 +216,15 @@ export default function ProfileView({ username }: { username: string }) {
           (!canSeeActivity ? (
             <Locked name={name} rel={rel} onFollow={toggleFollow} />
           ) : (
-            <PassportMini passport={passport} />
+            <>
+              <PassportMini passport={passport} />
+              {self && (
+                <p className="pf-more">
+                  <Link href="/passport" className="sec-link">Full passport</Link>
+                  <Link href="/recap" className="sec-link">Your month recap</Link>
+                </p>
+              )}
+            </>
           ))}
       </div>
     </div>

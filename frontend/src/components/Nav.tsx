@@ -2,41 +2,23 @@
 
 import TransitionLink from "./TransitionLink";
 import { usePathname } from "next/navigation";
-import {
-  Compass,
-  SquaresFour,
-  MapTrifold,
-  Sparkle,
-  BookmarkSimple,
-  MagnifyingGlass,
-  Cards,
-  Smiley,
-  Play,
-  Medal,
-  Ticket,
-  UserCircle,
-} from "@phosphor-icons/react/ssr";
+import { Compass, MapTrifold, BookmarkSimple, MagnifyingGlass, Ticket, UserCircle } from "@phosphor-icons/react/ssr";
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
-import SoundToggle from "./SoundToggle";
 import AccountButton from "./AccountButton";
 import { useSaved } from "@/lib/saved";
 
+// Few, strong doors: tonight, explore, map. Saved, search and your account
+// sit on the right as icons.
 const LINKS = [
+  { href: "/", label: "Tonight", icon: Ticket },
   { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/discover", label: "Discover", icon: Cards },
-  { href: "/vibe", label: "Vibe", icon: Smiley },
-  { href: "/feed", label: "Feed", icon: Play },
-  { href: "/categories", label: "Categories", icon: SquaresFour },
   { href: "/map", label: "Map", icon: MapTrifold },
-  { href: "/plan-my-day", label: "Plan My Day", icon: Sparkle },
 ];
 
-// Fewer, stronger doors on phones: tonight, discover, map, saved, you.
-// Explore stays one tap away through the search icon in the top bar.
 const TABS = [
   { href: "/", label: "Tonight", icon: Ticket },
-  { href: "/discover", label: "Discover", icon: Cards },
+  { href: "/explore", label: "Explore", icon: Compass },
   { href: "/map", label: "Map", icon: MapTrifold },
   { href: "/saved", label: "Saved", icon: BookmarkSimple },
   { href: "/me", label: "You", icon: UserCircle },
@@ -64,7 +46,7 @@ export default function Nav() {
               <TransitionLink
                 key={href}
                 href={href}
-                className={`topnav-link${href === "/plan-my-day" ? " is-ai" : ""}`}
+                className="topnav-link"
                 aria-current={active(pathname, href) ? "page" : undefined}
               >
                 <Icon size={16} weight={active(pathname, href) ? "fill" : "bold"} aria-hidden="true" />
@@ -75,15 +57,6 @@ export default function Nav() {
 
           <div className="topnav-end">
             <LocationSelector />
-            <SoundToggle />
-            <TransitionLink
-              href="/passport"
-              className="icon-btn topnav-passport"
-              aria-label="Your passport"
-              aria-current={active(pathname, "/passport") ? "page" : undefined}
-            >
-              <Medal size={18} weight={active(pathname, "/passport") ? "fill" : "bold"} />
-            </TransitionLink>
             <TransitionLink href="/explore?focus=1" className="icon-btn" aria-label="Search events">
               <MagnifyingGlass size={18} weight="bold" />
             </TransitionLink>

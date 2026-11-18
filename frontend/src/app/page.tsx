@@ -3,16 +3,12 @@
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkle, ArrowRight, MapTrifold, Compass, BookmarkSimple, Cards, Play } from "@phosphor-icons/react/ssr";
+import { ArrowRight, Compass, BookmarkSimple } from "@phosphor-icons/react/ssr";
 import KineticWord from "@/components/KineticWord";
-import ScrollStory from "@/components/ScrollStory";
-import TonightList from "@/components/TonightList";
 import WeekendStories from "@/components/WeekendStories";
-import Preloader from "@/components/Preloader";
 import { useSky } from "@/hooks/useSky";
 import HeroSearch from "@/components/HeroSearch";
 import DepartureBoard from "@/components/DepartureBoard";
-import PosterWall from "@/components/PosterWall";
 import EventCard from "@/components/EventCard";
 import Rail from "@/components/Rail";
 import CategoryTile from "@/components/CategoryTile";
@@ -25,12 +21,8 @@ import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
 
-// three.js only loads on screens that will show the 3D hero.
 // Kept to roughly the width of "step out." so the headline stays on two lines.
 const KINETIC = ["step out.", "show up.", "get lost.", "go out.", "say yes."];
-
-const NOT_LEARNING_RE = /\b(comedy|stand.?up|brunch|party|dj|open mic)\b/i;
-const LEARN_RE = /\b(workshops?|courses?|class(es)?|masterclass(es)?|bootcamps?|learn(ing)?|training|lectures?|seminars?|webinars?|tutorials?|study)\b/i;
 
 function RailOf({
   events,
@@ -74,9 +66,6 @@ export default function Home() {
   }, [router]);
 
   const pool = useCityEvents(city, { limit: 100 });
-  const tech = useCityEvents(city, { category: "tech", limit: 30 });
-  const biz = useCityEvents(city, { category: "business", limit: 20 });
-  const edu = useCityEvents(city, { category: "education", limit: 30 });
   const stats = useCategoryStats(city.name);
 
   const all = useMemo(() => upcoming(pool.events), [pool.events]);
@@ -91,20 +80,8 @@ export default function Home() {
   const soonBadges = new Map(soon.map((s) => [s.event.id, s.badge]));
 
   const thisWeek = sortEvents(notFeatured.filter((e) => inDateWindow(e, "week")), "soonest").slice(0, 14);
-  const nearby = sortEvents(notFeatured.filter((e) => e.distance_km != null), "distance").slice(0, 8);
   const free = sortEvents(all.filter((e) => e.is_free), "soonest").slice(0, 14);
   const weekend = sortEvents(all.filter((e) => inDateWindow(e, "weekend")), "soonest").slice(0, 14);
-  const learn = useMemo(() => {
-    // Scraped categories are noisy (a comedy night can land in "education"),
-    // so the title has to read like learning too.
-    const isLearning = (e: Event) => LEARN_RE.test(e.title) && !NOT_LEARNING_RE.test(e.title);
-    return sortEvents(upcoming([...edu.events, ...all]).filter(isLearning), "soonest").slice(0, 14);
-  }, [all, edu.events]);
-  const scene = useMemo(
-    () => sortEvents(upcoming([...tech.events, ...biz.events]), "soonest").slice(0, 14),
-    [tech.events, biz.events],
-  );
-
   // "Handpicked" is based only on what this person saved: their categories.
   const picks = useMemo(() => {
     if (saved.length === 0) return [];
@@ -124,7 +101,6 @@ export default function Home() {
 
   return (
     <>
-      <Preloader count={all.length} loading={pool.loading} city={city.name} />
       <section className="home-hero has-board" data-sky={sky}>
         <div className="home-sky" aria-hidden="true" />
         <div className="shell home-hero-inner">
@@ -145,23 +121,8 @@ export default function Home() {
               Discover experiences, meet people, learn something new and explore what&apos;s happening around you.
             </p>
             <HeroSearch />
-            <nav className="hero-ways" aria-label="Other ways to find events">
-              <Link href="/discover" className="hero-swipe">
-                <Cards size={16} weight="bold" aria-hidden="true" /> Not sure what you want? <strong>Swipe to discover</strong>
-                <ArrowRight size={14} weight="bold" aria-hidden="true" />
-              </Link>
-              <Link href="/vibe" className="hero-swipe">
-                <Sparkle size={16} weight="bold" aria-hidden="true" /> Or <strong>pick a vibe</strong>
-                <ArrowRight size={14} weight="bold" aria-hidden="true" />
-              </Link>
-              <Link href="/feed" className="hero-swipe">
-                <Play size={16} weight="bold" aria-hidden="true" /> Or just <strong>scroll the feed</strong>
-                <ArrowRight size={14} weight="bold" aria-hidden="true" />
-              </Link>
-            </nav>
           </div>
           <div className="home-hero-art">
-            <PosterWall events={all} />
             <DepartureBoard events={all} city={city.name} loading={pool.loading} night={sky === "night" || sky === "dusk"} />
           </div>
         </div>
@@ -200,10 +161,6 @@ export default function Home() {
         )}
       </section>
 
-      <ScrollStory events={all} />
-
-      <TonightList events={all} city={city.name} />
-
       {soon.length > 0 && (
         <section className="shell sec">
           <SectionHeader
@@ -223,19 +180,8 @@ export default function Home() {
         </section>
       )}
 
-      {nearby.length > 0 && (
-        <section className="shell sec">
-          <SectionHeader kicker="Nearest first" title={`Close to you in ${city.name}`} href="/map" linkLabel="Open the map" />
-          <div className="compact-grid">
-            {nearby.map((e) => (
-              <EventCard key={e.id} event={e} variant="compact" />
-            ))}
-          </div>
-        </section>
-      )}
-
       <section className="shell sec">
-        <SectionHeader kicker="Every kind of event" title="Discover by category" href="/categories" linkLabel="All categories" />
+        <SectionHeader kicker="Every kind of event" title="Discover by category" href="/explore" linkLabel="Explore all" />
         <Rail label="categories" size="compact">
           {tiles.map((c) => {
             const s = statFor(c.value);
@@ -268,63 +214,12 @@ export default function Home() {
         </section>
       )}
 
-      <section className="shell sec">
-        <div className="plan-banner">
-          <div>
-            <p className="sec-kicker"><Sparkle size={14} weight="fill" /> AI day planner</p>
-            <h2 className="plan-banner-title">Tell it your day. It builds the plan.</h2>
-            <p className="plan-banner-body">
-              “Saturday in Mumbai under ₹1500, tech then food then live music.” Real events, in an order you can make,
-              with the route on a map.
-            </p>
-          </div>
-          <Link href="/plan-my-day" className="btn btn-primary btn-lg">
-            Plan my day <ArrowRight size={16} weight="bold" />
-          </Link>
-        </div>
-      </section>
-
       {weekend.length > 0 && (
         <section className="shell sec">
           <SectionHeader title="This weekend" href="/explore?when=weekend" />
           <RailOf events={weekend} label="weekend events" loading={false} />
         </section>
       )}
-
-      {(edu.loading || learn.length > 0) && (
-        <section className="shell sec">
-          <SectionHeader kicker="Workshops, classes, talks" title="Learn something new" href="/categories/education" />
-          <RailOf events={learn} label="learning events" loading={edu.loading && learn.length === 0} />
-        </section>
-      )}
-
-      {(tech.loading || scene.length > 0) && (
-        <section className="shell sec">
-          <SectionHeader kicker="Hackathons, meetups, founders" title="Tech & startup scene" href="/categories/technology" />
-          <RailOf events={scene} label="tech and startup events" loading={tech.loading && scene.length === 0} />
-        </section>
-      )}
-
-      <section className="shell sec">
-        <SectionHeader title="Explore more" />
-        <div className="more-grid">
-          <Link href="/explore" className="more-card">
-            <Compass size={26} weight="duotone" />
-            <span className="more-title">Explore everything</span>
-            <span className="more-body">Search by meaning, filter by date, price and category.</span>
-          </Link>
-          <Link href="/map" className="more-card">
-            <MapTrifold size={26} weight="duotone" />
-            <span className="more-title">Browse the map</span>
-            <span className="more-body">See what&apos;s on around you, street by street.</span>
-          </Link>
-          <Link href="/categories" className="more-card">
-            <Sparkle size={26} weight="duotone" />
-            <span className="more-title">All categories</span>
-            <span className="more-body">From hackathons to half marathons.</span>
-          </Link>
-        </div>
-      </section>
 
       <SiteFooter />
     </>
