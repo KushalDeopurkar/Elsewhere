@@ -11,7 +11,7 @@ export default function SoundToggle() {
       type="button"
       className="icon-btn sound-toggle"
       aria-pressed={on}
-      aria-label={on ? "Turn sound off" : "Turn sound on"}
+      aria-label={on ? "Turn sound and haptics off" : "Turn sound and haptics on"}
       title={on ? "Sound on" : "Sound off"}
       onClick={() => setSound(!on)}
     >

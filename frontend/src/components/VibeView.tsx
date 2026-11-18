@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { setGrade } from "@/lib/grade";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -74,6 +75,11 @@ export default function VibeView() {
     setF((x) => ({ ...x, ...patch }));
     setShown(PAGE);
   };
+  // The first picked mood grades the whole site for this session.
+  const lead = f.vibes[0] ?? null;
+  useEffect(() => {
+    setGrade(lead);
+  }, [lead]);
   const toggleVibe = (id: VibeId) =>
     set({ vibes: f.vibes.includes(id) ? f.vibes.filter((v) => v !== id) : [...f.vibes, id] });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { sfx } from "@/lib/sound";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -118,6 +119,7 @@ export default function SwipeDeck() {
         return;
       }
       recordSignal(top, action);
+      sfx(action === "save" ? "pop" : "swipe");
       if (action === "save") {
         ensureSaved(top);
         setShortlist((s) => [top, ...s.filter((e) => e.id !== top.id)]);

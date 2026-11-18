@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Opt-in sound. Off by default, one switch in the nav, remembered on this
+ * Opt-in sound (and haptics on Android). Off by default, one switch in the nav, remembered on this
  * device. Everything is synthesised with Web Audio (no files to download),
  * kept short and quiet, and nothing ever plays before the person turns
  * sound on with a click, which is also what unlocks audio in browsers.
@@ -75,9 +75,19 @@ function noise(c: AudioContext, at: number, dur: number, from: number, to: numbe
   src.start(at);
 }
 
-/** Play a UI sound if sound is on. Safe to call anywhere. */
+const BUZZ: Record<Sfx, number | number[]> = { tick: 6, pop: 12, whoosh: 10, swipe: 8, stamp: [12, 50, 24] };
+
+/**
+ * Play a UI sound if sound is on, with a matching short vibration on phones
+ * that support it (Android). Safe to call anywhere.
+ */
 export function sfx(name: Sfx): void {
   if (!store.read()) return;
+  try {
+    navigator.vibrate?.(BUZZ[name]);
+  } catch {
+    /* some browsers throw outside a user gesture */
+  }
   const c = audio();
   if (!c) return;
   const t = c.currentTime;

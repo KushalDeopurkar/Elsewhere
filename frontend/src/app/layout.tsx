@@ -9,6 +9,8 @@ import RouteSignal from "@/components/RouteSignal";
 import CursorLayer from "@/components/CursorLayer";
 import PassportToast from "@/components/PassportToast";
 import SocialRoot from "@/components/SocialRoot";
+import GradeChip from "@/components/GradeChip";
+import { GRADE_BOOT } from "@/lib/gradeBoot";
 
 export const metadata: Metadata = {
   title: "Elsewhere - discover what is happening",
@@ -27,13 +29,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: GRADE_BOOT }} />
         <RouteSignal />
         <Nav />
         <main>{children}</main>
         <PassportToast />
         <SocialRoot />
+        <GradeChip />
         <CursorLayer />
       </body>
     </html>

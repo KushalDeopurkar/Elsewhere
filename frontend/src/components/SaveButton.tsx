@@ -3,6 +3,7 @@
 import { BookmarkSimple } from "@phosphor-icons/react/ssr";
 import type { Event } from "@/lib/types";
 import { isSaved, toggleSaved, useSaved } from "@/lib/saved";
+import { sfx } from "@/lib/sound";
 
 /** Bookmark toggle. Sits above a card's full-card link, so it stops the click. */
 export default function SaveButton({
@@ -25,7 +26,7 @@ export default function SaveButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleSaved(event);
+        if (toggleSaved(event)) sfx("pop");
       }}
     >
       <BookmarkSimple size={variant === "icon" ? 18 : 17} weight={saved ? "fill" : "bold"} />

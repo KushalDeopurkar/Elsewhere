@@ -8,11 +8,16 @@ import {
   X,
   SquaresFour,
   List,
+  FilmStrip as FilmIcon,
   SlidersHorizontal,
   Sparkle,
   ClockCounterClockwise,
 } from "@phosphor-icons/react/ssr";
 import EventCard from "./EventCard";
+import FilmStrip from "./FilmStrip";
+import { groupByNight } from "@/lib/nights";
+import { useSky } from "@/hooks/useSky";
+import { useNow } from "@/lib/clock";
 import AlertButton from "./AlertButton";
 import { CardSkeleton, EmptyState } from "./Section";
 import { useCityEvents } from "@/hooks/useCityEvents";
@@ -56,7 +61,7 @@ const SUGGESTIONS = [
   "Live music this weekend",
 ];
 
-type View = "grid" | "list";
+type View = "strip" | "grid" | "list";
 
 function pick<T extends string>(v: string | null, allowed: readonly T[], fallback: T): T {
   return v && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
@@ -79,7 +84,12 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const when = pick(params.get("when"), DATES.map((d) => d.value), "any");
   const price = pick(params.get("price"), PRICES.map((p) => p.value), "any");
   const sort = pick(params.get("sort"), SORTS.map((s) => s.value), q ? "relevance" : "soonest");
-  const view = pick<View>(params.get("view"), ["grid", "list"], "grid");
+  // The reel (one strip per night) suits browsing by time; searches and other
+  // sorts default to the grid.
+  const reelDefault = !q && sort === "soonest";
+  const view = pick<View>(params.get("view"), ["strip", "grid", "list"], reelDefault ? "strip" : "grid");
+  const sky = useSky();
+  const now = useNow(60_000);
 
   const [draft, setDraft] = useState(q);
   const [drawer, setDrawer] = useState(false);
@@ -311,7 +321,10 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
                 </select>
               </label>
               <div className="xview" role="group" aria-label="Layout">
-                <button type="button" className="icon-btn" aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => setParams({ view: null })}>
+                <button type="button" className="icon-btn" aria-pressed={view === "strip"} aria-label="Reel view, one strip per night" onClick={() => setParams({ view: reelDefault ? null : "strip" })}>
+                  <FilmIcon size={17} weight={view === "strip" ? "fill" : "bold"} />
+                </button>
+                <button type="button" className="icon-btn" aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => setParams({ view: reelDefault ? "grid" : null })}>
                   <SquaresFour size={17} weight={view === "grid" ? "fill" : "bold"} />
                 </button>
                 <button type="button" className="icon-btn" aria-pressed={view === "list"} aria-label="List view" onClick={() => setParams({ view: "list" })}>
@@ -351,6 +364,15 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
                 Reset search and filters
               </button>
             </EmptyState>
+          ) : view === "strip" ? (
+            <FilmStrip
+              nights={groupByNight(
+                results.map((r) => r.event),
+                now || 0,
+                { night: sky === "night" || sky === "dusk" },
+              )}
+              badgeFor={(id) => (results.find((r) => r.event.id === id)?.byMeaning ? "Matched by meaning" : undefined)}
+            />
           ) : (
             <div className={view === "list" ? "xlist" : "xgrid"}>
               {results.map((r, i) => (
