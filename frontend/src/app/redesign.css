@@ -2899,18 +2899,7 @@ html {
    ========================================================================== */
 .home-hero.has-city { min-height: min(46rem, calc(100svh - var(--nav-h))); display: flex; align-items: center; }
 .home-hero.has-city > .shell { width: 100%; }
-.home-city { position: absolute; inset: 0; z-index: 0; }
-.home-city::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, var(--ink-900) 0%, rgb(14 16 21 / 0.82) 34%, transparent 60%),
-    linear-gradient(0deg, var(--ink-900) 0%, transparent 22%);
-}
-.home-hero.has-city .home-hero-inner { position: relative; z-index: 1; pointer-events: none; }
-.home-hero.has-city .home-hero-copy { pointer-events: auto; }
+.home-hero.has-city .home-hero-inner { position: relative; z-index: 1; }
 .city3d { position: absolute; inset: 0; touch-action: pan-y; user-select: none; }
 .city3d canvas { display: block; width: 100%; height: 100%; }
 .city3d-tip {
@@ -2932,17 +2921,6 @@ html {
 .city3d-tip strong { color: var(--text-hi); font-size: 0.875rem; font-weight: 600; line-height: 1.25; }
 .city3d-tip span { color: var(--text-low); font-size: 0.75rem; }
 @keyframes city-tip { from { opacity: 0; translate: -50% calc(-100% - 6px); } }
-.city3d-hint {
-  position: absolute;
-  right: 1.5rem;
-  bottom: 1.25rem;
-  z-index: 2;
-  color: var(--text-low);
-  font-size: 0.75rem;
-  letter-spacing: 0.01em;
-  pointer-events: none;
-}
-
 .kinetic {
   position: relative;
   display: inline-grid;
@@ -3560,6 +3538,9 @@ html.no-intro .intro { display: none; }
   pointer-events: none;
   opacity: 0;
   transition: opacity 1.2s ease, background 1.2s ease;
+  /* Fade into the page instead of ending in a hard line. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
 }
 .home-hero[data-sky="dawn"] .home-sky {
   opacity: 1;
@@ -3580,7 +3561,6 @@ html.no-intro .intro { display: none; }
     radial-gradient(55rem 30rem at 92% 5%, rgb(150 110 255 / 0.22), transparent 70%);
 }
 .home-hero.has-city .home-sky { z-index: 0; }
-.home-hero.has-city .home-city { z-index: 0; }
 
 /* City fly-in label. */
 .city3d-fly {
@@ -4252,4 +4232,172 @@ html.no-intro .intro { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .acct-menu, .signin[open], .detail .esocial { animation: none; }
   .auth-spin { animation-duration: 2s; }
+}
+
+/* ==========================================================================
+   Home hero: the city, framed as a lens in the right column (CityScene)
+   ========================================================================== */
+.city-stage {
+  position: relative;
+  width: min(100%, 36rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  isolation: isolate;
+}
+.city-lens {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+/* Soft pool of light under the lens so it sits on something. */
+.city-lens::before {
+  content: "";
+  position: absolute;
+  inset: 8% -6% -10%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(118 104 255 / 0.16), rgb(255 107 87 / 0.06) 60%, transparent);
+  filter: blur(20px);
+  pointer-events: none;
+}
+.city-lens::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  pointer-events: none;
+}
+.city-lens .city3d {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  /* Feathered circle: the city fades out before the ring. */
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 58%, transparent 70.5%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 58%, transparent 70.5%);
+}
+.city-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background:
+    conic-gradient(from 200deg, transparent 0 62%, rgb(255 107 87 / 0.55) 74%, rgb(169 155 255 / 0.5) 86%, transparent 96%) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0);
+  border-color: transparent;
+  animation: ring-turn 24s linear infinite;
+}
+.city-ring::after {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 1px dashed rgb(255 255 255 / 0.06);
+}
+@keyframes ring-turn { to { transform: rotate(360deg); } }
+
+.city-kicker {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--r-pill);
+  background: rgb(14 16 21 / 0.82);
+  border: 1px solid var(--line);
+  color: var(--text-hi);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.city-caption {
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  color: var(--text-low);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.city-tether {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+.city-tether line {
+  stroke: var(--text-mid);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.city-next {
+  position: absolute;
+  left: -8%;
+  bottom: 9%;
+  z-index: 3;
+  display: grid;
+  gap: 0.2rem;
+  width: min(17.5rem, 62%);
+  padding: 0.75rem 0.9rem 0.7rem;
+  border-radius: var(--r-control);
+  background: rgb(23 26 33 / 0.94);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cat, var(--marigold));
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+  animation: next-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+}
+.city-next:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+.city-next:focus-visible { outline: 2px solid var(--marigold); outline-offset: 3px; }
+.city-next-kicker {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--marigold-bright);
+  font-variant-numeric: tabular-nums;
+}
+.city-next strong {
+  color: var(--text-hi);
+  font-size: 0.95rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.city-next-meta {
+  color: var(--text-low);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.city-next-dots { display: flex; gap: 4px; margin-top: 0.35rem; }
+.city-next-dots i { width: 14px; height: 2px; border-radius: 2px; background: var(--line-strong); }
+.city-next-dots i.is-on { background: var(--marigold); }
+@keyframes next-in { from { opacity: 0; transform: translate3d(-8px, 6px, 0); } }
+
+.city-stage .city3d-fly { top: 42%; left: 0; right: 0; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .city-ring, .city-next { animation: none; }
 }

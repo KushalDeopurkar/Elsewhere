@@ -7,7 +7,8 @@
  * caller decides); decorative for assistive tech, since every event here is
  * also in the lists below.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import * as THREE from "three";
 import type { Event } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -16,6 +17,11 @@ import { formatWhen } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { indiaDots } from "@/lib/india";
 import { SKY_LIGHTS, type SkyPhase } from "@/lib/sky";
+import { hasTime } from "@/lib/formatDate";
+import { startCountdown } from "@/lib/countdown";
+import { useNow } from "@/lib/clock";
+
+const NEXT_MS = 5500;
 
 /** India map units for the fly-in: degrees to world units around 78E 22N. */
 const MAP_K = 2.6;
@@ -118,6 +124,34 @@ export default function CityScene({
     fly: (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => void;
   } | null>(null);
   const flyLabel = useRef<HTMLParagraphElement>(null);
+  const tether = useRef<SVGLineElement>(null);
+  const card = useRef<HTMLAnchorElement>(null);
+  const featuredId = useRef<string | null>(null);
+
+  // "Next up": the soonest few upcoming events with a real start time,
+  // cycled in a card that is tied to its light by a thin line.
+  const now = useNow(60_000);
+  const nextUp = useMemo(() => {
+    if (!now) return [];
+    // Only events that have a light in the scene (inside the city's radius).
+    return makeBeacons(events, center, now)
+      .map((b) => b.event)
+      .filter((e) => hasTime(e.start_time) && Date.parse(e.start_time) > now - 30 * 60_000)
+      .sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time))
+      .slice(0, 5);
+  }, [events, center, now]);
+  const [step, setStep] = useState(0);
+  const [held, setHeld] = useState(false);
+  const featured = nextUp.length ? nextUp[step % nextUp.length] : null;
+  useEffect(() => {
+    featuredId.current = featured?.id ?? null;
+  }, [featured]);
+  useEffect(() => {
+    if (held || nextUp.length < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(() => setStep((s) => s + 1), NEXT_MS);
+    return () => window.clearInterval(id);
+  }, [held, nextUp.length]);
   const skyRef = useRef(sky);
   useEffect(() => {
     skyRef.current = sky;
@@ -233,6 +267,9 @@ export default function CityScene({
     let heads: THREE.Points | null = null;
     let beams: THREE.LineSegments | null = null;
     let current: Beacon[] = [];
+    let indexOf = new Map<string, number>();
+    let lastFeat = -1;
+    let cardAt = { x: 0, y: 0, n: 0 };
     let intro = 0; // 0..1 fade/rise when data changes
 
     const setData = (list: Beacon[], seed: number) => {
@@ -243,6 +280,8 @@ export default function CityScene({
         }
       }
       current = list;
+      indexOf = new Map(list.map((b, i) => [b.event.id, i]));
+      lastFeat = -1;
       intro = 0;
 
       const { positions, glow } = cityLights(seed, 12000);
@@ -309,7 +348,7 @@ export default function CityScene({
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      world.position.x = camera.aspect > 1.4 ? 7.5 : 0;
+      world.position.x = 0;
       for (const m of [lightsMat, headMat]) m.uniforms.uPixel.value = pixel;
     };
     const ro = new ResizeObserver(resize);
@@ -444,8 +483,8 @@ export default function CityScene({
       const skyK = SKY_LIGHTS[skyRef.current];
       world.rotation.y = spin + mouse.x * 0.18;
       world.scale.setScalar(0.85 + 0.15 * ease);
-      camera.position.set(0, 10.5 - mouse.y * 2 + 78 * up, 17.5 + 26 * up);
-      camera.lookAt(world.position.x * 0.12, 0.6, 0);
+      camera.position.set(0, 12.5 - mouse.y * 2 + 76 * up, 14.5 + 26 * up);
+      camera.lookAt(0, 0.9, 0);
       (scene.fog as THREE.FogExp2).density = 0.03 * (1 - up) + 0.003 * up;
 
       for (const m of [lightsMat, headMat]) {
@@ -460,6 +499,38 @@ export default function CityScene({
       beamMat.opacity = 0.85 * ease * cityVis;
       glowMat.uniforms.uOpacity.value = ease * cityVis * skyK;
       if (hovered >= 0 && !dragging) showHover(hovered);
+
+      // Tie the Next up card to its light, and make that light larger.
+      const fi = featuredId.current ? (indexOf.get(featuredId.current) ?? -1) : -1;
+      if (heads && fi !== lastFeat) {
+        const sz = heads.geometry.attributes.aSize as THREE.BufferAttribute;
+        if (lastFeat >= 0 && lastFeat < sz.count) sz.setX(lastFeat, 9);
+        if (fi >= 0) sz.setX(fi, 20);
+        sz.needsUpdate = true;
+        lastFeat = fi;
+        cardAt.n = 0;
+      }
+      const line = tether.current;
+      const el = card.current;
+      if (line) {
+        if (fi >= 0 && el && !flight && hovered < 0) {
+          const b = current[fi];
+          const v = new THREE.Vector3(b.x, b.h, b.z).applyMatrix4(world.matrixWorld).project(camera);
+          if (cardAt.n-- <= 0) {
+            // Re-measure the card now and then (it moves only on resize or a new event).
+            const hr = host.getBoundingClientRect();
+            const cr = el.getBoundingClientRect();
+            cardAt = { x: cr.right - hr.left - 18, y: cr.top - hr.top + 1, n: 30 };
+          }
+          line.setAttribute("x1", String(cardAt.x));
+          line.setAttribute("y1", String(cardAt.y));
+          line.setAttribute("x2", String(((v.x + 1) / 2) * w));
+          line.setAttribute("y2", String(((1 - v.y) / 2) * h));
+          line.style.opacity = v.z < 1 ? String(Math.min(1, ease) * 0.9) : "0";
+        } else {
+          line.style.opacity = "0";
+        }
+      }
       renderer.render(scene, camera);
     };
     const start = () => {
@@ -528,23 +599,72 @@ export default function CityScene({
     api.current?.setData(makeBeacons(events, center, Date.now()), seedOf(cityName));
   }, [events, center, cityName]);
 
+  const label = sky === "night" || sky === "dusk" ? `Tonight in ${cityName}` : `${cityName}, live`;
+  const count = events.length;
+  const cd = featured && now ? startCountdown(featured.start_time, featured.end_time, now, { hasTime: true }) : null;
+
   return (
-    <div className="city3d" ref={wrap} data-cursor={hover ? "Open" : "Drag"}>
-      {hover && (
-        <div
-          className="city3d-tip"
-          style={{ left: hover.x, top: hover.y, "--cat": getCategoryColor(hover.b.event.category).color } as React.CSSProperties}
-          aria-hidden="true"
-        >
-          <strong>{hover.b.event.title}</strong>
-          <span>
-            {formatWhen(hover.b.event.start_time)} · {priceBadge(hover.b.event)}
-          </span>
+    <div className="city-stage" onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)}>
+      <div className="city-lens">
+        <div className="city3d" ref={wrap} data-cursor={hover ? "Open" : "Drag"}>
+          {hover && (
+            <div
+              className="city3d-tip"
+              style={{ left: hover.x, top: hover.y, "--cat": getCategoryColor(hover.b.event.category).color } as React.CSSProperties}
+              aria-hidden="true"
+            >
+              <strong>{hover.b.event.title}</strong>
+              <span>
+                {formatWhen(hover.b.event.start_time)} · {priceBadge(hover.b.event)}
+              </span>
+            </div>
+          )}
         </div>
+        <span className="city-ring" aria-hidden="true" />
+        <p className="city3d-fly" ref={flyLabel} aria-hidden="true" />
+      </div>
+
+      <p className="city-kicker" aria-hidden="true">
+        <span className="live-dot" /> {label}
+      </p>
+
+      <svg className="city-tether" aria-hidden="true">
+        <line ref={tether} x1="0" y1="0" x2="0" y2="0" />
+      </svg>
+
+      {featured && (
+        <Link
+          href={`/events/${featured.id}`}
+          ref={card}
+          key={featured.id}
+          className="city-next"
+          style={{ "--cat": getCategoryColor(featured.category).color } as React.CSSProperties}
+          onFocus={() => setHeld(true)}
+          onBlur={() => setHeld(false)}
+        >
+          <span className="city-next-kicker">
+            Next up{cd ? ` · ${cd.label}` : ` · ${formatWhen(featured.start_time)}`}
+          </span>
+          <strong>{featured.title}</strong>
+          <span className="city-next-meta">
+            {cd ? formatWhen(featured.start_time) : null}
+            {cd && (featured.location_name ? " · " : "")}
+            {featured.location_name ?? ""}
+            {" · "}
+            {priceBadge(featured)}
+          </span>
+          {nextUp.length > 1 && (
+            <span className="city-next-dots" aria-hidden="true">
+              {nextUp.map((e, i) => (
+                <i key={e.id} className={i === step % nextUp.length ? "is-on" : ""} />
+              ))}
+            </span>
+          )}
+        </Link>
       )}
-      <p className="city3d-fly" ref={flyLabel} aria-hidden="true" />
-      <p className="city3d-hint" aria-hidden="true">
-        Each light is a real event · hover to peek · drag to spin
+
+      <p className="city-caption" aria-hidden="true">
+        {count} {count === 1 ? "event" : "events"} lit up · hover a light to peek · drag to spin
       </p>
     </div>
   );

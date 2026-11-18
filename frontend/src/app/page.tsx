@@ -130,11 +130,6 @@ export default function Home() {
       <Preloader count={all.length} loading={pool.loading} city={city.name} />
       <section className={`home-hero${use3d ? " has-city" : ""}`} data-sky={sky}>
         <div className="home-sky" aria-hidden="true" />
-        {use3d && (
-          <div className="home-city">
-            <CityScene events={all} center={city} cityName={city.name} sky={sky} onPick={(e) => router.push(`/events/${e.id}`)} />
-          </div>
-        )}
         <div className="shell home-hero-inner">
           <div className="home-hero-copy">
             <p className="eyebrow-live">
@@ -169,7 +164,11 @@ export default function Home() {
             </nav>
           </div>
           <div className="home-hero-art">
-            {!use3d && <HeroDeck events={showcase(all)} />}
+            {use3d ? (
+              <CityScene events={all} center={city} cityName={city.name} sky={sky} onPick={(e) => router.push(`/events/${e.id}`)} />
+            ) : (
+              <HeroDeck events={showcase(all)} />
+            )}
           </div>
         </div>
       </section>
