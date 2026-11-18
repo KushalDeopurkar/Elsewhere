@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { searchEvents } from "@/lib/api";
 import { CATEGORIES } from "@/lib/types";
 import { cityByName, DEFAULT_CITY } from "@/lib/cities";
-import { hasTime } from "@/lib/formatDate";
+import { timedOf } from "@/lib/formatDate";
 
 export const runtime = "nodejs";
 // Counts change only when the scraper runs (every 6 hours).
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       });
       if (isSample) return { value: c.value, count: null, capped: false, image: null };
       const pic =
-        events.find((e) => e.image_url && hasTime(e.start_time))?.image_url ??
+        events.find((e) => e.image_url && timedOf(e))?.image_url ??
         events.find((e) => e.image_url)?.image_url ??
         null;
       return { value: c.value, count: events.length, capped: events.length >= 100, image: pic };

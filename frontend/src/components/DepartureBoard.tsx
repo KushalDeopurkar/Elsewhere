@@ -7,14 +7,23 @@ import type { Event } from "@/lib/types";
 import { boardRows, pages, type BoardTab } from "@/lib/board";
 import { useNow } from "@/lib/clock";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatWhen } from "@/lib/formatDate";
+import { whenOf } from "@/lib/formatDate";
 import FlapText from "./FlapText";
 import ScrambleText from "./ScrambleText";
 import TransitionLink from "./TransitionLink";
 
 const PAGE = 6;
 const CYCLE_MS = 9000;
-const CLOCK = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const clockFor = (zone: string) =>
+  new Intl.DateTimeFormat("en-IN", { timeZone: zone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+/** Short zone name for the board clock: "IST", "GMT", "EST", "AEDT"… */
+function zoneLabel(zone: string, at: number): string {
+  if (zone === "Asia/Kolkata") return "IST";
+  const part = new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "short" })
+    .formatToParts(at)
+    .find((p) => p.type === "timeZoneName")?.value;
+  return part && !part.startsWith("GMT+") && !part.startsWith("GMT-") ? part : "LOCAL";
+}
 
 /**
  * The home page hero: a station departures board of real events. Tabs flip
@@ -25,11 +34,14 @@ const CLOCK = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour:
 export default function DepartureBoard({
   events,
   city,
+  zone = "Asia/Kolkata",
   loading,
   night,
 }: {
   events: Event[];
   city: string;
+  /** The city's time zone, for the board clock. */
+  zone?: string;
   loading: boolean;
   night: boolean;
 }) {
@@ -80,9 +92,9 @@ export default function DepartureBoard({
           <span className="board-kicker">Departures</span>
           <FlapText text={city} length={Math.min(12, Math.max(6, city.length))} className="board-city" />
         </div>
-        <div className="board-clock" aria-label={now ? `Time in India ${CLOCK.format(new Date(now))}` : undefined}>
-          <span className="board-clock-label">IST</span>
-          <FlapText text={now ? CLOCK.format(new Date(now)) : "--:--"} length={5} />
+        <div className="board-clock" aria-label={now ? `Time in ${city} ${clockFor(zone).format(new Date(now))}` : undefined}>
+          <span className="board-clock-label">{now ? zoneLabel(zone, now) : "IST"}</span>
+          <FlapText text={now ? clockFor(zone).format(new Date(now)) : "--:--"} length={5} />
         </div>
       </header>
 
@@ -179,7 +191,7 @@ export default function DepartureBoard({
             </button>
           </div>
         ) : (
-          <span className="board-note">{rows[0] ? `Next: ${formatWhen(rows[0].event.start_time)}` : ""}</span>
+          <span className="board-note">{rows[0] ? `Next: ${whenOf(rows[0].event)}` : ""}</span>
         )}
         <Link href={exploreHref} className="board-all">
           All {rows.length || ""} {tabLabel.toLowerCase()} <ArrowRight size={14} weight="bold" aria-hidden="true" />

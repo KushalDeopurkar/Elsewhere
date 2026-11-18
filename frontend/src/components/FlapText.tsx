@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:₹+";
+const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:₹$£€+";
 
 /**
  * Split-flap tiles: one tile per character, padded to `length`. When the

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, CaretLeft, CaretRight, MapPin, Pause, Play, X } from "@phosphor-icons/react/ssr";
 import type { Event } from "@/lib/types";
 import { pickStories } from "@/lib/stories";
-import { formatWhen, hasTime } from "@/lib/formatDate";
+import { whenOf, timedOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { CATEGORIES } from "@/lib/types";
@@ -73,7 +73,7 @@ export default function WeekendStories({ events, city }: { events: Event[]; city
                 <img src={e.image_url!} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
               </span>
               <span className="ws-ring-label" aria-hidden="true">
-                {formatWhen(e.start_time).split(",")[0]}
+                {whenOf(e).split(",")[0]}
               </span>
             </button>
           </li>
@@ -234,7 +234,7 @@ function StoryPlayer({
   };
 
   const hue = getCategoryColor(event.category);
-  const countdown = now ? startCountdown(event.start_time, event.end_time, now, { hasTime: hasTime(event.start_time) }) : null;
+  const countdown = now ? startCountdown(event.start_time, event.end_time, now, { hasTime: timedOf(event) }) : null;
   const where = event.location_name ?? event.city;
 
   return (
@@ -308,7 +308,7 @@ function StoryPlayer({
           {countdown && <p className={`ws-count is-${countdown.tone}`}>{countdown.label}</p>}
           <h2 className="ws-title">{event.title}</h2>
           <p className="ws-meta">
-            <span>{formatWhen(event.start_time)}</span>
+            <span>{whenOf(event)}</span>
             {where && (
               <span>
                 <MapPin size={14} weight="fill" aria-hidden="true" /> {where}

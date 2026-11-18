@@ -11,7 +11,7 @@ import { EventActions, EventLocationMap } from "@/components/EventActions";
 import { getEvent } from "@/lib/api";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatFull } from "@/lib/formatDate";
+import { formatFull, eventZone } from "@/lib/formatDate";
 import { priceLine, realTiers } from "@/lib/money";
 import { categoryHref } from "@/lib/categoryPages";
 import { Suspense } from "react";
@@ -41,6 +41,11 @@ const SOURCE_NAMES: Record<string, string> = {
   allevents: "AllEvents.in",
   district: "District",
   meetup: "Meetup",
+  ticketmaster: "Ticketmaster",
+  seatgeek: "SeatGeek",
+  eventfinda: "Eventfinda",
+  "paris-opendata": "Que faire à Paris",
+  ics: "the organiser's calendar",
   sample: "Sample data",
 };
 
@@ -125,7 +130,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 {event.city ? <span> · {event.city}</span> : null}
               </p>
               <RevealTitle className="detail-title" text={event.title} />
-              <StartCountdown start={event.start_time} end={event.end_time} />
+              <StartCountdown start={event.start_time} end={event.end_time} zone={eventZone(event)} />
               <ul className="detail-tags" aria-label="Tags">
                 <li>{meta?.label ?? event.category}</li>
                 {priceKnown && <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>}
@@ -183,12 +188,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             <dl className="booking-facts">
               <div>
                 <dt><CalendarBlank size={16} weight="duotone" /> Starts</dt>
-                <dd>{formatFull(event.start_time)}</dd>
+                <dd>{formatFull(event.start_time, eventZone(event))}</dd>
               </div>
               {event.end_time && (
                 <div>
                   <dt><Clock size={16} weight="duotone" /> Ends</dt>
-                  <dd>{formatFull(event.end_time)}</dd>
+                  <dd>{formatFull(event.end_time, eventZone(event))}</dd>
                 </div>
               )}
               {where && (
@@ -222,6 +227,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
               {event.source === "sample"
                 ? "Sample listing, not a real event."
                 : `Tickets and registration are handled on ${source}. Check details there before you go.`}
+              {event.source === "paris-opendata" && (
+                <>
+                  {" "}Listing from <a href="https://opendata.paris.fr/explore/dataset/que-faire-a-paris-/" target="_blank" rel="noopener noreferrer">Que faire à Paris</a>, Ville de Paris, under the{" "}
+                  <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener noreferrer">ODbL</a>.
+                </>
+              )}
             </p>
           </aside>
         </div>

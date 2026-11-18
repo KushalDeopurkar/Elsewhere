@@ -4,7 +4,7 @@
  */
 
 import { Event } from "./types";
-import { hasTime, matchesWindow } from "./formatDate";
+import { matchesWindow, eventZone, timedOf } from "./formatDate";
 
 export type DateFilter = "any" | "today" | "tomorrow" | "weekend" | "week";
 export type PriceFilter = "any" | "free" | "paid";
@@ -18,7 +18,7 @@ export function inDateWindow(e: Event, when: DateFilter, now = Date.now()): bool
     const t = Date.parse(e.start_time);
     return t >= now - 2 * 3_600_000 && t <= now + 7 * DAY;
   }
-  return matchesWindow(e.start_time, when);
+  return matchesWindow(e.start_time, when, undefined, eventZone(e));
 }
 
 export function inPrice(e: Event, price: PriceFilter): boolean {
@@ -53,7 +53,7 @@ export function upcoming(events: Event[], now = Date.now()): Event[] {
 
 /** Events worth putting in a large slot: a real picture and a real time. */
 export function showcase(events: Event[]): Event[] {
-  return events.filter((e) => Boolean(e.image_url) && hasTime(e.start_time));
+  return events.filter((e) => Boolean(e.image_url) && timedOf(e));
 }
 
 export function textMatch(e: Event, words: string[]): boolean {
@@ -69,7 +69,7 @@ export function textMatch(e: Event, words: string[]): boolean {
 export function startingSoon(events: Event[], hours = 3, now = Date.now()): { event: Event; badge: string }[] {
   const out: { event: Event; badge: string; at: number }[] = [];
   for (const e of events) {
-    if (!hasTime(e.start_time)) continue;
+    if (!timedOf(e)) continue;
     const start = Date.parse(e.start_time);
     const end = e.end_time ? Date.parse(e.end_time) : start + 2 * 3_600_000;
     if (start <= now && end > now && end - start <= 8 * 3_600_000) {

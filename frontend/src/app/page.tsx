@@ -16,6 +16,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { SectionHeader, CardSkeleton, EmptyState } from "@/components/Section";
 import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
 import { useCity } from "@/lib/cityPref";
+import { cityZone } from "@/lib/cities";
 import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
@@ -123,7 +124,7 @@ export default function Home() {
             <HeroSearch />
           </div>
           <div className="home-hero-art">
-            <DepartureBoard events={all} city={city.name} loading={pool.loading} night={sky === "night" || sky === "dusk"} />
+            <DepartureBoard events={all} city={city.name} zone={cityZone(city)} loading={pool.loading} night={sky === "night" || sky === "dusk"} />
           </div>
         </div>
       </section>

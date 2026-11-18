@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
-import { formatFull } from "@/lib/formatDate";
+import { formatFull, eventZone } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 
 /**
@@ -46,7 +46,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
   const img = await poster(event?.image_url ?? null);
   const D = bold && text ? "Bricolage" : "Geist";
   const title = event ? clip(event.title, 70) : "Find your next reason to show up";
-  const when = event ? formatFull(event.start_time) : "";
+  const when = event ? formatFull(event.start_time, eventZone(event)) : "";
   const where = event?.location_name ? clip(event.location_name, 40) : event?.city ?? "";
 
   return new ImageResponse(

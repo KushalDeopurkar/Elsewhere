@@ -17,6 +17,13 @@ on:
           - insider
           - district
           - meetup
+          - india
+          - global
+          - ticketmaster
+          - seatgeek
+          - eventfinda
+          - paris
+          - ics
       city:
         description: 'Specific city to scrape (optional)'
         required: false
@@ -52,6 +59,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Global sources: each one is skipped if its secret isn't set.
+          TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
+          SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
+          EVENTFINDA_USERNAME: ${{ secrets.EVENTFINDA_USERNAME }}
+          EVENTFINDA_PASSWORD: ${{ secrets.EVENTFINDA_PASSWORD }}
         run: |
           cd backend
           SOURCE="${{ github.event.inputs.source || 'all' }}"

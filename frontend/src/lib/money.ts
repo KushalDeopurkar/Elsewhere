@@ -8,12 +8,36 @@ type Priced = {
   is_free: boolean;
   price_min: number | null;
   price_max: number | null;
+  country?: string | null;
   tickets?: { price: number | null; currency: string | null; available?: boolean | null }[] | null;
 };
 
 export function formatRupees(n: number): string {
   return RUPEES.format(n);
 }
+
+// Listing prices carry no currency of their own: it's the event's country's.
+const CURRENCY: Record<string, string> = {
+  IN: "INR", US: "USD", CA: "CAD", MX: "MXN", GB: "GBP", IE: "EUR", FR: "EUR", DE: "EUR", NL: "EUR",
+  ES: "EUR", BE: "EUR", AT: "EUR", IT: "EUR", PT: "EUR", FI: "EUR", DK: "DKK", SE: "SEK", NO: "NOK",
+  CH: "CHF", PL: "PLN", AU: "AUD", NZ: "NZD", SG: "SGD", AE: "AED", JP: "JPY",
+};
+export const currencyOf = (e: { country?: string | null }): string => CURRENCY[(e.country ?? "IN").toUpperCase()] ?? "USD";
+
+const money = new Map<string, Intl.NumberFormat>();
+function formatter(currency: string): Intl.NumberFormat {
+  if (currency === "INR") return RUPEES;
+  let f = money.get(currency);
+  if (!f) {
+    // Whole units read cleanly on cards ("$45", "£20", "€12").
+    f = new Intl.NumberFormat("en-GB", { style: "currency", currency, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 });
+    money.set(currency, f);
+  }
+  return f;
+}
+
+/** A price in the event's own currency. */
+export const formatPrice = (n: number, e: { country?: string | null }) => formatter(currencyOf(e)).format(n);
 
 /**
  * Price range from the ticket tiers when the event has them: the tiers are
@@ -23,7 +47,7 @@ export function formatRupees(n: number): string {
 function withTiers<T extends Priced>(event: T): T {
   if (!event.tickets?.length) return event;
   const p = event.tickets
-    .filter((t) => t.price != null && (t.currency ?? "INR") === "INR" && (t as { available?: boolean | null }).available !== false)
+    .filter((t) => t.price != null && (t.currency ?? currencyOf(event)) === currencyOf(event) && (t as { available?: boolean | null }).available !== false)
     .map((t) => t.price as number);
   if (!p.length) return event;
   const lo = Math.min(...p);
@@ -36,7 +60,7 @@ export function priceBadge(input: Priced): string {
   const event = withTiers(input);
   if (event.is_free) return "Free";
   if (event.price_min == null) return "Tickets";
-  const base = RUPEES.format(event.price_min);
+  const base = formatPrice(event.price_min, event);
   return event.price_max != null && event.price_max > event.price_min
     ? `${base}+`
     : base;
@@ -48,9 +72,9 @@ export function priceLine(input: Priced): string {
   if (event.is_free) return "Free entry";
   if (event.price_min == null) return "See listing";
   if (event.price_max != null && event.price_max > event.price_min) {
-    return `${RUPEES.format(event.price_min)} to ${RUPEES.format(event.price_max)}`;
+    return `${formatPrice(event.price_min, event)} to ${formatPrice(event.price_max, event)}`;
   }
-  return RUPEES.format(event.price_min);
+  return formatPrice(event.price_min, event);
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/&amp;/g, "&").replace(/[^a-z0-9]+/g, " ").trim();

@@ -4,12 +4,11 @@ import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from
 import TimeDial from "./TimeDial";
 import { Pause, Play, X, MoonStars } from "@phosphor-icons/react";
 import type { Event } from "@/lib/types";
-import { HOUR, WEEK_HOURS, busyness, momentLabel } from "@/lib/timeline";
+import { HOUR, WEEK_HOURS, busyness, momentLabel, zoneOffset } from "@/lib/timeline";
 
 const BUCKET = 3;
 const STEP_MS = 320;
 const NIGHT_STEP_MS = 750;
-const IST = 5.5 * HOUR;
 
 /**
  * Week timeline over the map. Scrubbing (or pressing play) shows only the
@@ -27,6 +26,7 @@ export default function TimeScrubber({
   setPlaying,
   shown,
   live,
+  zone = "Asia/Kolkata",
 }: {
   events: Event[];
   start: number;
@@ -39,11 +39,13 @@ export default function TimeScrubber({
   setPlaying: Dispatch<SetStateAction<boolean>>;
   shown: number;
   live: number;
+  /** The city's time zone: "tonight" and the hour labels read in it. */
+  zone?: string;
 }) {
   // "Play tonight" runs slowly from the evening (or now, if it's already
   // evening) until 3 am. The scrubber still reaches across the whole week.
   const [stopAt, setStopAt] = useState(WEEK_HOURS - 1);
-  const startHod = Math.floor((start + IST) / HOUR) % 24;
+  const startHod = Math.floor((start + zoneOffset(zone, start)) / HOUR) % 24;
   const hod = (startHod + hour) % 24;
   const tonight = () => {
     const begin = startHod >= 4 && startHod < 18 ? 18 - startHod : 0;
@@ -59,10 +61,10 @@ export default function TimeScrubber({
         const t = start + d * 24 * HOUR;
         return {
           left: (d * 24) / WEEK_HOURS,
-          label: d === 0 ? "Today" : new Date(t).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short" }),
+          label: d === 0 ? "Today" : new Date(t).toLocaleDateString("en-IN", { timeZone: zone, weekday: "short" }),
         };
       }),
-    [start],
+    [start, zone],
   );
 
   const night = stopAt < WEEK_HOURS - 1;
@@ -100,7 +102,7 @@ export default function TimeScrubber({
     );
   }
 
-  const label = momentLabel(start + hour * HOUR, now);
+  const label = momentLabel(start + hour * HOUR, now, zone);
   const active = Math.floor(hour / BUCKET);
   // When nothing is on, offer a jump to the hour the next event starts.
   const t = start + hour * HOUR;
@@ -153,7 +155,7 @@ export default function TimeScrubber({
                   setHour(nextHour);
                 }}
               >
-                Skip to {momentLabel(start + nextHour * HOUR, now)} →
+                Skip to {momentLabel(start + nextHour * HOUR, now, zone)} →
               </button>
             )}
           </span>

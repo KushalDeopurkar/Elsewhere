@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
-import { formatWhen } from "@/lib/formatDate";
+import { whenOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { getCategoryColor } from "@/lib/categoryColors";
 import type { Event } from "@/lib/types";
@@ -120,7 +120,7 @@ export async function GET(req: Request) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", fontSize: story ? 40 : 32, fontWeight: 700, lineHeight: 1.1, fontFamily: D }}>{clip(e.title, story ? 60 : 44)}</div>
                     <div style={{ display: "flex", fontSize: story ? 28 : 22, color: "#c6cad6" }}>
-                      {clip(`${formatWhen(e.start_time)}${e.location_name ? ` · ${e.location_name}` : ""}`, story ? 52 : 46)}
+                      {clip(`${whenOf(e)}${e.location_name ? ` · ${e.location_name}` : ""}`, story ? 52 : 46)}
                     </div>
                     <div style={{ display: "flex", fontSize: story ? 26 : 20, color: hue }}>{priceBadge(e)}</div>
                   </div>

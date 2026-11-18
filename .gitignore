@@ -10,3 +10,7 @@ node_modules/
 *.command
 seed_events.json
 .vercel/
+.DS_Store
+*.envbackend
+.env*
+!.env.example

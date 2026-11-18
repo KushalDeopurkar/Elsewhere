@@ -7,7 +7,7 @@ import Avatar from "./Avatar";
 import { EmptyState } from "./Section";
 import { openSignIn, socialConfigured, useAuth, type Profile } from "@/lib/auth";
 import { connections, eventsByIds, follow, friendsUpcoming, searchPeople, unfollow, type FriendPlan } from "@/lib/social";
-import { formatWhen } from "@/lib/formatDate";
+import { whenOf } from "@/lib/formatDate";
 import type { Event } from "@/lib/types";
 
 /**
@@ -176,7 +176,7 @@ export default function FriendsView() {
                   {event.image_url ? <img src={event.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span className="fr-plan-ph" />}
                   <span className="fr-plan-text">
                     <strong>{event.title}</strong>
-                    <small>{formatWhen(event.start_time)}{event.location_name ? ` · ${event.location_name}` : ""}</small>
+                    <small>{whenOf(event)}{event.location_name ? ` · ${event.location_name}` : ""}</small>
                     <span className="fr-plan-who">
                       <span className="esocial-faces" aria-hidden="true">
                         {plan.slice(0, 4).map((p) => <Avatar key={p.user_id} src={p.avatar_url} name={p.display_name || p.username} size={22} />)}

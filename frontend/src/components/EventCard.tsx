@@ -2,7 +2,7 @@ import TransitionLink from "./TransitionLink";
 import { MapPin, Clock } from "@phosphor-icons/react/ssr";
 import { Event, CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatDatePlate, formatWhen } from "@/lib/formatDate";
+import { formatDatePlate, eventZone, whenOf } from "@/lib/formatDate";
 import { priceBadge, realTiers } from "@/lib/money";
 import EventImage from "./EventImage";
 import SaveButton from "./SaveButton";
@@ -32,7 +32,7 @@ export default function EventCard({
 }) {
   const meta = CATEGORIES.find((c) => c.value === event.category);
   const hue = getCategoryColor(event.category);
-  const plate = formatDatePlate(event.start_time);
+  const plate = formatDatePlate(event.start_time, eventZone(event));
   const price = priceBadge(event);
   const where = [event.location_name, event.city].filter(Boolean).join(", ");
   const style = { "--cat-hue": hue.color } as React.CSSProperties;
@@ -73,7 +73,7 @@ export default function EventCard({
         </h3>
         <p className="ecard-meta">
           <Clock size={14} weight="bold" aria-hidden="true" />
-          <span>{formatWhen(event.start_time)}</span>
+          <span>{whenOf(event)}</span>
         </p>
         {where && (
           <p className="ecard-meta">

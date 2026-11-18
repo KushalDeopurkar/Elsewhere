@@ -11,7 +11,52 @@ export interface CityPoint {
   name: string;
   lat: number;
   lng: number;
+  /** ISO country code; India when absent. */
+  country?: string;
+  /** IANA time zone; Asia/Kolkata when absent. */
+  tz?: string;
 }
+
+// Outside India. Keep in step with backend/app/scrapers/world.py: the global
+// sources are fetched around these same points.
+const WORLD: CityPoint[] = [
+  { name: "New York", lat: 40.7128, lng: -74.006, country: "US", tz: "America/New_York" },
+  { name: "Los Angeles", lat: 34.0522, lng: -118.2437, country: "US", tz: "America/Los_Angeles" },
+  { name: "Chicago", lat: 41.8781, lng: -87.6298, country: "US", tz: "America/Chicago" },
+  { name: "San Francisco", lat: 37.7749, lng: -122.4194, country: "US", tz: "America/Los_Angeles" },
+  { name: "Austin", lat: 30.2672, lng: -97.7431, country: "US", tz: "America/Chicago" },
+  { name: "Miami", lat: 25.7617, lng: -80.1918, country: "US", tz: "America/New_York" },
+  { name: "Seattle", lat: 47.6062, lng: -122.3321, country: "US", tz: "America/Los_Angeles" },
+  { name: "Boston", lat: 42.3601, lng: -71.0589, country: "US", tz: "America/New_York" },
+  { name: "Washington DC", lat: 38.9072, lng: -77.0369, country: "US", tz: "America/New_York" },
+  { name: "Las Vegas", lat: 36.1699, lng: -115.1398, country: "US", tz: "America/Los_Angeles" },
+  { name: "Nashville", lat: 36.1627, lng: -86.7816, country: "US", tz: "America/Chicago" },
+  { name: "Toronto", lat: 43.6532, lng: -79.3832, country: "CA", tz: "America/Toronto" },
+  { name: "Vancouver", lat: 49.2827, lng: -123.1207, country: "CA", tz: "America/Vancouver" },
+  { name: "Montreal", lat: 45.5019, lng: -73.5674, country: "CA", tz: "America/Toronto" },
+  { name: "Mexico City", lat: 19.4326, lng: -99.1332, country: "MX", tz: "America/Mexico_City" },
+  { name: "London", lat: 51.5074, lng: -0.1278, country: "GB", tz: "Europe/London" },
+  { name: "Manchester", lat: 53.4808, lng: -2.2426, country: "GB", tz: "Europe/London" },
+  { name: "Birmingham", lat: 52.4862, lng: -1.8904, country: "GB", tz: "Europe/London" },
+  { name: "Glasgow", lat: 55.8642, lng: -4.2518, country: "GB", tz: "Europe/London" },
+  { name: "Dublin", lat: 53.3498, lng: -6.2603, country: "IE", tz: "Europe/Dublin" },
+  { name: "Paris", lat: 48.8566, lng: 2.3522, country: "FR", tz: "Europe/Paris" },
+  { name: "Berlin", lat: 52.52, lng: 13.405, country: "DE", tz: "Europe/Berlin" },
+  { name: "Amsterdam", lat: 52.3676, lng: 4.9041, country: "NL", tz: "Europe/Amsterdam" },
+  { name: "Madrid", lat: 40.4168, lng: -3.7038, country: "ES", tz: "Europe/Madrid" },
+  { name: "Barcelona", lat: 41.3874, lng: 2.1686, country: "ES", tz: "Europe/Madrid" },
+  { name: "Brussels", lat: 50.8503, lng: 4.3517, country: "BE", tz: "Europe/Brussels" },
+  { name: "Copenhagen", lat: 55.6761, lng: 12.5683, country: "DK", tz: "Europe/Copenhagen" },
+  { name: "Stockholm", lat: 59.3293, lng: 18.0686, country: "SE", tz: "Europe/Stockholm" },
+  { name: "Sydney", lat: -33.8688, lng: 151.2093, country: "AU", tz: "Australia/Sydney" },
+  { name: "Melbourne", lat: -37.8136, lng: 144.9631, country: "AU", tz: "Australia/Melbourne" },
+  { name: "Brisbane", lat: -27.4698, lng: 153.0251, country: "AU", tz: "Australia/Brisbane" },
+  { name: "Perth", lat: -31.9505, lng: 115.8605, country: "AU", tz: "Australia/Perth" },
+  { name: "Auckland", lat: -36.8485, lng: 174.7633, country: "NZ", tz: "Pacific/Auckland" },
+  { name: "Wellington", lat: -41.2865, lng: 174.7762, country: "NZ", tz: "Pacific/Auckland" },
+  { name: "Christchurch", lat: -43.5321, lng: 172.6362, country: "NZ", tz: "Pacific/Auckland" },
+  { name: "Singapore", lat: 1.3521, lng: 103.8198, country: "SG", tz: "Asia/Singapore" },
+];
 
 const CITIES: Record<string, CityPoint> = {
   mumbai: { name: "Mumbai", lat: 19.076, lng: 72.878 },
@@ -41,10 +86,16 @@ const CITIES: Record<string, CityPoint> = {
   dehradun: { name: "Dehradun", lat: 30.316, lng: 78.032 },
   udaipur: { name: "Udaipur", lat: 24.585, lng: 73.712 },
   jodhpur: { name: "Jodhpur", lat: 26.238, lng: 73.024 },
+  ...Object.fromEntries(WORLD.map((c) => [c.name.toLowerCase(), c])),
 };
 
 /** Spellings and nearby areas, all lower case, pointing at a CITIES key. */
 const ALIASES: Record<string, string> = {
+  nyc: "new york",
+  "new york city": "new york",
+  sf: "san francisco",
+  "washington d.c.": "washington dc",
+  montréal: "montreal",
   bombay: "mumbai",
   bangalore: "bengaluru",
   blr: "bengaluru",
@@ -114,12 +165,49 @@ export function cityByName(name: string | null | undefined): CityPoint | null {
 
 export const DEFAULT_CITY = CITIES.mumbai;
 
-/** Cities offered in the location selector, most active first. */
-export const CITY_LIST: CityPoint[] = [
+/** Indian cities in the location selector, most active first. */
+export const INDIA_LIST: CityPoint[] = [
   "mumbai", "bengaluru", "delhi", "hyderabad", "pune", "chennai", "kolkata",
   "gurgaon", "noida", "ahmedabad", "jaipur", "goa", "kochi", "chandigarh",
   "indore", "lucknow", "coimbatore", "thiruvananthapuram", "guwahati",
 ].map((k) => CITIES[k]);
+
+/** Cities outside India, alphabetical. */
+export const WORLD_LIST: CityPoint[] = [...WORLD].sort((a, b) => a.name.localeCompare(b.name));
+
+/** Every city in the location selector. */
+export const CITY_LIST: CityPoint[] = [...INDIA_LIST, ...WORLD_LIST];
+
+export const cityZone = (c: CityPoint | null | undefined): string => c?.tz ?? "Asia/Kolkata";
+export const cityCountry = (c: CityPoint | null | undefined): string => c?.country ?? "IN";
+
+/**
+ * The time zone an event's times should read in: the zone of the nearest
+ * known city (all of India is one zone). Deterministic, so the server and
+ * the browser format the same string.
+ */
+export function zoneOf(e: { lat?: number | null; lng?: number | null; country?: string | null }): string {
+  const country = (e.country ?? "").toUpperCase();
+  if (!country || country === "IN") return "Asia/Kolkata";
+  const pool = WORLD.filter((c) => c.country === country);
+  if (pool.length === 1 || (pool.length && (e.lat == null || e.lng == null))) return pool[0].tz!;
+  if (e.lat != null && e.lng != null) {
+    const list = pool.length ? pool : WORLD;
+    let best = list[0];
+    let bestD = Infinity;
+    for (const c of list) {
+      const d = (c.lat - e.lat) ** 2 + ((c.lng - e.lng) * Math.cos((e.lat * Math.PI) / 180)) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    // Far from every known city (> ~1,000 km): fall back to India's zone
+    // only if nothing better is known.
+    if (bestD < 100) return best.tz!;
+  }
+  return "Asia/Kolkata";
+}
 
 /**
  * True when a point sits on a city centroid: the scrapers' fallback when a

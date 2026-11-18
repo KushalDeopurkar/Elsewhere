@@ -7,9 +7,9 @@ import { hasTime } from "@/lib/formatDate";
 import { salesCountdown, startCountdown } from "@/lib/countdown";
 
 /** "Starts in 2h 14m" / "On now", ticking. Renders nothing far out or on the server. */
-export function StartCountdown({ start, end }: { start: string; end: string | null }) {
+export function StartCountdown({ start, end, zone }: { start: string; end: string | null; zone?: string }) {
   const now = useNow(15_000);
-  const c = now ? startCountdown(start, end, now, { hasTime: hasTime(start) }) : null;
+  const c = now ? startCountdown(start, end, now, { hasTime: hasTime(start, zone) }) : null;
   if (!c) return null;
   return (
     <p className={`countdown is-${c.tone}`} role="timer" aria-live="off">

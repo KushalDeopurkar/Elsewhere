@@ -29,6 +29,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app.scrapers.allevents import AllEventsScraper
 from app.scrapers.district import DistrictScraper
 from app.scrapers.meetup import MeetupScraper
+from app.scrapers.ticketmaster import TicketmasterScraper
+from app.scrapers.seatgeek import SeatGeekScraper
+from app.scrapers.eventfinda import EventfindaScraper
+from app.scrapers.paris_opendata import ParisOpenDataScraper
+from app.scrapers.ics_feeds import IcsFeedsScraper
+from app.services.dedupe import dedupe
+
+INDIA_SOURCES = ["allevents", "district", "meetup"]
+GLOBAL_SOURCES = ["ticketmaster", "seatgeek", "eventfinda", "paris", "ics"]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,8 +59,8 @@ async def run_scraper(scraper, city=None):
 
 async def main():
     parser = argparse.ArgumentParser(description="Run event scrapers")
-    parser.add_argument("--source", choices=["allevents", "district", "insider", "meetup", "all"],
-                        default="all", help="Which scraper to run")
+    parser.add_argument("--source", choices=[*INDIA_SOURCES, "insider", *GLOBAL_SOURCES, "india", "global", "all"],
+                        default="all", help="Which scraper to run (india / global run a whole group)")
     parser.add_argument("--city", default=None, help="Scrape only this city")
     parser.add_argument("--dry-run", action="store_true",
                         help="Scrape but don't upsert to database")
@@ -81,13 +90,30 @@ async def main():
         return
 
     # Build scrapers based on selection
+    def wanted(name):
+        group = INDIA_SOURCES if name in INDIA_SOURCES else GLOBAL_SOURCES
+        return args.source in ("all", name) or (args.source == "india" and group is INDIA_SOURCES) or (
+            args.source == "global" and group is GLOBAL_SOURCES
+        )
+
     scrapers = []
-    if args.source in ("all", "allevents"):
+    if wanted("allevents"):
         scrapers.append(AllEventsScraper(delay=1.0, categories=["all"]))
-    if args.source in ("all", "district"):
+    if wanted("district"):
         scrapers.append(DistrictScraper(delay=1.5))
-    if args.source in ("all", "meetup"):
+    if wanted("meetup"):
         scrapers.append(MeetupScraper(delay=2.0))
+    # Global sources skip themselves (with a log line) when their key isn't set.
+    if wanted("ticketmaster"):
+        scrapers.append(TicketmasterScraper())
+    if wanted("seatgeek"):
+        scrapers.append(SeatGeekScraper())
+    if wanted("eventfinda"):
+        scrapers.append(EventfindaScraper())
+    if wanted("paris"):
+        scrapers.append(ParisOpenDataScraper())
+    if wanted("ics"):
+        scrapers.append(IcsFeedsScraper())
 
     # Run all selected scrapers
     all_events = []
@@ -101,6 +127,10 @@ async def main():
             logger.error(f"Scraper {scraper.name} failed: {e}")
             results[scraper.name] = 0
 
+    before = len(all_events)
+    all_events = dedupe(all_events)
+    if before != len(all_events):
+        logger.info(f"Dropped {before - len(all_events)} duplicates listed by more than one source")
     logger.info(f"Total scraped: {len(all_events)} events")
     logger.info(f"Per-scraper: {results}")
 

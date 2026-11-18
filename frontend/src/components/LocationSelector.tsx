@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MapPin, CaretDown } from "@phosphor-icons/react/ssr";
-import { CITY_LIST } from "@/lib/cities";
+import { INDIA_LIST, WORLD_LIST } from "@/lib/cities";
 import { pickCity, useCity } from "@/lib/cityPref";
 
 /**
@@ -34,11 +34,20 @@ export default function LocationSelector({ compact = false }: { compact?: boolea
         aria-label="Choose your city"
       >
         {open && <option value="" hidden disabled />}
-        {CITY_LIST.map((c) => (
-          <option key={c.name} value={c.name}>
-            {c.name}
-          </option>
-        ))}
+        <optgroup label="India">
+          {INDIA_LIST.map((c) => (
+            <option key={c.name} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="Around the world">
+          {WORLD_LIST.map((c) => (
+            <option key={c.name} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </optgroup>
       </select>
     </label>
   );

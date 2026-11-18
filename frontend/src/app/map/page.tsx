@@ -9,12 +9,13 @@ import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
 import { onCityRepick, useCity } from "@/lib/cityPref";
+import { cityZone } from "@/lib/cities";
 import { CategoryRail } from "@/components/FilterRail";
 import type { MapHandle } from "@/components/EventMap";
 import { getMapEvents, MapBounds } from "@/lib/api";
 import { Event, EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatWhen } from "@/lib/formatDate";
+import { whenOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import TimeScrubber from "@/components/TimeScrubber";
 import { HOUR, eventsAt, timelineStart } from "@/lib/timeline";
@@ -38,7 +39,8 @@ export default function MapPage() {
   const [timeOn, setTimeOn] = useState(false);
   const [hour, setHour] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const tlStart = timelineStart(now);
+  const zoneCity = useCity();
+  const tlStart = timelineStart(now, cityZone(zoneCity));
   const at = useMemo(
     () => (timeOn ? eventsAt(allEvents, tlStart + hour * HOUR) : null),
     [timeOn, allEvents, tlStart, hour],
@@ -161,7 +163,7 @@ export default function MapPage() {
                   </span>
                   <span className="map-item-body">
                     <span className="map-item-title">{e.title}</span>
-                    <span className="map-item-meta">{formatWhen(e.start_time)}</span>
+                    <span className="map-item-meta">{whenOf(e)}</span>
                     <span className="map-item-meta">
                       {priceBadge(e)}
                       {e.location_name ? ` · ${e.location_name}` : ""}
@@ -239,6 +241,7 @@ export default function MapPage() {
         </div>
 
         <TimeScrubber
+          zone={cityZone(city)}
           events={allEvents}
           start={tlStart}
           now={now}
@@ -283,7 +286,7 @@ export default function MapPage() {
                 {priceBadge(selected)}
               </p>
               <h3 className="card-title">{selected.title}</h3>
-              <p className="card-time mono">{formatWhen(selected.start_time)}</p>
+              <p className="card-time mono">{whenOf(selected)}</p>
               <p className="card-foot">
                 <span>
                   {selected.location_name}

@@ -13,12 +13,21 @@ export const SOON = 3 * HOUR;
 
 export type AtStatus = "live" | "soon";
 
-/** India is UTC+5:30, so hour marks sit on the half hour in UTC. */
-const IST_OFFSET = 5.5 * HOUR;
+/** A zone's offset from UTC at an instant, in ms (India: +5:30). */
+export function zoneOffset(zone: string, at: number): number {
+  if (zone === "Asia/Kolkata") return 5.5 * HOUR;
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone, year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23",
+  }).formatToParts(at);
+  const g = (t: string) => +(p.find((x) => x.type === t)?.value ?? 0);
+  const wall = Date.UTC(g("year"), g("month") - 1, g("day"), g("hour") % 24, g("minute"), g("second"));
+  return wall - Math.floor(at / 1000) * 1000;
+}
 
-/** Start of the timeline: the current India-time hour, so the slider's 0 is "now". */
-export function timelineStart(now: number): number {
-  return Math.floor((now + IST_OFFSET) / HOUR) * HOUR - IST_OFFSET;
+/** Start of the timeline: the current local hour, so the slider's 0 is "now". */
+export function timelineStart(now: number, zone = "Asia/Kolkata"): number {
+  const off = zoneOffset(zone, now);
+  return Math.floor((now + off) / HOUR) * HOUR - off;
 }
 
 function endOf(e: Event): number {
@@ -58,10 +67,9 @@ export function busyness(events: Event[], start: number, bucketHours = 3): numbe
   return buckets;
 }
 
-/** "Now", "Tonight 9 pm", "Sat 11 am": short label in India time. */
-export function momentLabel(t: number, now: number): string {
-  if (t - timelineStart(now) < HOUR) return "Now";
-  const zone = "Asia/Kolkata";
+/** "Now", "Tonight 9 pm", "Sat 11 am": short label in local time. */
+export function momentLabel(t: number, now: number, zone = "Asia/Kolkata"): string {
+  if (t - timelineStart(now, zone) < HOUR) return "Now";
   const day = (x: number) => new Date(x).toLocaleDateString("en-CA", { timeZone: zone });
   const time = new Date(t)
     .toLocaleTimeString("en-IN", { timeZone: zone, hour: "numeric", hour12: true })

@@ -34,15 +34,19 @@ class EventService:
         if not events:
             return 0
 
-        rows = [_unescape_row(e.to_db_row()) for e in events]
+        # One row per (source, source_id), or Postgres rejects the batch.
+        rows = list({(r["source"], r["source_id"]): r for r in (_unescape_row(e.to_db_row()) for e in events)}.values())
 
-        result = (
-            self.client.table("events")
-            .upsert(rows, on_conflict="source,source_id")
-            .execute()
-        )
-
-        count = len(result.data) if result.data else 0
+        # Global sources bring thousands of rows a run: send them in chunks
+        # so no single request is too large.
+        count = 0
+        for i in range(0, len(rows), 500):
+            result = (
+                self.client.table("events")
+                .upsert(rows[i : i + 500], on_conflict="source,source_id")
+                .execute()
+            )
+            count += len(result.data) if result.data else 0
         logger.info(f"Upserted {count} events")
         return count
 
@@ -112,7 +116,7 @@ class EventService:
         rows = result.data or []
         return self._with_details(rows)
 
-    _DETAIL_COLUMNS = "id,image_url,end_time,price_min,price_max,is_free,url,address,city,source"
+    _DETAIL_COLUMNS = "id,image_url,end_time,price_min,price_max,is_free,url,address,city,country,source"
 
     def _with_details(self, rows: List[Dict], extra: str = "") -> List[Dict]:
         """Merge columns the RPCs don't return, by id, in one query.

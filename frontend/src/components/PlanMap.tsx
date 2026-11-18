@@ -6,7 +6,7 @@ import { LngLatBounds, MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
 import { STYLE_URL, FALLBACK_STYLE_URL, applyDarkTheme } from "@/lib/mapTheme";
 import type { PlanStop } from "@/lib/plan";
 import { pathTo, pointAt, stopIndexAt, type LngLat } from "@/lib/route";
-import { formatWhen } from "@/lib/formatDate";
+import { whenOf } from "@/lib/formatDate";
 
 setWorkerUrl("/maplibre-gl-worker.mjs");
 
@@ -244,7 +244,7 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
             }}
           />
           <p className="plan-scrub-label" aria-live="polite">
-            <strong>{at + 1}</strong> {formatWhen(here.start_time)} · {here.title}
+            <strong>{at + 1}</strong> {whenOf(here)} · {here.title}
           </p>
         </div>
       </div>

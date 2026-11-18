@@ -1,5 +1,5 @@
 import { Event, EventCategory, EventFormat } from "./types";
-import { matchesWindow } from "./formatDate";
+import { matchesWindow, eventZone } from "./formatDate";
 
 /**
  * Intent parsing for natural-language discovery.
@@ -243,7 +243,7 @@ export function scoreEvent(event: Event, intent: Intent): Scored | null {
   }
 
   if (intent.when !== "any") {
-    if (!matchesWindow(event.start_time, intent.when)) return null;
+    if (!matchesWindow(event.start_time, intent.when, undefined, eventZone(event))) return null;
     score += 2;
     reasons.push(intent.when === "weekend" ? "On this weekend" : `Happening ${intent.when}`);
   }
