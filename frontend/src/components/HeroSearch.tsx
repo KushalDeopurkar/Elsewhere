@@ -5,14 +5,21 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { rememberSearch } from "@/lib/cityPref";
 
+// One prompt per kind of plan, so the first thing people see is the range.
 const PROMPTS = [
-  "Free tech events this weekend",
-  "Beginner-friendly workshops",
-  "Startup networking events",
-  "Live music near me",
+  "Free AI workshops this weekend",
+  "I want to meet startup founders",
+  "Something educational tomorrow",
+  "Volunteering this Sunday",
+  "A run or a match this weekend",
+  "Live music tonight under ₹500",
 ];
 
-/** The home page's plain-words search, set like the destination field on a ticket. Results open on /explore. */
+/**
+ * The home page's plain-words search: Elsewhere reads the request (what,
+ * when, budget, where, online or not) and Explore shows what it understood
+ * and why each result matches.
+ */
 export default function HeroSearch() {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -35,7 +42,7 @@ export default function HeroSearch() {
         }}
       >
         <label className="hsearch-label" htmlFor="hsearch-input">
-          Where to?
+          Ask Elsewhere
         </label>
         <div className="hsearch-field">
           <input
@@ -43,7 +50,7 @@ export default function HeroSearch() {
             className="hsearch-input"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="AI meetups this weekend"
+            placeholder="What do you feel like doing?"
             enterKeyHint="search"
             autoComplete="off"
           />
@@ -53,6 +60,7 @@ export default function HeroSearch() {
           </button>
         </div>
       </form>
+      <p className="hsearch-help">Say what, when, how much and where, in your own words. It reads the request and shows why each event matches.</p>
       <div className="hsearch-try">
         <span className="hsearch-try-label">Try</span>
         <ul>

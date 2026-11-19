@@ -5,7 +5,7 @@ const GROUPS = [
   {
     title: "Find",
     links: [
-      { href: "/", label: "Tonight" },
+      { href: "/", label: "Discover" },
       { href: "/explore", label: "Explore" },
       { href: "/map", label: "Map" },
       { href: "/plan-my-day", label: "Plan my day" },

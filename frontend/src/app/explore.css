@@ -603,3 +603,72 @@
     height: 36px;
   }
 }
+
+/* ---- Filters in use, removable ------------------------------------------ */
+.xactive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.xactive-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  transition: background-color var(--t-hover) var(--ease);
+}
+
+@media (hover: hover) {
+  .xactive-chip:hover {
+    background: var(--crit);
+  }
+}
+
+.xactive-clear {
+  min-height: 34px;
+  font-size: var(--t-sm);
+  color: var(--fg-2);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.xread-note {
+  font-size: var(--t-sm);
+  color: var(--fg-3);
+}
+
+/* Why a search returned this ticket */
+.ecard-why {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--rule-strong);
+  font-size: var(--t-xs);
+  line-height: 1.4;
+  color: var(--signal-text);
+  font-weight: 600;
+}
+
+.xmore {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--rule);
+}
+
+.xmore-count {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}

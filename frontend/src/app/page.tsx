@@ -10,6 +10,7 @@ import Timetable from "@/components/Timetable";
 import EventCard from "@/components/EventCard";
 import Rail from "@/components/Rail";
 import CategoryLines from "@/components/CategoryLines";
+import Collections from "@/components/Collections";
 import SiteFooter from "@/components/SiteFooter";
 import { SectionHeader, CardSkeleton, EmptyState } from "@/components/Section";
 import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
@@ -110,6 +111,11 @@ export default function Home() {
       .slice(0, 12);
   }, [all, saved]);
 
+  // Collections draw from everything except the headliners and what starts in the next three hours.
+  const collectionExclude = useMemo(
+    () => new Set([...featured, ...soon.map((x) => x.event)].map((e) => e.id)),
+    [featured, soon],
+  );
   const lines = CATEGORY_PAGES.filter((c) => c.value !== "other");
   const lineStat = (v: string) => {
     const s = stats?.find((x) => x.value === v);
@@ -129,12 +135,14 @@ export default function Home() {
           zone={cityZone(city)}
           loading={pool.loading}
           night={night}
+          lede={
+            <>
+              Workshops, hackathons, talks, matches, gigs, meetups, exhibitions and volunteering in {city.name}, gathered
+              from across the web. Ask for what you want, or start with what&apos;s next.
+            </>
+          }
           aside={
             <>
-              <p className="home-lede">
-                Every gig, workshop, match, meetup and free walk in {city.name}, gathered from across the web and set out
-                like a timetable. Soonest first.
-              </p>
               <HeroSearch />
               {(pool.loading || all.length > 0) && (
                 <dl className="home-facts" aria-busy={pool.loading}>
@@ -166,7 +174,13 @@ export default function Home() {
         </div>
       )}
 
-      {!pool.loading && <WeekendStories events={all} city={city.name} />}
+
+
+
+
+
+
+
 
       <section className="shell sec">
         <SectionHeader index={no()} kicker={`This week in ${city.name}`} title="Headliners" href="/explore?when=week" />
@@ -191,7 +205,6 @@ export default function Home() {
           </div>
         )}
       </section>
-
       {soon.length > 0 && (
         <section className="shell sec">
           <SectionHeader
@@ -204,19 +217,35 @@ export default function Home() {
           <RailOf events={soon.map((s) => s.event)} badges={soonBadges} label="events on now or starting soon" loading={false} />
         </section>
       )}
-
+      <section className="shell sec">
+        <SectionHeader index={no()} kicker="Every category, one line each" title="Browse by line" href="/explore" linkLabel="Browse everything" />
+        <CategoryLines cats={lines} stat={lineStat} city={city.name} />
+      </section>
+      {!pool.loading && all.length > 0 && (
+        <section className="shell sec">
+          <SectionHeader index={no()} kicker="Plans, not genres" title="Collections" href="/explore" linkLabel="Browse everything" />
+          <Collections events={all} exclude={collectionExclude} />
+        </section>
+      )}
+      {!pool.loading && <WeekendStories events={all} city={city.name} />}
+      {weekend.length > 0 && (
+        <section className="shell sec">
+          <SectionHeader index={no()} kicker="Saturday and Sunday" title="This weekend" href="/explore?when=weekend" />
+          <RailOf events={weekend} label="weekend events" loading={false} />
+        </section>
+      )}
+      {free.length > 0 && (
+        <section className="shell sec">
+          <SectionHeader index={no()} kicker="No ticket needed" title="Free entry" href="/explore?price=free" />
+          <RailOf events={free} label="free events" loading={false} />
+        </section>
+      )}
       {(pool.loading || thisWeek.length > 0) && (
         <section className="shell sec">
           <SectionHeader index={no()} kicker="Next 7 days" title="This week" href="/explore?when=week" />
           <RailOf events={thisWeek} label="events this week" loading={pool.loading} />
         </section>
       )}
-
-      <section className="shell sec">
-        <SectionHeader index={no()} kicker="Every kind of event" title="Lines" href="/explore" linkLabel="Browse everything" />
-        <CategoryLines cats={lines} stat={lineStat} city={city.name} />
-      </section>
-
       <section className="shell sec">
         <SectionHeader
           index={no()}
@@ -243,20 +272,6 @@ export default function Home() {
           </div>
         )}
       </section>
-
-      {free.length > 0 && (
-        <section className="shell sec">
-          <SectionHeader index={no()} kicker="No ticket needed" title="Free entry" href="/explore?price=free" />
-          <RailOf events={free} label="free events" loading={false} />
-        </section>
-      )}
-
-      {weekend.length > 0 && (
-        <section className="shell sec">
-          <SectionHeader index={no()} kicker="Saturday and Sunday" title="This weekend" href="/explore?when=weekend" />
-          <RailOf events={weekend} label="weekend events" loading={false} />
-        </section>
-      )}
 
       <SiteFooter />
     </>

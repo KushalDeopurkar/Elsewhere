@@ -3,6 +3,7 @@
  * homepage rails. Times are judged in IST, like the rest of the site.
  */
 
+import { kmBetween } from "./geo";
 import { Event } from "./types";
 import { matchesWindow, eventZone, timedOf } from "./formatDate";
 
@@ -81,4 +82,27 @@ export function startingSoon(events: Event[], hours = 3, now = Date.now()): { ev
     }
   }
   return out.sort((a, b) => a.at - b.at).map(({ event, badge }) => ({ event, badge }));
+}
+
+export type FormatFilter = "any" | "in_person" | "online";
+
+/**
+ * Online or not. The API has no format column yet, so a listing counts as
+ * online when it says so, or when its venue is literally "Online".
+ */
+export function isOnline(e: Event): boolean {
+  if (e.format === "online") return true;
+  const place = `${e.location_name ?? ""} ${e.city ?? ""}`.toLowerCase();
+  return /\bonline\b/.test(place);
+}
+
+export function inFormat(e: Event, format: FormatFilter): boolean {
+  if (format === "any") return true;
+  return format === "online" ? isOnline(e) : !isOnline(e);
+}
+
+/** Within `km` of a point; online events and listings without coordinates always pass. */
+export function withinKm(e: Event, km: number | null, lat: number, lng: number): boolean {
+  if (km == null || isOnline(e) || e.lat == null || e.lng == null) return true;
+  return kmBetween(lat, lng, e.lat, e.lng) <= km;
 }

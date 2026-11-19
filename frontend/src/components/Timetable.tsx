@@ -35,6 +35,7 @@ export default function Timetable({
   loading,
   night,
   aside,
+  lede,
 }: {
   events: Event[];
   city: string;
@@ -44,6 +45,8 @@ export default function Timetable({
   night: boolean;
   /** Intro and search, set beside the rows on wide screens. */
   aside?: React.ReactNode;
+  /** One line under the masthead saying what the site covers. */
+  lede?: React.ReactNode;
 }) {
   const now = useNow(15_000);
   const [tab, setTab] = useState<BoardTab>("today");
@@ -97,15 +100,13 @@ export default function Timetable({
     >
       <header className="tt-mast">
         <p className="tt-kicker">
-          <span className="tt-kicker-code">Departures</span>
+          <span className="tt-kicker-code">Every kind of event</span>
           <span>{now ? dateFor(zone).format(new Date(now)) : " "}</span>
         </p>
         <h1 id="tt-title" className="tt-title">
-          <span className="tt-word" key={heading}>
-            {heading}
-          </span>{" "}
-          <span className="tt-in">in {city}</span>
+          <span className="tt-word">What&apos;s on</span> <span className="tt-in">in {city}</span>
         </h1>
+        {lede && <p className="tt-lede">{lede}</p>}
         <div className="tt-clock">
           <FlapText text={time} length={5} className="tt-clock-face" label={now ? `Time in ${city}: ${time}` : ""} />
           <span className="tt-clock-zone">{now ? zoneLabel(zone, now) : ""}</span>
@@ -116,6 +117,9 @@ export default function Timetable({
         {aside && <div className="tt-aside">{aside}</div>}
 
         <div className="tt-board">
+          <p className="tt-board-label">
+            <span className="tt-kicker-code">Departures</span> Next up near you
+          </p>
           <div className="tt-bar">
             <div className="tt-tabs" role="tablist" aria-label="When">
               {tabs.map((t) => (

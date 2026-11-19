@@ -34,12 +34,15 @@ export default function EventCard({
   priority = false,
   variant = "standard",
   badge,
+  reasons,
 }: {
   event: Event;
   priority?: boolean;
   variant?: CardVariant;
   /** Small marker such as "Starts in 20 min". Only for facts we know. */
   badge?: string;
+  /** Why a search returned this event, in plain words ("Free to attend"). */
+  reasons?: string[];
 }) {
   const meta = CATEGORIES.find((c) => c.value === event.category);
   const hue = getCategoryColor(event.category);
@@ -89,6 +92,12 @@ export default function EventCard({
             <p className="ecard-meta ecard-where">
               <span className="sr-only">Where: </span>
               <span className="ecard-ellipsis">{where}</span>
+            </p>
+          )}
+          {reasons && reasons.length > 0 && (
+            <p className="ecard-why">
+              <span className="sr-only">Why it matches: </span>
+              {reasons.slice(0, 3).join(" · ")}
             </p>
           )}
           {variant === "compact" && <span className={`ecard-price-inline${event.is_free ? " is-free" : ""}`}>{price}</span>}

@@ -2502,10 +2502,10 @@ p {
 }
 
 @media (max-width: 1023px) {
-  /* Phones and tablets: the departures come straight after the masthead.
-     The panel keeps a floor so rows arriving don't push the page about. */
-  .tt-aside {
-    order: 2;
+  /* Phones and tablets: ask first, then the departures. The facts row moves
+     under the board, where it reads as its summary. */
+  .tt-aside .home-facts {
+    display: none;
   }
 }
 
@@ -2664,5 +2664,162 @@ p {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Discover masthead (3.0) -------------------------------------------- */
+.tt-lede {
+  grid-column: 1;
+  max-width: 62ch;
+  margin-top: var(--s-3);
+  font-size: var(--t-lg);
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+
+.tt-board-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.hsearch-help {
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--fg-3);
+}
+
+.hsearch-label {
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* ---- Collections -------------------------------------------------------- */
+.coll-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.coll-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.coll-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  flex: none;
+  min-height: 48px;
+  padding: var(--s-3) var(--s-4) var(--s-3) 0;
+  margin-right: var(--s-4);
+  color: var(--fg-3);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: 88%;
+  font-size: var(--t-lg);
+  transition: color var(--t-hover) var(--ease);
+}
+
+.coll-tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: var(--s-4);
+  bottom: -1px;
+  height: 4px;
+  background: var(--signal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--t-hover) var(--ease);
+}
+
+.coll-tab[aria-selected="true"] {
+  color: var(--fg);
+}
+
+.coll-tab[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+.coll-tab-count {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--fg-3);
+}
+
+@media (hover: hover) {
+  .coll-tab:hover {
+    color: var(--fg);
+  }
+}
+
+.coll-line {
+  margin: var(--s-4) 0 var(--s-2);
+  color: var(--fg-2);
+}
+
+.tt-title {
+  font-size: clamp(3rem, 8.2vw, 8.25rem);
+  overflow-wrap: anywhere;
+}
+
+.tt-title .tt-in {
+  display: block;
+}
+
+.tt-mast .tt-clock {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+@media (max-width: 767px) {
+  .tt-mast .tt-clock {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.hsearch-input {
+  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+}
+
+.hsearch-field {
+  min-height: 60px;
+}
+
+@media (max-width: 767px) {
+  .tt-lede {
+    font-size: var(--t-base);
+  }
+  .hsearch-try ul {
+    display: flex;
+    gap: var(--s-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--shell-pad) * -1);
+    padding-inline: var(--shell-pad);
+  }
+  .hsearch-try ul::-webkit-scrollbar {
+    display: none;
+  }
+  .hsearch-prompt {
+    width: auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+    border: 1px solid var(--rule-strong);
+  }
+  .hsearch-prompt::before {
+    content: none;
   }
 }

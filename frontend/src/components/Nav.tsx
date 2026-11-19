@@ -2,24 +2,25 @@
 
 import TransitionLink from "./TransitionLink";
 import { usePathname } from "next/navigation";
-import { Compass, MapTrifold, BookmarkSimple, MagnifyingGlass, Ticket, UserCircle } from "@phosphor-icons/react/ssr";
+import { Compass, MapTrifold, BookmarkSimple, MagnifyingGlass, UserCircle } from "@phosphor-icons/react/ssr";
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
 import AccountButton from "./AccountButton";
 import CityClock from "./CityClock";
 import { useSaved } from "@/lib/saved";
 
-// Three doors, numbered like platforms. Saved, search and your account sit on
+// Three doors, numbered like platforms: Discover (what is on, and ask for
+// anything), Explore (every listing, filtered) and Map. Saved, search and your account sit on
 // the right; on phones the same band becomes the bottom tab bar.
 const LINKS = [
-  { href: "/", label: "Tonight", n: "01" },
+  { href: "/", label: "Discover", n: "01" },
   { href: "/explore", label: "Explore", n: "02" },
   { href: "/map", label: "Map", n: "03" },
 ];
 
 const TABS = [
-  { href: "/", label: "Tonight", icon: Ticket },
-  { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/", label: "Discover", icon: Compass },
+  { href: "/explore", label: "Explore", icon: MagnifyingGlass },
   { href: "/map", label: "Map", icon: MapTrifold },
   { href: "/saved", label: "Saved", icon: BookmarkSimple },
   { href: "/me", label: "You", icon: UserCircle },

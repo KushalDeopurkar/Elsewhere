@@ -1,5 +1,6 @@
 import { ApiResponse, Event, SearchParams } from "./types";
 import { DEMO_EVENTS } from "./demoEvents";
+import { kmBetween } from "./geo";
 
 import { decodeEntities } from "./text";
 
@@ -43,14 +44,6 @@ function matchesLocally(event: Event, params: SearchParams): boolean {
   }
   return true;
 }
-
-const kmBetween = (aLat: number, aLng: number, bLat: number, bLng: number) => {
-  const r = Math.PI / 180;
-  const h =
-    Math.sin(((bLat - aLat) * r) / 2) ** 2 +
-    Math.cos(aLat * r) * Math.cos(bLat * r) * Math.sin(((bLng - aLng) * r) / 2) ** 2;
-  return 12742 * Math.asin(Math.sqrt(h));
-};
 
 /** Like the API: within the search radius of the point; online events go everywhere. */
 function nearLocally(event: Event, params: SearchParams): boolean {
