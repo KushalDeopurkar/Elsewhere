@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import ExploreView from "@/components/ExploreView";
 import SiteFooter from "@/components/SiteFooter";
 import CategoryIcon from "@/components/CategoryIcon";
-import CategoryWorld from "@/components/CategoryWorld";
 import { PageHeader } from "@/components/Section";
 import { CATEGORY_PAGES, categoryBySlug } from "@/lib/categoryPages";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -28,11 +27,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   return (
     <>
       <div className="cat-hero" style={{ "--cat-hue": hue.color, "--cat-wash": hue.wash } as React.CSSProperties}>
-        <CategoryWorld category={cat.value} />
         <PageHeader
           title={
             <>
-              <span className="cat-hero-icon"><CategoryIcon category={cat.value} size={30} weight="fill" /></span>
+              <span className="cat-hero-icon" aria-hidden="true">
+                <CategoryIcon category={cat.value} size={34} weight="bold" />
+              </span>
               {cat.label}
             </>
           }

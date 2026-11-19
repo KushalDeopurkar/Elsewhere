@@ -6,7 +6,6 @@ import {
   MagnifyingGlass,
   X,
   SlidersHorizontal,
-  Sparkle,
   ClockCounterClockwise,
 } from "@phosphor-icons/react/ssr";
 import EventCard from "./EventCard";
@@ -268,14 +267,16 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           submit(draft);
         }}
       >
-        <MagnifyingGlass size={19} weight="bold" className="xsearch-icon" aria-hidden="true" />
+        <label className="xsearch-label" htmlFor="xsearch-input">
+          Where to?
+        </label>
         <input
           ref={inputRef}
+          id="xsearch-input"
           className="xsearch-input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Describe what you want, e.g. ‘free workshops this weekend’"
-          aria-label="Search events"
+          placeholder="Free workshops this weekend"
           enterKeyHint="search"
         />
         {draft && (
@@ -283,7 +284,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             <X size={15} weight="bold" />
           </button>
         )}
-        <button type="submit" className="btn btn-primary">Search</button>
+        <button type="submit" className="btn btn-primary xsearch-go">Search</button>
       </form>
 
       {!q && (
@@ -306,7 +307,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
 
       {q && intent && (
         <div className="xread">
-          <span className="xread-label"><Sparkle size={13} weight="fill" /> Reading “{q}” as</span>
+          <span className="xread-label">Reading “{q}” as</span>
           {intent.signals.length === 0 && <span className="xread-chip">meaning only</span>}
           {intent.signals.map((s) => (
             <span key={`${s.kind}-${s.value}`} className="xread-chip"><b>{s.kind}</b> {s.label}</span>
@@ -361,7 +362,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </EmptyState>
           ) : results.length === 0 ? (
             <EmptyState
-              icon={<MagnifyingGlass size={30} weight="duotone" />}
+              icon={<MagnifyingGlass size={28} weight="bold" />}
               title="No events match"
               body={q ? "Try fewer words, a wider date range, or another city." : "Widen the date range or clear a filter."}
             >

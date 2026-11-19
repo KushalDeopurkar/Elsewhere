@@ -7,6 +7,7 @@ import "./globals.css";
 import "./redesign.css";
 import "./core.css";
 import "./events.css";
+import "./explore.css";
 import Nav from "@/components/Nav";
 import RouteSignal from "@/components/RouteSignal";
 import SocialRoot from "@/components/SocialRoot";
