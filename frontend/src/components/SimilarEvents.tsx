@@ -1,4 +1,5 @@
 import EventCard from "./EventCard";
+import { SectionHeader } from "./Section";
 import { similarEvents } from "@/lib/semantic";
 import { supabaseConfigured } from "@/lib/supabaseServer";
 
@@ -15,11 +16,8 @@ export default async function SimilarEvents({ eventId, title }: { eventId: strin
   if (events.length === 0) return null;
 
   return (
-    <section className="shell section">
-      <div className="section-head">
-        <h2>More like this</h2>
-        <span className="section-link">Matched by meaning, not just category</span>
-      </div>
+    <section className="shell sec">
+      <SectionHeader kicker="Matched by what it's about, not only its category" title="More like this" />
       <div className="grid-results">
         {events.map((e) => (
           <EventCard key={e.id} event={e} />

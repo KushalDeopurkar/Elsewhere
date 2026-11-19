@@ -19,22 +19,33 @@ export default function LoadingEvent() {
       <div className="shell detail-top">
         <span className="skel skel-crumbs" />
       </div>
-      <div className="shell detail-stage">
-        <div className="detail-media is-trailer">
-          {p ? (
-            <EventImage src={p.image_url} alt="" category={p.category} ratio="21 / 9" priority width={1100} />
+      <div className="shell detail-hero">
+        <header className="detail-head">
+          {label ? (
+            <p className="detail-kicker">
+              {label}
+              {p?.city ? <span className="detail-city">{p.city}</span> : null}
+            </p>
           ) : (
-            <div className="skel detail-media-skel" />
+            <span className="skel skel-line" />
           )}
+          {p ? <h1 className="detail-title">{p.title}</h1> : <span className="skel skel-title" />}
+          <span className="skel skel-line" />
+        </header>
+        <div className="detail-stage">
+          <div className="detail-media is-trailer">
+            {p ? (
+              <EventImage src={p.image_url} alt="" category={p.category} ratio="4 / 5" priority width={900} />
+            ) : (
+              <div className="skel detail-media-skel" />
+            )}
+          </div>
         </div>
       </div>
       <div className="shell detail-grid">
         <div className="detail-main">
-          <header className="detail-head">
-            {label ? <p className="detail-kicker">{label}{p?.city ? <span> · {p.city}</span> : null}</p> : <span className="skel skel-line" />}
-            {p ? <h1 className="detail-title">{p.title}</h1> : <span className="skel skel-title" />}
-            <span className="skel skel-line" />
-          </header>
+          <span className="skel skel-line" />
+          <span className="skel skel-line" />
         </div>
         <aside className="skel skel-aside" aria-hidden="true" />
       </div>

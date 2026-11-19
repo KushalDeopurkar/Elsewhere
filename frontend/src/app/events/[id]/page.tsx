@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eventJsonLd, jsonLdHtml } from "@/lib/eventSchema";
 import type { Metadata } from "next";
-import { CalendarBlank, MapPin, Ticket, ArrowSquareOut, Clock, Globe } from "@phosphor-icons/react/ssr";
+import { MapPin, ArrowSquareOut } from "@phosphor-icons/react/ssr";
 import SiteFooter from "@/components/SiteFooter";
 import SimilarEvents from "@/components/SimilarEvents";
 import EventImage from "@/components/EventImage";
@@ -25,6 +25,7 @@ import { SalesCountdown, StartCountdown } from "@/components/LiveCountdown";
 import PassportStamp from "@/components/PassportStamp";
 import EventSocial from "@/components/EventSocial";
 import EventActionBar from "@/components/EventActionBar";
+import BookingWhen from "@/components/BookingWhen";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -128,31 +129,36 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
           />
         </div>
 
-        <div className="shell detail-stage">
-          <TrailerMedia>
-            <EventImage src={event.image_url} alt="" category={event.category} ratio="21 / 9" priority width={1100} />
-          </TrailerMedia>
+        <div className="shell detail-hero">
+          <header className="detail-head">
+            <p className="detail-kicker">
+              <span className="detail-line" aria-hidden="true">
+                <CategoryIcon category={event.category} size={16} weight="bold" />
+              </span>
+              {meta?.label ?? event.category}
+              {event.city ? <span className="detail-city">{event.city}</span> : null}
+            </p>
+            <RevealTitle className="detail-title" text={event.title} />
+            <StartCountdown start={event.start_time} end={event.end_time} zone={eventZone(event)} />
+            <ul className="detail-tags" aria-label="Tags">
+              <li>{meta?.label ?? event.category}</li>
+              {priceKnown && <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>}
+              {event.city && <li>{event.city}</li>}
+              <li>via {source}</li>
+            </ul>
+            <EventActions event={event} />
+          </header>
+
+          <div className="detail-stage">
+            <TrailerMedia>
+              <EventImage src={event.image_url} alt="" category={event.category} ratio="4 / 5" priority width={900} />
+            </TrailerMedia>
+          </div>
         </div>
 
         <div className="shell detail-grid">
           <div className="detail-main">
-            <header className="detail-head">
-              <p className="detail-kicker">
-                <CategoryIcon category={event.category} size={15} />
-                {meta?.label ?? event.category}
-                {event.city ? <span> · {event.city}</span> : null}
-              </p>
-              <RevealTitle className="detail-title" text={event.title} />
-              <StartCountdown start={event.start_time} end={event.end_time} zone={eventZone(event)} />
-              <ul className="detail-tags" aria-label="Tags">
-                <li>{meta?.label ?? event.category}</li>
-                {priceKnown && <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>}
-                {event.city && <li>{event.city}</li>}
-                <li>via {source}</li>
-              </ul>
-              <EventActions event={event} />
-              <EventSocial event={event} />
-            </header>
+            <EventSocial event={event} />
 
             {about && (
               <section className="detail-section">
@@ -196,32 +202,33 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             </section>
           </div>
 
-          <aside className="booking">
+          <aside className="booking" aria-label="Tickets">
+            <p className="booking-kicker">
+              <span>Boarding pass</span>
+              <span>{source}</span>
+            </p>
+            <BookingWhen start={event.start_time} end={event.end_time} zone={eventZone(event)} />
             <p className="booking-price">{priceLine(event)}</p>
             <dl className="booking-facts">
               <div>
-                <dt><CalendarBlank size={16} weight="duotone" /> Starts</dt>
+                <dt>Starts</dt>
                 <dd>{formatFull(event.start_time, eventZone(event))}</dd>
               </div>
               {event.end_time && (
                 <div>
-                  <dt><Clock size={16} weight="duotone" /> Ends</dt>
+                  <dt>Ends</dt>
                   <dd>{formatFull(event.end_time, eventZone(event))}</dd>
                 </div>
               )}
               {where && (
                 <div>
-                  <dt><MapPin size={16} weight="duotone" /> Venue</dt>
+                  <dt>Platform</dt>
                   <dd>{event.location_name || where}</dd>
                 </div>
               )}
               <div>
-                <dt><Ticket size={16} weight="duotone" /> Entry</dt>
+                <dt>Entry</dt>
                 <dd>{priceLine(event)}</dd>
-              </div>
-              <div>
-                <dt><Globe size={16} weight="duotone" /> Source</dt>
-                <dd>{source}</dd>
               </div>
             </dl>
             <SalesCountdown tickets={tickets} />
@@ -231,11 +238,15 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             {event.url ? (
               <a className="btn btn-primary btn-lg booking-cta" href={event.url} target="_blank" rel="noopener noreferrer">
                 {free ? "Register" : tickets.length > 1 ? `See all options on ${source}` : "Get tickets"}{" "}
-                <ArrowSquareOut size={16} weight="bold" />
+                <ArrowSquareOut size={16} weight="bold" aria-hidden="true" />
+                <span className="sr-only">(opens {source})</span>
               </a>
             ) : (
               <Link className="btn btn-ghost booking-cta" href="/map">Find it on the map</Link>
             )}
+            <p className="booking-ref" aria-hidden="true">
+              REF {event.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase()}
+            </p>
             <p className="booking-note">
               {event.source === "sample"
                 ? "Sample listing, not a real event."

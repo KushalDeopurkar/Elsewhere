@@ -184,15 +184,16 @@ p {
 
 /* ---- Shell -------------------------------------------------------------- */
 .shell {
+  --shell-pad: var(--s-4);
   width: 100%;
   max-width: var(--shell);
   margin-inline: auto;
-  padding-inline: var(--s-4);
+  padding-inline: var(--shell-pad);
 }
 
 @media (min-width: 640px) {
   .shell {
-    padding-inline: var(--s-6);
+    --shell-pad: var(--s-6);
   }
 }
 
@@ -1964,11 +1965,13 @@ p {
 /* Where to? */
 .hsearch {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s-3);
 }
 
 .hsearch-box {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 
@@ -2023,6 +2026,7 @@ p {
 
 .hsearch-try {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 
