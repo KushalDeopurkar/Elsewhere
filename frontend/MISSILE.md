@@ -1,6 +1,6 @@
 # Missile log: Elsewhere frontend
 
-status: stage=0 iteration=2 verdict=CONTINUE updated=2026-11-19T21:54:06.881Z
+status: stage=0 iteration=3 verdict=CONTINUE updated=2026-11-19T22:06:32.633Z
 mode: full (existing project, redesign)
 branch: missile/20261120
 url: none
@@ -25,19 +25,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 ## Scoreboard
 
 <!-- scoreboard:start -->
-| dimension | baseline | it1 | it2 | target |
-|---|---|---|---|---|
-| first_impression | 6 | 7 | 8 | 9+ |
-| design_system | 4 | 7 | 7 | 9+ |
-| layout | 6 | 6 | 7 | 9+ |
-| motion | 5 | 6 | 7 | 9+ |
-| ux_completeness | 5 | 6 | 7 | 9+ |
-| accessibility | 6 | 8 | 7 | 9+ |
-| performance | 6 | 8 | 9 | 9+ |
-| code_health | 6 | 7 | 7 | 9+ |
-| story | 4 | 7 | 8 | 9+ |
-| shipped | 5 | 5 | 5 | 9+ |
-| **mean** | 5.3 | 6.7 | 7.2 | 9.5+ |
+| dimension | baseline | it1 | it2 | it3 | target |
+|---|---|---|---|---|---|
+| first_impression | 6 | 7 | 8 | 8 | 9+ |
+| design_system | 4 | 7 | 7 | 8 | 9+ |
+| layout | 6 | 6 | 7 | 8 | 9+ |
+| motion | 5 | 6 | 7 | 8 | 9+ |
+| ux_completeness | 5 | 6 | 7 | 8 | 9+ |
+| accessibility | 6 | 8 | 7 | 8 | 9+ |
+| performance | 6 | 8 | 9 | 9 | 9+ |
+| code_health | 6 | 7 | 7 | 8 | 9+ |
+| story | 4 | 7 | 8 | 9 | 9+ |
+| shipped | 5 | 5 | 5 | 5 | 9+ |
+| **mean** | 5.3 | 6.7 | 7.2 | 7.9 | 9.5+ |
 <!-- scoreboard:end -->
 
 ## Plan
@@ -93,6 +93,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
   - [S] motion: Delete the cw-* infinite loops (moved, not removed, in it2) and pin-pulse, set --t-enter to 200ms, and cut the 500 ms theme crossfade to 240 ms. (src/app/passport.css, src/app/map.css, src/app/tokens.css, src/app/core.css, src/components/CategoryWorld.tsx)
   - [S] story: Add a README Credits section, re-shoot the docs screenshots from HEAD with one phone shot, and give /map its own title and description. (README.md, docs/, src/app/map/page.tsx)
   - [L] design_system: Restyle /passport (square stamps, ruled Archivo heads, mono counters, no wash banner or round badge counters) and the plan-my-day panels to the timetable system, then fold components/stories.css into the core sheets and delete it. (src/components/PassportView.tsx, src/components/PassportStamp.tsx, src/app/passport.css, src/app/planner.css, src/components/stories.css)
+
+### Iteration 3 · 2026-11-19T22:06:32.633Z
+- mean 7.9, min 5, verdict **CONTINUE**
+- url: http://localhost:3100
+- screens: /, /explore, /map, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101, /categories/technology, /saved, /passport, /plan-my-day, /settings, /friends, /recap, /alert, /privacy, /opengraph-image, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101/opengraph-image
+- next fixes:
+  - [S] first_impression: Fix the signature's two visible faults: in FlapText.tsx always set the target glyph and remove .is-flipping at settle (the 14:00 '1' is stuck grey on home-1440-day.png), and make the board header count every row shown ('1 tonight, 4 tomorrow') instead of '1 DEPARTURE' over five rows. Add a test for each. (src/components/FlapText.tsx, src/components/Timetable.tsx, src/lib/)
+  - [S] ux_completeness: De-duplicate home with one 'shown' set passed down board, reel, Headliners, This week, Free entry and This weekend in that order, dropping a rail left with fewer than three cards (the it2 fix was applied to This week only). Also render passport stats as 'Stamps' over '0/12', and hide map tools while the tile-failure card shows. (src/app/page.tsx, src/components/PassportView.tsx, src/components/ExploreView.tsx)
+  - [S] accessibility: Extend the keyboard sensor to /events/[id] (share dialog with Escape), /map (Map/List switch) and the explore filter drawer at 390, printing accessible names, and add a sequential-frame capture of the home load; both were asked in it1 and it2 and are still home-only, which caps accessibility and motion. (.missile/shots/it3-sense/keyboard.txt (sensor script that writes it))
+  - [S] layout: Add a right-edge mask fade to the /map chip row (it2 fix, not applied), set passport stamps to two columns under 480 px, and make the plan-my-day 'In your own words' panel sticky on desktop. (src/app/map.css, src/app/passport.css, src/app/planner.css)
+  - [M] design_system: Remove the box-in-a-box on the planner prompt field, replace the 13 hex literals with tokens and fold reel.css into core.css, unify the saved, friends and settings empty states on one .empty container, and set alert and privacy titles in the Archivo display style. (src/app/planner.css, src/components/DayPlanner.tsx, src/app/reel.css, src/app/core.css, src/app/alert/page.tsx, src/app/privacy/page.tsx)
+  - [S] motion: Cut the sunset crossfade in core.css:42 from 500 ms to 240 ms, and reserve the board's final height while listings load so home CLS (0.085) drops back under 0.06. (src/app/core.css, src/components/Timetable.tsx)
+  - [M] shipped: Owner's call after the loop: push the branch, verify the Vercel preview in a private window at 390 and 1440, run a fresh clone per the README, then tag. (README.md)
 
 <!-- iterations:end -->
 

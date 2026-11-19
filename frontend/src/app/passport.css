@@ -485,3 +485,19 @@
   color: var(--fg-3);
   text-decoration: underline;
 }
+
+@media (max-width: 639px) {
+  .pp-stamps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pp-stamp {
+    grid-template-columns: 1fr;
+    grid-template-areas: "ring" "name" "date";
+    row-gap: 6px;
+    min-height: 0;
+  }
+  .pp-ring {
+    width: 32px;
+    height: 32px;
+  }
+}

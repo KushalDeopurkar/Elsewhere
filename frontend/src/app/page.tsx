@@ -70,15 +70,25 @@ export default function Home() {
     const week = showcase(all).filter((e) => inDateWindow(e, "week"));
     return (week.length >= 3 ? week : showcase(all)).slice(0, 3);
   }, [all]);
-  const featuredIds = new Set(featured.map((e) => e.id));
-  const notFeatured = all.filter((e) => !featuredIds.has(e.id));
-
   const soon = useMemo(() => startingSoon(all).slice(0, 12), [all]);
   const soonBadges = new Map(soon.map((s) => [s.event.id, s.badge]));
 
-  const thisWeek = sortEvents(notFeatured.filter((e) => inDateWindow(e, "week")), "soonest").slice(0, 14);
-  const free = sortEvents(all.filter((e) => e.is_free), "soonest").slice(0, 14);
-  const weekend = sortEvents(all.filter((e) => inDateWindow(e, "weekend")), "soonest").slice(0, 14);
+  // Each event appears in one section below the board: the most specific
+  // one first (headliners, starting soon, the weekend, free), then the rest
+  // of the week. A section with fewer than three left is dropped.
+  const { thisWeek, free, weekend } = useMemo(() => {
+    const shown = new Set([...featured, ...soon.map((s) => s.event)].map((e) => e.id));
+    const take = (list: Event[]) => {
+      const out = list.filter((e) => !shown.has(e.id)).slice(0, 14);
+      if (out.length < 3) return [];
+      out.forEach((e) => shown.add(e.id));
+      return out;
+    };
+    const weekend = take(sortEvents(all.filter((e) => inDateWindow(e, "weekend")), "soonest"));
+    const free = take(sortEvents(all.filter((e) => e.is_free), "soonest"));
+    const thisWeek = take(sortEvents(all.filter((e) => inDateWindow(e, "week")), "soonest"));
+    return { thisWeek, free, weekend };
+  }, [all, featured, soon]);
   // "Handpicked" is based only on what this person saved: their categories.
   const picks = useMemo(() => {
     if (saved.length === 0) return [];

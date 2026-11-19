@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowRight, CaretLeft, CaretRight } from "@phosphor-icons/react/ssr";
 import type { Event } from "@/lib/types";
 import { CATEGORIES } from "@/lib/types";
-import { boardRows, pages, type BoardRow, type BoardTab } from "@/lib/board";
+import { boardCount, boardRows, pages, type BoardRow, type BoardTab } from "@/lib/board";
 import { useNow } from "@/lib/clock";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { zoneLabel } from "@/lib/formatDate";
@@ -134,7 +134,7 @@ export default function Timetable({
               ))}
             </div>
             <p className="tt-count" aria-live="polite">
-              {settled ? `${rows.length} ${rows.length === 1 ? "departure" : "departures"}` : "Checking listings"}
+              {settled ? boardCount(rows.length, later.length, heading) : "Checking listings"}
             </p>
           </div>
 

@@ -39,7 +39,7 @@ body {
 :root[data-theme-switching] *,
 :root[data-theme-switching] *::before,
 :root[data-theme-switching] *::after {
-  transition: background-color 500ms var(--ease-in-out), color 500ms var(--ease-in-out), border-color 500ms var(--ease-in-out) !important;
+  transition: background-color 240ms var(--ease-in-out), color 240ms var(--ease-in-out), border-color 240ms var(--ease-in-out) !important;
 }
 
 a {

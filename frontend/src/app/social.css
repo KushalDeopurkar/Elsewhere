@@ -76,8 +76,12 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  line-height: 1.15;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 74%;
+  text-transform: uppercase;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  line-height: 0.95;
   text-wrap: balance;
 }
 
@@ -621,8 +625,8 @@
 .signin-fine a { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; }
 
 .legal { max-width: 44rem; margin: 0 auto; padding: 2.5rem 0 1rem; line-height: 1.65; color: var(--fg-2); }
-.legal h1 { font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.05; color: var(--fg); margin: 0.4rem 0 1rem; }
-.legal h2 { font-size: 1.15rem; color: var(--fg); margin: 2rem 0 0.5rem; }
+.legal h1 { font-family: var(--font-display); font-weight: 800; font-stretch: 72%; text-transform: uppercase; font-size: clamp(2.6rem, 6vw, 4rem); line-height: 0.92; color: var(--fg); margin: 0.4rem 0 1.25rem; }
+.legal h2 { font-family: var(--font-display); font-weight: 800; font-stretch: 85%; text-transform: uppercase; font-size: var(--t-lg); color: var(--fg); margin: 2.25rem 0 0.5rem; padding-top: var(--s-2); border-top: 1px solid var(--rule-strong); }
 .legal p, .legal ul { margin: 0 0 0.9rem; }
 .legal ul { padding-left: 1.25rem; display: grid; gap: 0.35rem; }
 .legal strong { color: var(--fg); }

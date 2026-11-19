@@ -70,3 +70,12 @@ export function pages<T>(rows: T[], size: number): T[][] {
   for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
   return out;
 }
+
+/**
+ * The count line above the board. When a thin night carries on into
+ * tomorrow, both parts are counted: "1 tonight · 4 tomorrow".
+ */
+export function boardCount(shown: number, later: number, word: string): string {
+  const main = later > 0 ? `${shown} ${word.toLowerCase()}` : `${shown} ${shown === 1 ? "departure" : "departures"}`;
+  return later > 0 ? `${main} · ${later} tomorrow` : main;
+}

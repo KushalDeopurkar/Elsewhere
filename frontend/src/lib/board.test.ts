@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardRows, pages, rowFor } from "./board";
+import { boardCount, boardRows, pages, rowFor } from "./board";
 import type { Event } from "./types";
 
 // Thu 19 Nov 2026, 18:00 IST
@@ -40,5 +40,16 @@ describe("board rows", () => {
   });
   it("pages rows", () => {
     expect(pages([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+  });
+});
+
+describe("boardCount", () => {
+  it("counts a plain board", () => {
+    expect(boardCount(1, 0, "Tonight")).toBe("1 departure");
+    expect(boardCount(7, 0, "Today")).toBe("7 departures");
+  });
+  it("counts both parts when the board carries on into tomorrow", () => {
+    expect(boardCount(1, 4, "Tonight")).toBe("1 tonight · 4 tomorrow");
+    expect(boardCount(0, 5, "Today")).toBe("0 today · 5 tomorrow");
   });
 });

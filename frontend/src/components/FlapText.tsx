@@ -46,10 +46,9 @@ export default function FlapText({
         if (!el) return;
         const settle = t0 + 90 + i * 32;
         if (now >= settle) {
-          if (el.textContent !== target[i]) {
-            el.textContent = target[i];
-            el.classList.remove("is-flipping");
-          }
+          // Always land: the riffle may already show the right character.
+          if (el.textContent !== target[i]) el.textContent = target[i];
+          el.classList.remove("is-flipping");
         } else {
           busy = true;
           if (now >= t0 + i * 18 && target[i] !== " ") {

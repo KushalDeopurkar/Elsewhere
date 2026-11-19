@@ -1052,3 +1052,15 @@
   outline: 2px solid var(--signal);
   outline-offset: -2px;
 }
+
+/* Without tiles the map's controls have nothing to steer */
+.map-page:has(.map-status .panel.is-error) .map-tools {
+  display: none;
+}
+
+/* The category chip row fades at its edge so it reads as scrollable */
+.map-bar .rail {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  padding-right: 40px;
+}
