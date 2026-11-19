@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import { BookmarkSimple } from "@phosphor-icons/react/ssr";
 import type { Event } from "@/lib/types";
 import { isSaved, toggleSaved, useSaved } from "@/lib/saved";
@@ -25,7 +26,7 @@ export default function SaveButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleSaved(event);
+        if (toggleSaved(event)) track("save", { category: event.category, source: event.source });
       }}
     >
       <BookmarkSimple size={variant === "icon" ? 18 : 17} weight={saved ? "fill" : "bold"} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, CheckCircle, Crown, LinkSimple, ShareNetwork, Ticket } from "@phosphor-icons/react/ssr";
@@ -105,6 +106,7 @@ export default function PollView({ id, fresh = false }: { id: string; fresh?: bo
     });
     try {
       await castVote(poll.id, eventId, signedIn);
+      track("poll_vote", { signed_in: signedIn });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't save your vote.");
     } finally {
@@ -118,6 +120,7 @@ export default function PollView({ id, fresh = false }: { id: string; fresh?: bo
     setBusy("lock");
     try {
       await lockPoll(poll.id, eventId);
+      if (eventId) track("poll_decided", { votes: poll.votes.length });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't update the poll.");

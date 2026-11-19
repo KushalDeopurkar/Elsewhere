@@ -6,6 +6,7 @@
  * they never disagree. Also announces "just marked going" for the ticket
  * stub moment.
  */
+import { track } from "./track";
 import { useEffect, useSyncExternalStore } from "react";
 import { currentUserId, useAuth } from "./auth";
 import { myStatus, setStatus, type Status } from "./social";
@@ -67,7 +68,10 @@ export function useMyStatus(eventId: string, enabled: boolean): [Entry, (next: S
     emit();
     try {
       await setStatus(eventId, next);
-      if (next === "going" && prev !== "going") goingListeners.forEach((f) => f(eventId));
+      if (next === "going" && prev !== "going") {
+        goingListeners.forEach((f) => f(eventId));
+        track("going");
+      }
     } catch (e) {
       entries.set(k, { status: prev, loaded: true });
       emit();

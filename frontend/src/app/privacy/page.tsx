@@ -78,10 +78,20 @@ export default function PrivacyPage() {
             to understand the request. Don&apos;t include personal details there.
           </p>
 
+          <h2>Usage statistics and error reports</h2>
+          <p>
+            We count page views and a few actions (such as saving an event, starting or voting in a poll, or changing
+            city) with Vercel Web Analytics, and measure how fast pages load with Vercel Speed Insights. Neither uses
+            cookies or stores anything on your device, and the counts don&apos;t identify you: no names, emails or what
+            you typed. If the site crashes in your browser, an error report (the error, the page and your browser type)
+            may be sent to Sentry so we can fix it, without your name, email, cookies or form contents.
+          </p>
+
           <h2>Who processes data for us</h2>
           <ul>
             <li>Supabase: database, sign-in and search (servers may be outside India).</li>
-            <li>Vercel: hosts the website. Render: hosts the events API.</li>
+            <li>Vercel: hosts the website and counts visits (Web Analytics, Speed Insights). Render: hosts the events API.</li>
+            <li>Sentry: error reports, if enabled.</li>
             <li>Google: sign-in (if you choose it), Gemini and route times.</li>
             <li>Groq, TomTom, the OpenStreetMap router and Photon (komoot): as described above.</li>
             <li>Brevo: sends alert emails. Telegram: delivers Telegram alerts.</li>

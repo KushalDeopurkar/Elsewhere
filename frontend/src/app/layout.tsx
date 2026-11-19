@@ -20,6 +20,10 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
+// Vercel Web Analytics and Speed Insights: cookieless page views and real
+// loading times. Only on Vercel deployments, where these script paths exist.
+const ON_VERCEL = process.env.VERCEL === "1";
+
 export default function RootLayout({
   children,
 }: {
@@ -33,6 +37,17 @@ export default function RootLayout({
         <main>{children}</main>
         <SocialRoot />
         <CursorLayer />
+        {ON_VERCEL && (
+          <>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: "window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};",
+              }}
+            />
+            <script defer src="/_vercel/insights/script.js" />
+            <script defer src="/_vercel/speed-insights/script.js" />
+          </>
+        )}
       </body>
     </html>
   );

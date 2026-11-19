@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export default function SavedView() {
     setPollError(null);
     try {
       const id = await createPoll(question.trim() || "Which one?", chosen);
+      track("poll_created", { options: chosen.length });
       router.push(`/poll/${id}?new=1`);
     } catch (e) {
       setPollError(e instanceof Error ? e.message : "Couldn't start the poll.");

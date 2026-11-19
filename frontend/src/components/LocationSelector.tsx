@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import { useState } from "react";
 import { MapPin, CaretDown } from "@phosphor-icons/react/ssr";
 import { INDIA_LIST, WORLD_LIST } from "@/lib/cities";
@@ -31,7 +32,10 @@ export default function LocationSelector({ compact = false }: { compact?: boolea
         onPointerDown={() => setOpen(true)}
         onChange={(e) => {
           setOpen(false);
-          if (e.target.value) pickCity(e.target.value);
+          if (e.target.value) {
+            if (e.target.value !== city.name) track("city_change", { city: e.target.value });
+            pickCity(e.target.value);
+          }
         }}
         onBlur={() => setOpen(false)}
         onKeyDown={() => setOpen(false)}
