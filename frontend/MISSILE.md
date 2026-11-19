@@ -103,6 +103,11 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 - Installed @fontsource-variable/archivo (variable width axis drives the timetable numerals).
 - Sensors: sense.mjs for the baseline; a local Playwright script (stand-in photos, scroll before capture) for later iterations because the image CDN is blocked in the sandbox.
 - Work happens in a sandbox copy; it ships to the user's Mac as a branch, never pushed.
+- Not done, for the owner: a Next.js route handler in front of `/api/events/search` that would turn a sleeping backend's 500 into a labelled 200. Route handlers take precedence over the rewrite, so every production search would pass through a serverless function (latency, cost, a second place for the contract). The client already falls back to the labelled sample set; the 500 stays the honest signal. Owner's call.
+- Event pages hide the phone tab bar so the event's own action bar (price, going, tickets) owns the bottom edge; the header still leads home.
+- Decorative CategoryWorld backdrops, the custom cursor, the kinetic headline and the scramble text were removed as decoration; no feature depended on them.
+- Poster tint now only tints the poster's own frame (type stays on theme tokens so it reads in both themes).
+
 
 ## Remaining gaps
 
