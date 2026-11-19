@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
-import { formatFull, eventZone } from "@/lib/formatDate";
+import { eventZone } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { OG, OG_FONTS } from "@/lib/ogTheme";
 import { CATEGORIES } from "@/lib/types";
