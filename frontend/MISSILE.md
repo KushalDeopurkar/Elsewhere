@@ -137,4 +137,15 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 
 ## Remaining gaps
 
-(filled at Impact, or on stall)
+Flight stopped at the iteration cap (4). Final critic mean 8.2 (from 5.3 at baseline); every dimension except `shipped` at 8 or 9. Fixed after the final score: home sections also skip the reel, digit-only tile riffle, rails without needless arrows, the planner's single field and sentence-case preview, the Explore placeholder.
+
+1. **shipped (5):** not deployed from this branch. Owner: push `missile/20261120`, open the Vercel preview in a private window at 390 and 1440, then merge and tag (`v2.0.0-missile`).
+2. **Console 500s while the backend sleeps:** see Decisions; a route handler would remove them at the cost of a serverless hop on every search.
+3. **Font swap on first paint:** Archivo loads with `font-display: swap`, so the masthead can reflow once on a cold visit (home CLS about 0.06 to 0.09). A preloaded font file or a size-matched fallback would remove it.
+4. **Map and planner tile-failure cards** use slightly different treatments; unify when the map page next changes.
+
+## Handover
+
+- Branch: `missile/20261120` (frontend only; backend untouched). Every commit authored by Kushal.
+- Run: `cd frontend && npm install && npm run dev`; checks: `npx tsc --noEmit`, `npm run lint`, `npm test`, `npm run build`.
+- Demo first: the home page after 18:00 in any city, then pin Day in Settings to see the printed timetable.

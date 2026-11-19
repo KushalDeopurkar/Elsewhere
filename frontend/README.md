@@ -7,6 +7,11 @@ Everything happening in your city, set out like a timetable you can act on.
   <img src="docs/home-night.png" alt="The same home page after 18:00, as a lit departure board in deep blue and amber" width="49%" />
 </p>
 
+<p>
+  <img src="docs/phone-day.png" alt="Elsewhere on a phone by day: the masthead, the split-flap clock and tonight's departures" width="24%" />
+  <img src="docs/phone-night.png" alt="The same phone screen at night, on the lit departure board" width="24%" />
+</p>
+
 Elsewhere gathers gigs, workshops, matches, meetups and free walks from ticketing sites, community calendars and city open data, and shows them soonest first. This folder is the Next.js app; the API and scrapers live in `../backend`.
 
 ## What you can do
