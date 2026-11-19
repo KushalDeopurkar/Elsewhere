@@ -5226,3 +5226,32 @@ a.board-link:focus-visible .board-thumb {
 .st-danger-link { color: var(--danger); min-height: 44px; }
 .st-danger-btn { background: var(--danger); color: #1a0208; }
 .st-danger-btn:hover { filter: brightness(1.08); }
+
+/* First-visit city note (components/CityGuess.tsx) */
+.city-note {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0.4rem 0.5rem 0.9rem;
+  border-radius: 14px;
+  background: rgb(23 26 33 / 0.96);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--lift-3);
+  color: var(--text-mid);
+  font-size: 0.9rem;
+  transform: translateX(-50%);
+  animation: city-note-in 320ms var(--ease) both;
+}
+.city-note svg { color: var(--marigold); flex: none; }
+.city-note strong { color: var(--text-hi); }
+.city-note button { display: grid; place-items: center; width: 44px; height: 44px; margin: -0.5rem 0; border-radius: 50%; color: var(--text-mid); cursor: pointer; flex: none; }
+.city-note button:focus-visible { outline: 2px solid var(--marigold); }
+@keyframes city-note-in { from { opacity: 0; transform: translate(-50%, 10px); } }
+@media (max-width: 899px) { .city-note { bottom: calc(5rem + env(safe-area-inset-bottom)); } }
+@media (prefers-reduced-motion: reduce) { .city-note { animation: none; } }

@@ -64,6 +64,11 @@ export default function PrivacyPage() {
 
           <h2>Location and travel times</h2>
           <p>
+            On your first visit we pick a starting city from your approximate location, which our host Vercel works
+            out from your IP address at city level, or from your device&apos;s time zone. It&apos;s used once to choose
+            the city and isn&apos;t stored; you can change the city at any time.
+          </p>
+          <p>
             If you ask for travel time to an event and allow location, your browser&apos;s location is sent to our server
             to work out the route, along with the event&apos;s location. We pass those two points to a routing service
             (Google Maps Platform, TomTom, or the free OpenStreetMap router at routing.openstreetmap.de) and

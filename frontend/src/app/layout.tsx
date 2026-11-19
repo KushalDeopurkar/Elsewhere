@@ -8,6 +8,7 @@ import Nav from "@/components/Nav";
 import RouteSignal from "@/components/RouteSignal";
 import CursorLayer from "@/components/CursorLayer";
 import SocialRoot from "@/components/SocialRoot";
+import CityGuess from "@/components/CityGuess";
 
 export const metadata: Metadata = {
   title: "Elsewhere - discover what is happening",
@@ -36,6 +37,7 @@ export default function RootLayout({
         <Nav />
         <main>{children}</main>
         <SocialRoot />
+        <CityGuess />
         <CursorLayer />
         {ON_VERCEL && (
           <>
