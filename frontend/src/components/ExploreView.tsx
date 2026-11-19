@@ -83,6 +83,39 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
 
   const [draft, setDraft] = useState(q);
   const [drawer, setDrawer] = useState(false);
+  const drawerPanel = useRef<HTMLDivElement>(null);
+  const filtersBtn = useRef<HTMLButtonElement>(null);
+
+  // The filters drawer is a modal: focus moves in, Escape closes it, focus
+  // returns to the button that opened it, and Tab stays inside.
+  useEffect(() => {
+    if (!drawer) return;
+    const panel = drawerPanel.current;
+    const opener = filtersBtn.current;
+    panel?.querySelector<HTMLElement>("button, [href], input, select")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDrawer(false);
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const items = [...panel.querySelectorAll<HTMLElement>("button, [href], input, select")].filter((el) => !el.hasAttribute("disabled"));
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      opener?.focus();
+    };
+  }, [drawer]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep the box in step with back/forward navigation (React's documented
@@ -326,7 +359,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
               <span> near {city.name}</span>
             </p>
             <div className="xbar-end">
-              <button type="button" className="btn btn-ghost xfilters-btn" onClick={() => setDrawer(true)}>
+              <button ref={filtersBtn} type="button" className="btn btn-ghost xfilters-btn" aria-haspopup="dialog" onClick={() => setDrawer(true)}>
                 <SlidersHorizontal size={16} weight="bold" /> Filters{activeCount ? ` (${activeCount})` : ""}
               </button>
               <label className="xsort">
@@ -388,7 +421,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
       {drawer && (
         <div className="drawer" role="dialog" aria-modal="true" aria-label="Filters">
           <button type="button" className="drawer-scrim" aria-label="Close filters" onClick={() => setDrawer(false)} />
-          <div className="drawer-panel">
+          <div className="drawer-panel" ref={drawerPanel}>
             <div className="drawer-head">
               <p className="drawer-title">Filters</p>
               <button type="button" className="icon-btn" aria-label="Close filters" onClick={() => setDrawer(false)}>
