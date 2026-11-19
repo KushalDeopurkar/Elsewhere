@@ -17,34 +17,39 @@
 import { Event, EventCategory } from "./types";
 import { searchEvents } from "./api";
 import { parseIntent } from "./intent";
-import { detectCity, cityByName, DEFAULT_CITY, CityPoint } from "./cities";
+import { detectCity, cityByName, cityZone, cityCountry, DEFAULT_CITY, CityPoint } from "./cities";
+import { currencyOf, formatPrice } from "./money";
 import { buildSchedule, parseBudget, lowestPrice, PlanResult } from "./plan";
 import { hasTime } from "./formatDate";
 import { embedQuery, matchEvents } from "./semantic";
 import { supabaseConfigured } from "./supabaseServer";
 
-const ZONE = "Asia/Kolkata";
 const SHORTLIST = 30;
 
 // ---------------------------------------------------------------------------
-// Dates (IST)
+// Dates, in the planned city's own time zone
 // ---------------------------------------------------------------------------
 
-const dayKeyFmt = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE });
-const weekdayFmt = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, weekday: "long" });
-const longFmt = new Intl.DateTimeFormat("en-GB", {
-  timeZone: ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric",
-  hour: "numeric", minute: "2-digit", hour12: true,
-});
-const slotFmt = new Intl.DateTimeFormat("en-GB", {
-  timeZone: ZONE, weekday: "short", day: "numeric", month: "short",
-  hour: "numeric", minute: "2-digit", hour12: true,
-});
-const timeFmt = new Intl.DateTimeFormat("en-GB", {
-  timeZone: ZONE, hour: "numeric", minute: "2-digit", hour12: true,
-});
-
-const hourFmt = new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, hour: "numeric", hourCycle: "h23" });
+const fmts = new Map<string, Intl.DateTimeFormat>();
+function fmt(zone: string, kind: "day" | "weekday" | "long" | "slot" | "time" | "hour"): Intl.DateTimeFormat {
+  const key = `${zone}|${kind}`;
+  let f = fmts.get(key);
+  if (!f) {
+    const o: Record<typeof kind, Intl.DateTimeFormatOptions> = {
+      day: {},
+      weekday: { weekday: "long" },
+      long: { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true },
+      slot: { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true },
+      time: { hour: "numeric", minute: "2-digit", hour12: true },
+      hour: { hour: "numeric", hourCycle: "h23" },
+    };
+    f = new Intl.DateTimeFormat(kind === "day" ? "en-CA" : "en-GB", { timeZone: zone, ...o[kind] });
+    fmts.set(key, f);
+  }
+  return f;
+}
+/** "Saturday" for a calendar date key like 2026-11-21 (any zone). */
+const weekdayOfKey = (key: string) => fmt("UTC", "weekday").format(new Date(`${key}T12:00:00Z`));
 
 /** [fromHour, toHour, label] for "morning", "shaam", "tonight" and friends. */
 function partOfDay(text: string): [number, number, string] | null {
@@ -65,31 +70,31 @@ function partOfDay(text: string): [number, number, string] | null {
   return null;
 }
 
-const dayKey = (ms: number) => dayKeyFmt.format(new Date(ms));
+const dayKey = (ms: number, zone: string) => fmt(zone, "day").format(new Date(ms));
 const DAY_MS = 86_400_000;
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-/** The IST date the request is about, or null when it does not say. */
-function requestedDay(text: string, now: number): string | null {
+/** The local date the request is about, or null when it does not say. */
+function requestedDay(text: string, now: number, zone: string): string | null {
   const q = ` ${text.toLowerCase()} `;
-  const todayName = weekdayFmt.format(new Date(now)).toLowerCase();
+  const todayName = fmt(zone, "weekday").format(new Date(now)).toLowerCase();
   const todayIdx = WEEKDAYS.indexOf(todayName);
 
-  if (/\b(today|tonight|aaj|abhi|this evening)\b/.test(q)) return dayKey(now);
-  if (/\b(day after tomorrow|parso|parson)\b/.test(q)) return dayKey(now + 2 * DAY_MS);
-  if (/\b(tomorrow|kal)\b/.test(q)) return dayKey(now + DAY_MS);
+  if (/\b(today|tonight|aaj|abhi|this evening)\b/.test(q)) return dayKey(now, zone);
+  if (/\b(day after tomorrow|parso|parson)\b/.test(q)) return dayKey(now + 2 * DAY_MS, zone);
+  if (/\b(tomorrow|kal)\b/.test(q)) return dayKey(now + DAY_MS, zone);
 
   for (let i = 0; i < WEEKDAYS.length; i++) {
     const name = WEEKDAYS[i];
     if (new RegExp(`\\b(${name}|${name.slice(0, 3)})\\b`).test(q)) {
       const ahead = (i - todayIdx + 7) % 7;
-      return dayKey(now + ahead * DAY_MS);
+      return dayKey(now + ahead * DAY_MS, zone);
     }
   }
   if (/\b(weekend|saturday|sunday)\b/.test(q)) {
     const ahead = todayIdx === 0 ? 0 : (6 - todayIdx + 7) % 7;
-    return dayKey(now + ahead * DAY_MS);
+    return dayKey(now + ahead * DAY_MS, zone);
   }
   return null;
 }
@@ -132,6 +137,7 @@ function shortlist(
   area: string | null,
   budget: number | null,
   similarity: Map<string, number> = new Map(),
+  zone = "Asia/Kolkata",
 ): Shortlisted[] {
   const interests = interestsFor(text);
   const intent = parseIntent(text);
@@ -145,13 +151,13 @@ function shortlist(
         score += 3;
         reasons.push("Matches what you asked for");
       }
-      if (day && dayKey(Date.parse(event.start_time)) === day) {
+      if (day && dayKey(Date.parse(event.start_time), zone) === day) {
         score += 4;
         reasons.push("On the day you asked for");
       }
       const part = partOfDay(text);
       if (part) {
-        const hour = Number(hourFmt.format(new Date(event.start_time)));
+        const hour = Number(fmt(zone, "hour").format(new Date(event.start_time)));
         if (hour >= part[0] && hour < part[1]) {
           score += 2;
           reasons.push(part[2]);
@@ -346,10 +352,10 @@ function parseJson(raw: string): LlmPlan | null {
 function priceText(e: Event): string {
   if (e.is_free) return "free";
   if (e.price_min == null) return "price n/a";
-  return `₹${e.price_min}${e.price_max && e.price_max > e.price_min ? "+" : ""}`;
+  return `${formatPrice(e.price_min, e)}${e.price_max && e.price_max > e.price_min ? "+" : ""}`;
 }
 
-const SYSTEM_PROMPT = `You are the day planner inside Elsewhere, an event discovery app for India.
+const SYSTEM_PROMPT = `You are the day planner inside Elsewhere, an event discovery app for cities in India and around the world.
 The user describes the day they want. You build an itinerary from the CANDIDATES list only.
 
 Rules:
@@ -375,28 +381,30 @@ async function planWithLlm(
   budget: number | null,
   pool: Shortlisted[],
   now: number,
+  zone: string,
 ): Promise<{ plan: LlmPlan; model: string; byId: Map<string, Event> }> {
+  const local = (iso: string) => hasTime(iso, zone);
   const byId = new Map<string, Event>();
   const rows = pool.map((s, i) => {
     const id = `c${i + 1}`;
     byId.set(id, s.event);
     const e = s.event;
-    const end = e.end_time && hasTime(e.start_time) ? timeFmt.format(new Date(e.end_time)) : "?";
+    const end = e.end_time && local(e.start_time) ? fmt(zone, "time").format(new Date(e.end_time)) : "?";
     const venue = (e.location_name || e.address || "").slice(0, 45);
-    const when = hasTime(e.start_time)
-      ? slotFmt.format(new Date(e.start_time))
-      : `${dayKey(Date.parse(e.start_time))} (time not listed)`;
+    const when = local(e.start_time)
+      ? fmt(zone, "slot").format(new Date(e.start_time))
+      : `${dayKey(Date.parse(e.start_time), zone)} (time not listed)`;
     return `${id} | ${when}–${end} | ${e.title.slice(0, 60)} | ${e.category} | ${venue || e.city || "venue n/a"} | ${priceText(e)}`;
   });
 
   const user = [
-    `Now: ${longFmt.format(new Date(now))} IST`,
+    `Now: ${fmt(zone, "long").format(new Date(now))} (local time in ${city.name})`,
     `Request: ${text}`,
     `City: ${city.name}${area ? ` (area: ${area})` : ""}`,
-    `Day asked for: ${day ? weekdayFmt.format(new Date(`${day}T12:00:00+05:30`)) + " " + day : "not stated, pick the best upcoming day"}`,
-    `Budget: ${budget != null ? `₹${budget} total` : "not stated"}`,
+    `Day asked for: ${day ? weekdayOfKey(day) + " " + day : "not stated, pick the best upcoming day"}`,
+    `Budget: ${budget != null ? `${budget} ${currencyOf({ country: cityCountry(city) })} total` : "not stated"}`,
     "",
-    "CANDIDATES (id | when IST | title | category | venue | price):",
+    "CANDIDATES (id | when, local time | title | category | venue | price):",
     ...rows,
   ].join("\n");
 
@@ -430,13 +438,14 @@ function planWithRules(
   pool: Shortlisted[],
   day: string | null,
   budget: number | null,
+  zone = "Asia/Kolkata",
 ): { picks: { event: Event; why: string }[]; day: string | null } {
   let target = day;
   if (!target) {
     // The day whose three best matches score highest.
     const byDay = new Map<string, number[]>();
     for (const s of pool) {
-      const k = dayKey(Date.parse(s.event.start_time));
+      const k = dayKey(Date.parse(s.event.start_time), zone);
       byDay.set(k, [...(byDay.get(k) ?? []), s.score]);
     }
     let best = -Infinity;
@@ -449,7 +458,7 @@ function planWithRules(
     }
   }
 
-  const sameDay = pool.filter((s) => dayKey(Date.parse(s.event.start_time)) === target);
+  const sameDay = pool.filter((s) => dayKey(Date.parse(s.event.start_time), zone) === target);
   const dayPool = sameDay.length >= 2 ? sameDay : pool;
   // When the request names interests, only fall back to unrelated events if
   // nothing related exists at all.
@@ -485,7 +494,8 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
   const detected = detectCity(text);
   const city = detected?.city ?? cityByName(input.city) ?? DEFAULT_CITY;
   const area = detected?.area ?? null;
-  const day = requestedDay(text, now);
+  const zone = cityZone(city);
+  const day = requestedDay(text, now, zone);
   const budget = parseBudget(text);
 
   const horizon = now + 14 * DAY_MS;
@@ -533,14 +543,16 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
   });
   // A timeline needs start times. Listings that give only a date are used
   // only when a city has almost nothing else.
-  const timed = inWindow.filter((e) => hasTime(e.start_time));
+  const timed = inWindow.filter((e) => hasTime(e.start_time, zone));
   const upcoming = timed.length >= 4 ? timed : inWindow;
 
-  const ranked = shortlist(upcoming, city, text, day, area, budget, similarity);
+  const ranked = shortlist(upcoming, city, text, day, area, budget, similarity, zone);
   const pool = ranked.slice(0, SHORTLIST);
 
   const base = {
     city: city.name,
+    zone,
+    currency: currencyOf({ country: cityCountry(city) }),
     isSample,
     considered: upcoming.length,
   };
@@ -560,7 +572,7 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
   const cfg = llmConfig();
   if (cfg) {
     try {
-      const { plan, model, byId } = await planWithLlm(cfg, text, city, area, day, budget, pool, now);
+      const { plan, model, byId } = await planWithLlm(cfg, text, city, area, day, budget, pool, now, zone);
       const seen = new Set<string>();
       const picks = (plan.stops ?? [])
         .filter((s) => s.id && byId.has(s.id) && !seen.has(s.id) && seen.add(s.id))
@@ -571,8 +583,8 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
       // from the same day so a three-stop request doesn't end at one stop.
       let toppedUp = false;
       if (dropped > 0 && stops.length > 0 && stops.length < picks.length) {
-        const sameDay = dayKey(Date.parse(stops[0].event.start_time));
-        const extra = planWithRules(pool, sameDay, budget).picks.filter((p) => !seen.has(p.event.id));
+        const sameDay = dayKey(Date.parse(stops[0].event.start_time), zone);
+        const extra = planWithRules(pool, sameDay, budget, zone).picks.filter((p) => !seen.has(p.event.id));
         const refill = buildSchedule([...picks, ...extra], { budget, maxStops: picks.length });
         if (refill.stops.length > stops.length) {
           stops = refill.stops;
@@ -609,9 +621,9 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
     }
   }
 
-  const { picks, day: target } = planWithRules(pool, day, budget);
+  const { picks, day: target } = planWithRules(pool, day, budget, zone);
   const { stops } = buildSchedule(picks, { budget, maxStops: 3 });
-  const dayName = target ? weekdayFmt.format(new Date(`${target}T12:00:00+05:30`)) : "";
+  const dayName = target ? weekdayOfKey(target) : "";
   return {
     ...base,
     title: dayName ? `Your ${dayName} in ${city.name}` : `Your day in ${city.name}`,

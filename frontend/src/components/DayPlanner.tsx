@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -24,7 +24,8 @@ import { PlanResult, planToIcs, googleCalendarLink } from "@/lib/plan";
 import { whatsappUrl, planShareText } from "@/lib/share";
 import ShareCard from "./ShareCard";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { priceBadge } from "@/lib/money";
+import { currencyOf, priceBadge } from "@/lib/money";
+import { cityByName, cityCountry, cityZone } from "@/lib/cities";
 import { hasTime } from "@/lib/formatDate";
 import AlertButton from "@/components/AlertButton";
 import EventImage from "@/components/EventImage";
@@ -36,11 +37,27 @@ const PlanMap = dynamic(() => import("@/components/PlanMap"), {
   loading: () => <div className="plan-map plan-map-loading" />,
 });
 
-const EXAMPLES = [
+const INDIA_EXAMPLES = [
   "Saturday in Mumbai under ₹1000, music and food",
   "Free tech meetups in Bengaluru this weekend",
   "Kal shaam Andheri mein comedy aur khana",
 ];
+
+/** Example requests that fit the chosen city (and its currency). */
+function examplesFor(city: string, abroad: boolean, sym: string): string[] {
+  if (!abroad) return INDIA_EXAMPLES;
+  return [
+    `Saturday in ${city} under ${sym}60, music and food`,
+    `Free things to do in ${city} this weekend`,
+    `Tomorrow evening in ${city}: comedy, then dinner`,
+  ];
+}
+
+/** "$", "£", "€", "₹"… for a currency code. */
+const symbolOf = (currency: string) =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency, currencyDisplay: "narrowSymbol" })
+    .formatToParts(0)
+    .find((p) => p.type === "currency")?.value ?? currency;
 
 const STARTS = [
   { value: "10 am", label: "Morning" },
@@ -50,10 +67,9 @@ const STARTS = [
   { value: "8 pm", label: "Night" },
 ];
 const DURATIONS = [2, 4, 6, 8];
-const dayName = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", weekday: "long" });
-
-/** Today, tomorrow and the five days after, as the words the planner reads. */
-function nextDays(now: number): { value: string; label: string }[] {
+/** Today, tomorrow and the five days after (in the city's own time), as the words the planner reads. */
+function nextDays(now: number, zone: string): { value: string; label: string }[] {
+  const dayName = new Intl.DateTimeFormat("en-GB", { timeZone: zone, weekday: "long" });
   return Array.from({ length: 7 }, (_, i) => {
     const name = dayName.format(new Date(now + i * 86_400_000));
     return { value: i === 0 ? "today" : i === 1 ? "tomorrow" : name, label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : name };
@@ -72,12 +88,12 @@ interface Details {
 }
 
 /** The details form as one plain-language request, exactly what is sent. */
-export function composeRequest(d: Details, city: string): string {
+export function composeRequest(d: Details, city: string, sym = "₹"): string {
   const labels = d.interests.map((v) => CATEGORIES.find((c) => c.value === v)?.label.toLowerCase() ?? v);
   const parts = [
     `${d.day === "today" ? "Today" : d.day === "tomorrow" ? "Tomorrow" : d.day} in ${city}`,
     `starting around ${d.start} for about ${d.hours} hours`,
-    d.budget ? `budget ₹${d.budget} total${d.people > 1 ? ` for ${d.people} people` : ""}` : d.people > 1 ? `for ${d.people} people` : "",
+    d.budget ? `budget ${sym}${d.budget} total${d.people > 1 ? ` for ${d.people} people` : ""}` : d.people > 1 ? `for ${d.people} people` : "",
     labels.length ? `I'm into ${labels.join(", ")}` : "",
     d.close ? "keep the stops close together" : "happy to travel between stops",
     d.notes.trim(),
@@ -92,24 +108,11 @@ const STEPS = [
   "Working out the route and timings",
 ];
 
-const timeFmt = new Intl.DateTimeFormat("en-IN", {
-  timeZone: "Asia/Kolkata",
-  hour: "numeric",
-  minute: "2-digit",
-  hour12: true,
-});
-const dayFmt = new Intl.DateTimeFormat("en-IN", {
-  timeZone: "Asia/Kolkata",
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-});
-
-const RUPEES = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
+// Times read in the planned city's zone; money in its currency.
+const timeFmtFor = (zone: string) => new Intl.DateTimeFormat("en-IN", { timeZone: zone, hour: "numeric", minute: "2-digit", hour12: true });
+const dayFmtFor = (zone: string) => new Intl.DateTimeFormat("en-IN", { timeZone: zone, weekday: "short", day: "numeric", month: "short" });
+const moneyFor = (currency: string) =>
+  new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-GB", { style: "currency", currency, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 });
 
 // Minimal typing for the browser speech API, which TypeScript's DOM lib omits.
 interface Recognition {
@@ -136,8 +139,14 @@ function speechCtor(): RecognitionCtor | null {
 }
 
 export default function DayPlanner({ city }: { city: string }) {
+  const point = cityByName(city);
+  const cityTz = cityZone(point);
+  const abroad = cityCountry(point) !== "IN";
+  const sym = symbolOf(currencyOf({ country: cityCountry(point) }));
+  const examples = examplesFor(city, abroad, sym);
   const [prompt, setPrompt] = useState("");
-  const [days] = useState(() => nextDays(Date.now()));
+  const [openedAt] = useState(() => Date.now());
+  const days = nextDays(openedAt, cityTz);
   const [details, setDetails] = useState<Details>({
     day: "tomorrow",
     start: "3 pm",
@@ -160,7 +169,7 @@ export default function DayPlanner({ city }: { city: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (picked.length) setDetails((d) => ({ ...d, interests: picked }));
   }, []);
-  const composed = composeRequest(details, city);
+  const composed = composeRequest(details, city, sym);
   const [lastPrompt, setLastPrompt] = useState("");
   const savedPlans = useSavedPlans();
   const [justSaved, setJustSaved] = useState(false);
@@ -190,8 +199,7 @@ export default function DayPlanner({ city }: { city: string }) {
     return () => clearInterval(id);
   }, [loading]);
 
-  const run = useCallback(
-    async (text: string) => {
+  const run = async (text: string) => {
       const q = text.trim();
       if (q.length < 3 || loading) return;
       setStep(0);
@@ -215,9 +223,7 @@ export default function DayPlanner({ city }: { city: string }) {
       } finally {
         setLoading(false);
       }
-    },
-    [city, loading],
-  );
+  };
 
   // Shared links land here as /plan-my-day?plan=<request>.
   useEffect(() => {
@@ -241,7 +247,8 @@ export default function DayPlanner({ city }: { city: string }) {
     const Ctor = speechCtor();
     if (!Ctor) return;
     const r = new Ctor();
-    r.lang = "en-IN"; // Copes with Indian English and Hinglish in Latin script.
+    // en-IN copes with Indian English and Hinglish in Latin script.
+    r.lang = abroad ? navigator.language || "en-GB" : "en-IN";
     r.interimResults = true;
     r.continuous = false;
     heard.current = "";
@@ -295,6 +302,8 @@ export default function DayPlanner({ city }: { city: string }) {
 
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
+  // The plan carries its own city zone (it may name another city than the picker).
+  const planZone = plan?.zone ?? cityTz;
   return (
     <section ref={section} id="plan" className="shell planner">
       <div className="planner-modes">
@@ -313,7 +322,7 @@ export default function DayPlanner({ city }: { city: string }) {
             className="search-input"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Saturday in Bandra, under ₹1000, music and food"
+            placeholder={abroad ? `Saturday in ${city}, under ${sym}60, music and food` : "Saturday in Bandra, under ₹1000, music and food"}
             aria-label="Describe your day"
             maxLength={400}
           />
@@ -333,7 +342,7 @@ export default function DayPlanner({ city }: { city: string }) {
           </button>
         </div>
         <div className="prompt-row">
-          {EXAMPLES.map((p) => (
+          {examples.map((p) => (
             <button
               key={p}
               type="button"
@@ -393,8 +402,8 @@ export default function DayPlanner({ city }: { city: string }) {
         </div>
         <div className="brow">
           <label className="bfield">
-            <span className="blabel">Budget (₹, total)</span>
-            <input className="binput" inputMode="numeric" placeholder="e.g. 1500" value={details.budget}
+            <span className="blabel">Budget ({sym}, total)</span>
+            <input className="binput" inputMode="numeric" placeholder={abroad ? "e.g. 60" : "e.g. 1500"} value={details.budget}
               onChange={(e) => set({ budget: e.target.value.replace(/[^0-9]/g, "").slice(0, 6) })} />
           </label>
           <label className="bfield">
@@ -468,7 +477,7 @@ export default function DayPlanner({ city }: { city: string }) {
             </div>
             <div className="plan-facts">
               <span>{plan.stops.length} stop{plan.stops.length === 1 ? "" : "s"}</span>
-              <span>{plan.totalCost === 0 ? "Free" : `From ${RUPEES.format(plan.totalCost)}`}</span>
+              <span>{plan.totalCost === 0 ? "Free" : `From ${moneyFor(plan.currency ?? "INR").format(plan.totalCost)}`}</span>
               <span>{plan.considered} events checked</span>
               <span className={`plan-engine ${plan.engine.kind}`}>
                 {plan.engine.kind === "ai" ? <Sparkle size={12} weight="fill" /> : null}
@@ -502,10 +511,10 @@ export default function DayPlanner({ city }: { city: string }) {
                         </div>
                         <div className="plan-card-body">
                           <p className="plan-time">
-                            {dayFmt.format(new Date(e.start_time))} ·{" "}
-                            {hasTime(e.start_time) ? timeFmt.format(new Date(e.start_time)) : "time on listing"}
-                            {hasTime(e.start_time) && e.end_time && dayFmt.format(new Date(e.end_time)) === dayFmt.format(new Date(e.start_time))
-                              ? `–${timeFmt.format(new Date(e.end_time))}`
+                            {dayFmtFor(planZone).format(new Date(e.start_time))} ·{" "}
+                            {hasTime(e.start_time, planZone) ? timeFmtFor(planZone).format(new Date(e.start_time)) : "time on listing"}
+                            {hasTime(e.start_time, planZone) && e.end_time && dayFmtFor(planZone).format(new Date(e.end_time)) === dayFmtFor(planZone).format(new Date(e.start_time))
+                              ? `–${timeFmtFor(planZone).format(new Date(e.end_time))}`
                               : ""}
                           </p>
                           <Link href={`/events/${e.id}`} className="plan-title">

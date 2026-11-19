@@ -26,8 +26,11 @@ export interface PlanResult {
   note: string | null;
   city: string;
   stops: PlanStop[];
-  /** Lowest total ticket cost in rupees across the stops. */
+  /** Lowest total ticket cost across the stops, in `currency`. */
   totalCost: number;
+  /** The planned city's time zone and currency (India's when absent). */
+  zone?: string;
+  currency?: string;
   engine: { kind: "ai" | "rules"; label: string };
   /** True when the backend was unreachable and sample events were used. */
   isSample: boolean;
@@ -35,7 +38,7 @@ export interface PlanResult {
   considered: number;
 }
 
-/** Average door-to-door speed in an Indian metro, km/h. Deliberately pessimistic. */
+/** Average door-to-door city speed, km/h. Deliberately pessimistic. */
 const CITY_KMH = 20;
 /** Fixed overhead per hop: finding a cab, parking, walking in. */
 const HOP_MINUTES = 8;
@@ -125,12 +128,15 @@ export function buildSchedule(
   return { stops, dropped: ranked.length - accepted.length };
 }
 
-/** "under 1000", "₹1500", "1000 rs", "budget 800". Null when no budget is stated. */
+/**
+ * "under 1000", "₹1500", "1000 rs", "budget 800", "under $50", "€40", "30 quid".
+ * In the planned city's own currency. Null when no budget is stated.
+ */
 export function parseBudget(text: string): number | null {
   const t = text.toLowerCase().replace(/,/g, "");
   const m =
-    t.match(/(?:₹|rs\.?|inr)\s*(\d{2,6})/) ||
-    t.match(/(\d{2,6})\s*(?:₹|rs\.?|rupees|inr|bucks)/) ||
+    t.match(/(?:₹|rs\.?|inr|\$|us\$|a\$|nz\$|c\$|s\$|£|€|usd|gbp|eur|aud|nzd|cad|sgd)\s*(\d{1,6})/) ||
+    t.match(/(\d{1,6})\s*(?:₹|rs\.?|rupees|inr|bucks|dollars?|pounds?|quid|euros?|usd|gbp|eur|aud|nzd|cad|sgd)\b/) ||
     t.match(/(?:under|below|less than|within|budget(?: of)?|max|upto|up to|andar)\s*(\d{2,6})/);
   return m ? Number(m[1]) : null;
 }
