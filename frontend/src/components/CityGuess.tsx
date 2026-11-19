@@ -49,7 +49,7 @@ export default function CityGuess() {
         /* unknown: switch anyway */
       }
       if (!live) return;
-      setCity(name);
+      setCity(name, { quiet: true });
       setNote(name);
     })();
     return () => {

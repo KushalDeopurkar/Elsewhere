@@ -31,6 +31,8 @@ export interface MapHandle {
   glideToEvent: (event: Event) => void;
   /** With `travel` (or when the view is far away), the camera hops between cities. */
   flyToPoint: (lat: number, lng: number, travel?: boolean) => void;
+  /** Move there at once, no animation. */
+  jumpToPoint: (lat: number, lng: number) => void;
 }
 
 export default function EventMap({
@@ -143,6 +145,9 @@ export default function EventMap({
             duration: prefersReducedMotion() ? 0 : far ? 900 : 600,
             essential: true,
           });
+        },
+        jumpToPoint: (lat, lng) => {
+          instance.jumpTo({ center: [lng, lat], zoom: lightsOn.current ? 12 : 11.5 });
         },
         flyToPoint: (lat, lng, travel = false) => {
           const city = lightsOn.current;

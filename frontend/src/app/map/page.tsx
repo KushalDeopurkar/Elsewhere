@@ -10,7 +10,7 @@ import { useCapable3D } from "@/hooks/useCapable3D";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
-import { onCityRepick, useCity } from "@/lib/cityPref";
+import { lastCityChangeQuiet, onCityRepick, useCity } from "@/lib/cityPref";
 import { cityZone } from "@/lib/cities";
 import { CategoryRail } from "@/components/FilterRail";
 import type { MapHandle } from "@/components/EventMap";
@@ -164,10 +164,25 @@ export default function MapPage() {
   const ready = useRef(false);
   // Changing city flies across the country to it, with a title card.
   const lastCity = useRef(city.name);
+  const pendingJump = useRef(false);
+  const lastCityPoint = useRef(city);
+  useEffect(() => {
+    lastCityPoint.current = city;
+  }, [city]);
   useEffect(() => {
     const moved = lastCity.current !== city.name;
     lastCity.current = city.name;
-    if (!ready.current) return;
+    // A first-visit guess (or one landing before the map is up) just puts the
+    // map there: no flight across the globe, no title card.
+    const quiet = lastCityChangeQuiet();
+    if (!ready.current) {
+      if (moved) pendingJump.current = true;
+      return;
+    }
+    if (quiet) {
+      handle.current?.jumpToPoint(city.lat, city.lng);
+      return;
+    }
     handle.current?.flyToPoint(city.lat, city.lng, moved);
     const el = flyLabel.current;
     if (moved && el && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -264,6 +279,10 @@ export default function MapPage() {
         onReady={(h) => {
           handle.current = h;
           ready.current = true;
+          if (pendingJump.current) {
+            pendingJump.current = false;
+            h.jumpToPoint(lastCityPoint.current.lat, lastCityPoint.current.lng);
+          }
         }}
         onError={(m) => setMapError((prev) => prev ?? m)}
         route={selected ? route : null}

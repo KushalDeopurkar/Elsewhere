@@ -11,8 +11,19 @@ export function useCity(): CityPoint {
   return CITY_LIST.find((c) => c.name === name) ?? DEFAULT_CITY;
 }
 
-export function setCity(name: string): void {
+let quiet = false;
+
+/** Set the city. `quiet`: chosen for the person (first-visit guess), so the map should just be there, not fly. */
+export function setCity(name: string, opts: { quiet?: boolean } = {}): void {
+  quiet = Boolean(opts.quiet);
   store.write(name);
+}
+
+/** Whether the latest city change was a quiet one (read once by the map). */
+export function lastCityChangeQuiet(): boolean {
+  const q = quiet;
+  quiet = false;
+  return q;
 }
 
 // Picking the city that's already chosen changes nothing in the store, but
@@ -21,6 +32,7 @@ const REPICK = "ee:city-repick";
 
 /** Choose a city from the picker: a change if it's new, a re-pick if not. */
 export function pickCity(name: string): void {
+  quiet = false;
   if (name === store.read()) window.dispatchEvent(new CustomEvent(REPICK, { detail: name }));
   else store.write(name);
 }
