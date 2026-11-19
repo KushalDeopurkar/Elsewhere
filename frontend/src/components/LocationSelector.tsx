@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MapPin, CaretDown } from "@phosphor-icons/react/ssr";
 import { INDIA_LIST, WORLD_LIST } from "@/lib/cities";
 import { pickCity, useCity } from "@/lib/cityPref";
+import { useActiveCities } from "@/lib/activeCities";
 
 /**
  * City picker. A native select underneath, so it is accessible on every device.
@@ -17,6 +18,9 @@ import { pickCity, useCity } from "@/lib/cityPref";
 export default function LocationSelector({ compact = false }: { compact?: boolean }) {
   const city = useCity();
   const [open, setOpen] = useState(false);
+  // Only offer cities abroad that have events on (plus the one you're in).
+  const active = useActiveCities();
+  const world = WORLD_LIST.filter((c) => !active || active.has(c.name) || c.name === city.name);
   return (
     <label className={`loc${compact ? " is-compact" : ""}`}>
       <MapPin size={16} weight="fill" aria-hidden="true" />
@@ -41,13 +45,15 @@ export default function LocationSelector({ compact = false }: { compact?: boolea
             </option>
           ))}
         </optgroup>
+        {world.length > 0 && (
         <optgroup label="Around the world">
-          {WORLD_LIST.map((c) => (
+          {world.map((c) => (
             <option key={c.name} value={c.name}>
               {c.name}
             </option>
           ))}
         </optgroup>
+        )}
       </select>
     </label>
   );

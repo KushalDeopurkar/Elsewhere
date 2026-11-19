@@ -144,6 +144,59 @@ export default function SettingsView() {
       <button type="button" className="disc-link st-signout" onClick={() => void signOut().then(() => router.push("/"))}>
         Sign out
       </button>
+
+      <DeleteAccount token={session?.access_token ?? null} onDone={() => void signOut().then(() => router.push("/"))} />
     </form>
+  );
+}
+
+/** Two-step, so it can't happen by accident. */
+function DeleteAccount({ token, onDone }: { token: string | null; onDone: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const run = async () => {
+    if (!token) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/account", { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error || "Couldn't delete the account.");
+      onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't delete the account.");
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="st-danger" aria-labelledby="st-danger-h">
+      <h2 id="st-danger-h" className="st-danger-h">Delete account</h2>
+      {asking ? (
+        <>
+          <p className="st-help">
+            This permanently deletes your profile, who you follow, your plans, saved events, lists, passport and polls.
+            It can&apos;t be undone.
+          </p>
+          <div className="st-actions">
+            <button type="button" className="btn st-danger-btn" disabled={busy} onClick={run}>
+              {busy ? "Deleting…" : "Yes, delete everything"}
+            </button>
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setAsking(false)}>
+              Keep my account
+            </button>
+          </div>
+        </>
+      ) : (
+        <button type="button" className="disc-link st-danger-link" onClick={() => setAsking(true)}>
+          Delete my account…
+        </button>
+      )}
+      {err && (
+        <p className="st-err" role="alert">
+          {err}
+        </p>
+      )}
+    </section>
   );
 }

@@ -98,3 +98,40 @@ export async function invokeFunction<T>(name: string, body: unknown, timeoutMs =
   await check(res, `function ${name}`);
   return (await res.json()) as T;
 }
+
+/** Number of rows matching a table query, e.g. count("events?city=eq.Paris"). */
+export async function count(path: string): Promise<number> {
+  const res = await fetch(`${supabaseUrl()}/rest/v1/${path}${path.includes("?") ? "&" : "?"}select=id&limit=1`, {
+    method: "GET",
+    headers: headers({ Prefer: "count=exact" }),
+    signal: AbortSignal.timeout(10_000),
+    cache: "no-store",
+  });
+  await check(res, `count ${path.split("?")[0]}`);
+  // Content-Range: 0-0/123  (or */0 when empty)
+  const total = Number((res.headers.get("content-range") ?? "").split("/")[1]);
+  return Number.isFinite(total) ? total : 0;
+}
+
+/** The signed-in user behind a browser access token, or null if it isn't valid. */
+export async function userFromToken(token: string): Promise<{ id: string; email?: string } | null> {
+  const res = await fetch(`${supabaseUrl()}/auth/v1/user`, {
+    headers: { apikey: serviceKey(), Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10_000),
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const u = (await res.json()) as { id?: string; email?: string };
+  return u.id ? { id: u.id, email: u.email } : null;
+}
+
+/** Permanently delete an account. Everything tied to it goes with it (foreign keys cascade). */
+export async function deleteUser(id: string): Promise<void> {
+  const res = await fetch(`${supabaseUrl()}/auth/v1/admin/users/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: headers(),
+    signal: AbortSignal.timeout(15_000),
+    cache: "no-store",
+  });
+  await check(res, "delete user");
+}

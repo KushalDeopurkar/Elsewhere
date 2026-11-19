@@ -109,6 +109,7 @@ export default function SignInDialog() {
           )}
           <p className="signin-fine">
             What you mark Going is visible to friends (people you both follow) unless you make your profile public.
+            By continuing you agree to the <a href="/terms">terms</a> and <a href="/privacy">privacy policy</a>.
           </p>
         </div>
       )}

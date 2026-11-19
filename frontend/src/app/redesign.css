@@ -5202,3 +5202,27 @@ a.board-link:focus-visible .board-thumb {
   /* Lift the zoom / compass buttons clear of the card strip. */
   .map-page:has(.map-strip) .map-tools { bottom: 10.75rem; }
 }
+
+/* ==========================================================================
+   Legal pages, footer links, account deletion
+   ========================================================================== */
+.foot-legal { display: flex; gap: 1.25rem; }
+.foot-legal a { color: var(--text-mid); min-height: 44px; display: inline-flex; align-items: center; }
+.foot-legal a:hover { color: var(--text-hi); }
+.signin-fine a { color: var(--text-mid); text-decoration: underline; text-underline-offset: 2px; }
+
+.legal { max-width: 44rem; margin: 0 auto; padding: 2.5rem 0 1rem; line-height: 1.65; color: var(--text-mid); }
+.legal h1 { font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.05; color: var(--text-hi); margin: 0.4rem 0 1rem; }
+.legal h2 { font-size: 1.15rem; color: var(--text-hi); margin: 2rem 0 0.5rem; }
+.legal p, .legal ul { margin: 0 0 0.9rem; }
+.legal ul { padding-left: 1.25rem; display: grid; gap: 0.35rem; }
+.legal strong { color: var(--text-hi); }
+.legal a { color: var(--marigold-bright); text-decoration: underline; text-underline-offset: 2px; }
+.legal-intro { font-size: 1.1rem; color: var(--text-hi); }
+.legal-other { display: flex; gap: 1.5rem; margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
+
+.st-danger { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); display: grid; gap: 0.75rem; justify-items: start; }
+.st-danger-h { font-size: 1rem; color: var(--text-hi); }
+.st-danger-link { color: var(--danger); min-height: 44px; }
+.st-danger-btn { background: var(--danger); color: #1a0208; }
+.st-danger-btn:hover { filter: brightness(1.08); }
