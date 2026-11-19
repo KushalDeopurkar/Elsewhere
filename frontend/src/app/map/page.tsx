@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { preconnect } from "react-dom";
 import { STYLE_URL } from "@/lib/mapTheme";
-import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
+import { X, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
 import { useCapable3D } from "@/hooks/useCapable3D";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
@@ -191,7 +191,7 @@ export default function MapPage() {
     .slice(0, 60);
 
   return (
-    <div className={`map-split is-${mobileView}`}>
+    <div className={`map-split is-${mobileView}`} data-theme="night">
       <aside className="map-list" aria-label="Events in view">
         <div className="map-list-head">
           <p className="map-list-title">
@@ -283,12 +283,12 @@ export default function MapPage() {
       {mapError && (
         <div className="map-status">
           <div className="panel is-error" role="alert">
-            <WarningCircle size={30} weight="duotone" className="panel-icon" />
-            <p className="panel-title">The basemap did not load</p>
+            <WarningCircle size={28} weight="bold" className="panel-icon" />
+            <p className="panel-title">The map didn&apos;t load</p>
             <p className="panel-body">
-              Both basemap providers were unreachable. The browser console
-              names the URLs that failed. To use a different provider, set
-              NEXT_PUBLIC_MAP_STYLE to any MapLibre style URL.
+              The map tiles couldn&apos;t be reached, which is usually a weak or
+              blocked connection. Every event is still listed beside the map and
+              on the timetable.
             </p>
             <div className="panel-actions">
               <button
@@ -299,7 +299,7 @@ export default function MapPage() {
                 Reload
               </button>
               <Link href="/" className="btn btn-primary">
-                Browse as a list
+                Open the timetable
               </Link>
             </div>
           </div>
@@ -337,8 +337,7 @@ export default function MapPage() {
 
         {isSample && !mapError && (
           <span className="sample-note" style={{ alignSelf: "flex-start" }}>
-            <Sparkle size={13} weight="fill" />
-            Sample data, the API is not connected
+            Sample events: live listings can&apos;t be reached
           </span>
         )}
 
@@ -357,7 +356,7 @@ export default function MapPage() {
                 }}
                 aria-label="Close"
               >
-                <X size={13} weight="bold" />
+                <X size={16} weight="bold" />
               </button>
             </div>
             <div className="map-peek-body">
@@ -375,13 +374,9 @@ export default function MapPage() {
                   {selected.city ? `, ${selected.city}` : ""}
                 </span>
               </p>
-              <Link
-                href={`/events/${selected.id}`}
-                className="section-link"
-                style={{ marginTop: "0.3rem" }}
-              >
+              <Link href={`/events/${selected.id}`} className="link-arrow map-peek-more">
                 Full details
-                <ArrowRight size={13} weight="bold" />
+                <ArrowRight size={14} weight="bold" aria-hidden="true" />
               </Link>
               <TravelTime key={selected.id} event={selected} onRoute={setRoute} />
             </div>

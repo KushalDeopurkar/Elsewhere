@@ -144,3 +144,10 @@
 :root { --cat-l: 0.5; --cat-c: 0.13; }
 :root[data-theme="night"],
 [data-theme="night"] { --cat-l: 0.8; --cat-c: 0.11; }
+
+/* A subtree that opts into the board re-sets its own ink and surface,
+   since inherited colour was already computed from the page theme. */
+[data-theme="night"]:not(:root) {
+  color: var(--fg);
+  background-color: var(--bg);
+}
