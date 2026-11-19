@@ -64,7 +64,7 @@ export default function AccountButton() {
             </button>
           )}
           <button role="menuitem" type="button" onClick={() => go("/settings")}>
-            <GearSix size={18} weight="bold" aria-hidden="true" /> Edit profile
+            <GearSix size={18} weight="bold" aria-hidden="true" /> Settings
           </button>
           <button
             role="menuitem"

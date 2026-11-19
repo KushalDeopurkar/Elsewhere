@@ -1,5 +1,6 @@
 "use client";
 
+import AccountsOff from "./AccountsOff";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,7 +36,7 @@ export default function ListView({ id }: { id: string }) {
     if (ready && socialConfigured) load();
   }, [ready, me, load]);
 
-  if (!socialConfigured) return <EmptyState icon={null} title="Lists aren't switched on yet" body="" />;
+  if (!socialConfigured) return <AccountsOff what="Lists" />;
   if (data === undefined) {
     return (
       <div className="xgrid list-page" aria-busy="true">

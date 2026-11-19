@@ -1,5 +1,6 @@
 "use client";
 
+import AccountsOff from "./AccountsOff";
 import { sized } from "@/lib/imageUrl";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -66,7 +67,7 @@ export default function FriendsView() {
   const followerIds = useMemo(() => new Set(followers.map((p) => p.id)), [followers]);
 
   if (!socialConfigured) {
-    return <EmptyState icon={<Users size={30} weight="duotone" />} title="Friends aren't switched on yet" body="Accounts need to be set up for this site first." />;
+    return <AccountsOff what="Friends" />;
   }
   if (!ready) return <p className="muted">Loading…</p>;
   if (!me) {

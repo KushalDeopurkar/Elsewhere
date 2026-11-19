@@ -1,5 +1,6 @@
 "use client";
 
+import AccountsOff from "./AccountsOff";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -34,7 +35,7 @@ export default function SettingsView() {
     });
   }
 
-  if (!socialConfigured) return <EmptyState icon={null} title="Accounts aren't switched on yet" body="" />;
+  if (!socialConfigured) return <AccountsOff what="Profile settings" />;
   if (!ready) return <p className="muted">Loading…</p>;
   if (!session) {
     return (

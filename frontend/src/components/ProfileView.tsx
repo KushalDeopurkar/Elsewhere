@@ -1,5 +1,6 @@
 "use client";
 
+import AccountsOff from "./AccountsOff";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -74,7 +75,7 @@ export default function ProfileView({ username }: { username: string }) {
   }, [ready, me, load]);
 
   if (!socialConfigured) {
-    return <EmptyState icon={<Users size={30} weight="duotone" />} title="Profiles aren't switched on yet" body="Accounts need to be set up for this site first." />;
+    return <AccountsOff what="Profiles" />;
   }
   if (profile === undefined) return <ProfileSkeleton />;
   if (profile === null) {

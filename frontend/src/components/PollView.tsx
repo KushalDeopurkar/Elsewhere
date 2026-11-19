@@ -1,5 +1,6 @@
 "use client";
 
+import AccountsOff from "./AccountsOff";
 import { track } from "@/lib/track";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -62,7 +63,7 @@ export default function PollView({ id, fresh = false }: { id: string; fresh?: bo
     };
   }, [ready, load]);
 
-  if (!socialConfigured) return <EmptyState icon={null} title="Polls aren't switched on yet" body="" />;
+  if (!socialConfigured) return <AccountsOff what="Polls" />;
   if (poll === undefined) {
     return (
       <div className="poll" aria-busy="true">

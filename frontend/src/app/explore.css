@@ -409,3 +409,115 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   Settings
+   ========================================================================== */
+.st-page {
+  display: grid;
+  gap: var(--s-7);
+  padding-bottom: var(--s-6);
+}
+
+.st-page > * {
+  max-width: 48rem;
+}
+
+.st-theme {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.st-legend {
+  display: block;
+  width: 100%;
+  padding-top: var(--s-3);
+  margin-bottom: var(--s-4);
+  border-top: 2px solid var(--fg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 80%;
+  font-size: var(--t-xl);
+  text-transform: uppercase;
+}
+
+.st-options {
+  display: grid;
+  border-top: 1px solid var(--rule);
+}
+
+.st-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-3) var(--s-3) var(--s-3) var(--s-2);
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  transition: background-color var(--t-hover) var(--ease);
+}
+
+.st-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.st-option.is-on {
+  background: var(--signal-wash);
+  box-shadow: inset 4px 0 0 var(--signal);
+}
+
+.st-option:has(input:focus-visible) {
+  outline: 2px solid var(--fg);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .st-option:not(.is-on):hover {
+    background: var(--bg-2);
+  }
+}
+
+.st-swatch {
+  width: 56px;
+  height: 40px;
+  border: 1.5px solid var(--fg);
+}
+
+.st-swatch.is-day {
+  background: linear-gradient(var(--signal), var(--signal)) 0 70% / 100% 6px no-repeat, oklch(0.985 0.004 250);
+}
+
+.st-swatch.is-night {
+  background: linear-gradient(var(--lamp), var(--lamp)) 0 70% / 100% 6px no-repeat, var(--board);
+}
+
+.st-swatch.is-auto {
+  background:
+    linear-gradient(90deg, oklch(0.985 0.004 250) 50%, var(--board) 50%);
+}
+
+.st-option-text {
+  display: grid;
+  gap: 2px;
+}
+
+.st-option-label {
+  font-weight: 650;
+}
+
+.st-option-note {
+  font-size: var(--t-sm);
+  color: var(--fg-3);
+}
+
+.st-now {
+  margin-top: var(--s-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  color: var(--fg-3);
+}
