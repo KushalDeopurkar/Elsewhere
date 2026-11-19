@@ -136,7 +136,7 @@
 }
 
 .plan-view:hover {
-  color: var(--signal-hi);
+  color: var(--signal-text);
 }
 
 @media (max-width: 480px) {
@@ -603,7 +603,7 @@
 }
 
 .travel-link:hover {
-  color: var(--signal-hi);
+  color: var(--signal-text);
 }
 
 .origin-pin {
@@ -1067,7 +1067,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   font-weight: 600;
   font-size: 0.875rem;
 }
-.sharecard-tabs button.is-on { background: var(--signal-wash); border-color: var(--signal-text); color: var(--signal-hi); }
+.sharecard-tabs button.is-on { background: var(--signal-wash); border-color: var(--signal-text); color: var(--signal-text); }
 .sharecard-preview { position: relative; display: grid; place-items: center; border-radius: var(--r-control); overflow: hidden; background: var(--bg); }
 .sharecard-preview.is-story { aspect-ratio: 9 / 16; max-height: 52dvh; margin-inline: auto; }
 .sharecard-preview.is-square { aspect-ratio: 1; }
@@ -1495,7 +1495,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .pf-name { font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.05; overflow-wrap: anywhere; }
 .pf-handle { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0; color: var(--fg-3); }
 .pf-chip { padding: 0.1rem 0.55rem; border-radius: var(--r-pill); background: var(--bg-4); color: var(--fg-2); font-size: 0.75rem; font-weight: 600; }
-.pf-chip.is-friend { background: var(--signal-wash); color: var(--signal-hi); }
+.pf-chip.is-friend { background: var(--signal-wash); color: var(--signal-text); }
 .pf-bio { margin: 0.2rem 0 0; color: var(--fg-2); max-width: 48ch; }
 .pf-meta { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin: 0; color: var(--fg-3); font-size: 0.875rem; }
 .pf-meta span { display: inline-flex; align-items: center; gap: 0.3rem; }
@@ -1550,7 +1550,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .fr-plan-text { display: grid; gap: 0.2rem; min-width: 0; align-content: center; }
 .fr-plan-text strong { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fr-plan-text small { color: var(--fg-3); font-size: 0.8125rem; }
-.fr-plan-who { display: flex; align-items: center; gap: 0.35rem; color: var(--signal-hi); font-size: 0.8125rem; font-weight: 600; }
+.fr-plan-who { display: flex; align-items: center; gap: 0.35rem; color: var(--signal-text); font-size: 0.8125rem; font-weight: 600; }
 
 /* Settings */
 .settings { display: grid; gap: 1.25rem; max-width: 34rem; padding-bottom: 3rem; }
@@ -1597,10 +1597,8 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   display: grid;
   place-items: center;
   overflow: hidden;
-  background:
-    radial-gradient(60rem 40rem at 85% 0%, color-mix(in oklch, var(--cat-hue, var(--signal)) 30%, transparent), transparent 70%),
-    radial-gradient(50rem 40rem at 0% 100%, rgb(169 155 255 / 0.18), transparent 70%),
-    #0b0c10;
+  background: var(--board);
+  border-top: 10px solid var(--cat-hue, var(--signal));
   color: var(--fg);
 }
 .rc-top { position: absolute; inset: 0 0 auto; z-index: 3; padding: max(0.9rem, env(safe-area-inset-top)) 1rem 0; }
@@ -1634,7 +1632,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .rc-slide > *:nth-child(2) { animation-delay: 120ms; }
 .rc-slide > *:nth-child(3) { animation-delay: 240ms; }
 .rc-slide > *:nth-child(4) { animation-delay: 360ms; }
-.rc-kicker { margin: 0; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--signal-hi); }
+.rc-kicker { margin: 0; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--signal-text); }
 .rc-big {
   margin: 0;
   font-family: var(--font-display);
@@ -1709,7 +1707,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .pp-recap span:not(.pp-recap-go) { display: grid; flex: 1; }
 .pp-recap strong { color: var(--fg); }
 .pp-recap small { color: var(--fg-2); }
-.pp-recap-go { color: var(--signal-hi); font-weight: 700; white-space: nowrap; }
+.pp-recap-go { color: var(--signal-text); font-weight: 700; white-space: nowrap; }
 
 /* Passport: fresh stamps slam onto the page with an ink ring; bars fill. */
 .pp-stamp.is-fresh { animation: stamp-slam 560ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0ms) both; position: relative; }
@@ -2052,7 +2050,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   font-weight: 600;
   cursor: pointer;
 }
-.saved-pick[aria-pressed="true"] { border-color: var(--signal-text); color: var(--signal-hi); }
+.saved-pick[aria-pressed="true"] { border-color: var(--signal-text); color: var(--signal-text); }
 .saved-pick:disabled { opacity: 0.45; cursor: default; }
 .saved-item.is-picking .ecard { transition: transform var(--t-hover) var(--ease); }
 .saved-item.is-chosen .ecard { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: var(--r-card); }
@@ -2122,7 +2120,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .legal p, .legal ul { margin: 0 0 0.9rem; }
 .legal ul { padding-left: 1.25rem; display: grid; gap: 0.35rem; }
 .legal strong { color: var(--fg); }
-.legal a { color: var(--signal-hi); text-decoration: underline; text-underline-offset: 2px; }
+.legal a { color: var(--fg); text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; text-underline-offset: 2px; }
 .legal-intro { font-size: 1.1rem; color: var(--fg); }
 .legal-other { display: flex; gap: 1.5rem; margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule-soft); }
 

@@ -105,11 +105,11 @@ export default function RecapView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [go, close]);
 
-  if (!recap) return <div className="rc" aria-busy="true" />;
+  if (!recap) return <div className="rc" data-theme="night" aria-busy="true" />;
 
   if (recap.empty) {
     return (
-      <div className="rc is-empty">
+      <div className="rc is-empty" data-theme="night">
         <div className="rc-slide is-on">
           <p className="rc-kicker">Your {recap.month} in Elsewhere</p>
           <h1 className="rc-big">Nothing to recap yet</h1>
@@ -157,7 +157,7 @@ export default function RecapView() {
   };
 
   return (
-    <div className="rc" style={{ "--cat-hue": hue } as React.CSSProperties} role="region" aria-roledescription="slideshow" aria-label={`Your ${recap.month} in Elsewhere`}>
+    <div className="rc" data-theme="night" style={{ "--cat-hue": hue } as React.CSSProperties} role="region" aria-roledescription="slideshow" aria-label={`Your ${recap.month} in Elsewhere`}>
       <div className="rc-top">
         <div className="rc-bars" aria-hidden="true">
           {slides.map((s, k) => (

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Copied from maplibre-gl at build time (scripts/copy-maplibre-worker.mjs).
+    "public/maplibre-gl-worker.mjs",
   ]),
   {
     // Event imagery comes from arbitrary scraped hosts, so next/image is the

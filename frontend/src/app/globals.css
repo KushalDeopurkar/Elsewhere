@@ -590,7 +590,7 @@
 }
 
 .plan-title:hover {
-  color: var(--signal-hi);
+  color: var(--signal-text);
 }
 
 .plan-venue {

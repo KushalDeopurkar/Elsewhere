@@ -17,12 +17,12 @@ export function setThemePref(pref: ThemePref): void {
   store.write(pref);
 }
 
-/** The theme in force right now: the pinned one, or the sun's. */
-export function useTheme(): Theme {
+/** The theme in force right now: the pinned one, or the sun's. Null on the server. */
+export function useTheme(): Theme | null {
   const pref = store.useValue();
   const now = useNow(60_000);
   const zone = cityZone(useCity());
-  return resolveTheme(pref, now ?? Date.now(), zone);
+  return now ? resolveTheme(pref, now, zone) : null;
 }
 
 /** Keeps <html data-theme> in step with the hour, the city and the setting. */
@@ -30,7 +30,7 @@ export default function ThemeSync() {
   const theme = useTheme();
   useEffect(() => {
     const root = document.documentElement;
-    if (root.dataset.theme === theme) return;
+    if (!theme || root.dataset.theme === theme) return;
     root.dataset.themeSwitching = "";
     root.dataset.theme = theme;
     document

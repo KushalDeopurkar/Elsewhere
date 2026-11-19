@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  Sparkle,
   Microphone,
   CalendarPlus,
   ShareNetwork,
@@ -446,7 +445,7 @@ export default function DayPlanner({ city }: { city: string }) {
         </label>
         <p className="bpreview"><span>The planner will be asked:</span> “{composed}”</p>
         <button type="submit" className="btn btn-primary" disabled={loading}>
-          <Sparkle size={16} weight="fill" /> {loading ? "Planning…" : "Build my plan"}
+          {loading ? "Planning…" : "Build my plan"} <ArrowRight size={16} weight="bold" aria-hidden="true" />
         </button>
       </form>
       </div>
@@ -480,7 +479,7 @@ export default function DayPlanner({ city }: { city: string }) {
               <span>{plan.totalCost === 0 ? "Free" : `From ${moneyFor(plan.currency ?? "INR").format(plan.totalCost)}`}</span>
               <span>{plan.considered} events checked</span>
               <span className={`plan-engine ${plan.engine.kind}`}>
-                {plan.engine.kind === "ai" ? <Sparkle size={12} weight="fill" /> : null}
+                
                 {plan.engine.kind === "ai" ? plan.engine.label : "Rules planner"}
               </span>
             </div>

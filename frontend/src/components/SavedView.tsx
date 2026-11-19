@@ -4,7 +4,7 @@ import { track } from "@/lib/track";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookmarkSimple, Trash, Sparkle, UsersThree, CheckCircle, Circle, X } from "@phosphor-icons/react/ssr";
+import { BookmarkSimple, Trash, Path, UsersThree, CheckCircle, Circle, X } from "@phosphor-icons/react/ssr";
 import EventCard from "./EventCard";
 import ShareCard from "./ShareCard";
 import RemindersCard from "./RemindersCard";
@@ -73,7 +73,7 @@ export default function SavedView() {
         {upcoming.length > 0 && (
           <div className="saved-share">
             <Link href="/plan-my-day" className="btn btn-primary">
-              <Sparkle size={16} weight="fill" aria-hidden="true" /> Plan my day
+              <Path size={16} weight="bold" aria-hidden="true" /> Plan my day
             </Link>
             {canPoll && (
               <button
