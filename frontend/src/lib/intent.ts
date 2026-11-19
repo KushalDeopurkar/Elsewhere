@@ -1,5 +1,6 @@
 import { Event, EventCategory, EventFormat } from "./types";
 import { matchesWindow, eventZone } from "./formatDate";
+import { detectCity } from "./cities";
 
 /**
  * Intent parsing for natural-language discovery.
@@ -37,6 +38,8 @@ export interface Intent {
   interests: EventCategory[];
   goals: Goal[];
   when: When;
+  /** "saturday" / "sunday" narrow the weekend to that day. */
+  day?: "Sat" | "Sun" | null;
   city: string | null;
   freeOnly: boolean;
   format: EventFormat | null;
@@ -92,7 +95,6 @@ const WHEN_WORDS: [When, string[]][] = [
   ["today", ["today", "tonight", "this evening", "right now"]],
 ];
 
-const CITY_WORDS = ["mumbai", "bengaluru", "bangalore", "delhi", "online"];
 
 const FREE_WORDS = ["free", "no cost", "zero cost", "affordable", "cheap", "budget", "no money"];
 const ONLINE_WORDS = ["online", "remote", "virtual", "from home", "livestream"];
@@ -144,20 +146,28 @@ export function parseIntent(raw: string): Intent {
   }
 
   let when: When = "any";
+  let day: "Sat" | "Sun" | null = null;
   for (const [value, words] of WHEN_WORDS) {
     const hit = findPhrase(q, words);
     if (hit) {
       when = value;
+      day = dayOf(hit);
       signals.push({ kind: "when", value, label: titleCase(hit), source: hit });
       break;
     }
   }
 
   let city: string | null = null;
-  const cityHit = findPhrase(q, CITY_WORDS);
-  if (cityHit) {
-    city = cityHit === "bangalore" ? "Bengaluru" : titleCase(cityHit);
-    signals.push({ kind: "where", value: city, label: city, source: cityHit });
+  if (findPhrase(q, ["online"])) {
+    city = "Online";
+    signals.push({ kind: "where", value: city, label: city, source: "online" });
+  } else {
+    // Any city we cover, in India or abroad ("paris on saturday", "gigs in nyc").
+    const hit = detectCity(q);
+    if (hit) {
+      city = hit.city.name;
+      signals.push({ kind: "where", value: city, label: hit.area ? `${titleCase(hit.area)}, ${city}` : city, source: hit.area ?? city.toLowerCase() });
+    }
   }
 
   const freeHit = findPhrase(q, FREE_WORDS);
@@ -190,6 +200,7 @@ export function parseIntent(raw: string): Intent {
     interests: [...widened],
     goals,
     when,
+    day,
     city,
     freeOnly: Boolean(freeHit),
     format,
@@ -205,6 +216,7 @@ export function dropSignal(intent: Intent, signal: Signal): Intent {
   const interests = new Set<EventCategory>();
   const goals: Goal[] = [];
   let when: When = "any";
+  let day: "Sat" | "Sun" | null = null;
   let city: string | null = null;
   let freeOnly = false;
   let format: EventFormat | null = null;
@@ -212,14 +224,36 @@ export function dropSignal(intent: Intent, signal: Signal): Intent {
   for (const s of signals) {
     if (s.kind === "interest") interests.add(s.value as EventCategory);
     if (s.kind === "goal") goals.push(s.value as Goal);
-    if (s.kind === "when") when = s.value as When;
+    if (s.kind === "when") {
+      when = s.value as When;
+      day = dayOf(s.source);
+    }
     if (s.kind === "where") city = s.value;
     if (s.kind === "budget") freeOnly = true;
     if (s.kind === "format") format = s.value as EventFormat;
   }
   for (const g of goals) for (const c of GOAL_CATEGORIES[g]) interests.add(c);
 
-  return { ...intent, signals, interests: [...interests], goals, when, city, freeOnly, format };
+  return { ...intent, signals, interests: [...interests], goals, when, day, city, freeOnly, format };
+}
+
+const dayOf = (word: string | undefined): "Sat" | "Sun" | null =>
+  word === "saturday" ? "Sat" : word === "sunday" ? "Sun" : null;
+
+const WEEKDAY = new Map<string, Intl.DateTimeFormat>();
+/** Does the event fall in the asked-for time, in its own local time ("saturday" means that Saturday). */
+export function matchesIntentWhen(event: Event, intent: Pick<Intent, "when" | "day">, now = new Date()): boolean {
+  if (intent.when === "any") return true;
+  const zone = eventZone(event);
+  if (!matchesWindow(event.start_time, intent.when, now, zone)) return false;
+  if (!intent.day) return true;
+  const key = zone ?? "";
+  let fmt = WEEKDAY.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: zone });
+    WEEKDAY.set(key, fmt);
+  }
+  return fmt.format(new Date(event.start_time)) === intent.day;
 }
 
 export interface Scored {
@@ -243,7 +277,7 @@ export function scoreEvent(event: Event, intent: Intent): Scored | null {
   }
 
   if (intent.when !== "any") {
-    if (!matchesWindow(event.start_time, intent.when, undefined, eventZone(event))) return null;
+    if (!matchesIntentWhen(event, intent)) return null;
     score += 2;
     reasons.push(intent.when === "weekend" ? "On this weekend" : `Happening ${intent.when}`);
   }

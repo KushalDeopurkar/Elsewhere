@@ -16,7 +16,8 @@ import { CardSkeleton, EmptyState } from "./Section";
 import { useCityEvents } from "@/hooks/useCityEvents";
 import { useCity, useRecentSearches, rememberSearch, clearRecentSearches } from "@/lib/cityPref";
 import { CATEGORIES, Event, EventCategory } from "@/lib/types";
-import { parseIntent, scoreEvent } from "@/lib/intent";
+import { detectCity } from "@/lib/cities";
+import { matchesIntentWhen, parseIntent, scoreEvent } from "@/lib/intent";
 import {
   DateFilter,
   PriceFilter,
@@ -67,10 +68,14 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const city = useCity();
+  const homeCity = useCity();
   const recent = useRecentSearches();
 
   const q = params.get("q") ?? "";
+  // A place named in the search ("paris on saturday") wins over the header
+  // city for this search only; the header choice stays as it was.
+  const named = useMemo(() => (q ? detectCity(q)?.city ?? null : null), [q]);
+  const city = named ?? homeCity;
   const cat = lockedCategory ?? (CATEGORIES.find((c) => c.value === params.get("cat"))?.value ?? null);
   const when = pick(params.get("when"), DATES.map((d) => d.value), "any");
   const price = pick(params.get("price"), PRICES.map((p) => p.value), "any");
@@ -149,7 +154,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         .map((x) => ({ event: x.e, byMeaning: false, score: x.s!.score }));
       const semantic = upcoming(meaning)
         .filter((e) => !cat || e.category === cat)
-        .filter((e) => (intent.when === "any" || inDateWindow(e, intent.when)) && (!intent.freeOnly || e.is_free))
+        .filter((e) => matchesIntentWhen(e, intent) && (!intent.freeOnly || e.is_free))
         .map((e, i) => ({ event: e, byMeaning: true, score: 100 - i }));
       list = [...semantic, ...keyword.sort((a, b) => b.score - a.score)];
     } else {
@@ -236,7 +241,10 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
       </fieldset>
       <fieldset className="fgroup">
         <legend>Location</legend>
-        <p className="fnote">Within 40 km of {city.name}. Change the city at the top of the page.</p>
+        <p className="fnote">
+          Within 40 km of {city.name}.{" "}
+          {named && named.name !== homeCity.name ? "Set by your search." : "Change the city at the top of the page."}
+        </p>
       </fieldset>
       {activeCount > 0 && (
         <button
