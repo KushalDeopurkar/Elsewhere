@@ -1872,13 +1872,13 @@ p {
   background: oklch(0 0 0 / 0.45);
 }
 
-.tt-clock .flap-t:nth-child(3) {
+.tt-clock .flap-t.is-sep {
   width: 0.36em;
   background: transparent;
   color: var(--fg);
 }
 
-.tt-clock .flap-t:nth-child(3)::after {
+.tt-clock .flap-t.is-sep::after {
   display: none;
 }
 
@@ -2235,7 +2235,7 @@ p {
   text-align: center;
 }
 
-.tt-time .flap-t:nth-child(3) {
+.tt-time .flap-t.is-sep {
   min-width: 0.24em;
 }
 

@@ -73,7 +73,7 @@ export default function FlapText({
           ref={(el) => {
             tiles.current[i] = el;
           }}
-          className={`flap-t${c === " " ? " is-blank" : ""}`}
+          className={`flap-t${c === " " ? " is-blank" : ""}${c === ":" ? " is-sep" : ""}`}
           aria-hidden="true"
         >
           {c}
