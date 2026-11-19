@@ -62,6 +62,15 @@ export default function PrivacyPage() {
             confirm it) or your Telegram chat. Every alert has an unsubscribe link, which deletes it.
           </p>
 
+          <h2>Reminders</h2>
+          <p>
+            If you turn on reminders, we keep your browser&apos;s push address for this device and, for each upcoming
+            saved event, its name, place and start time, so we can send a notification 2 hours before. No account is
+            needed and nothing else about you is stored with it. Turning reminders off deletes the push address and its
+            reminders straight away (blocking notifications does too, the next time one is due). Sent reminders are deleted
+            after a week.
+          </p>
+
           <h2>Location and travel times</h2>
           <p>
             On your first visit we pick a starting city from your approximate location, which our host Vercel works
@@ -100,6 +109,7 @@ export default function PrivacyPage() {
             <li>Google: sign-in (if you choose it), Gemini and route times.</li>
             <li>Groq, TomTom, the OpenStreetMap router and Photon (komoot): as described above.</li>
             <li>Brevo: sends alert emails. Telegram: delivers Telegram alerts.</li>
+            <li>Google, Mozilla, Apple or Microsoft: deliver reminder notifications to your browser (whichever your browser uses). They see only an encrypted message.</li>
             <li>OpenFreeMap and CARTO: serve the map tiles your browser loads, and so see your IP address.</li>
           </ul>
           <p>We don&apos;t sell your data or share it with advertisers.</p>

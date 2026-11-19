@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { BookmarkSimple, Trash, Sparkle, UsersThree, CheckCircle, Circle, X } from "@phosphor-icons/react/ssr";
 import EventCard from "./EventCard";
 import ShareCard from "./ShareCard";
+import RemindersCard from "./RemindersCard";
 import { EmptyState, SectionHeader } from "./Section";
 import { removeSaved, useSaved } from "@/lib/saved";
 import { openSignIn, socialConfigured, useAuth } from "@/lib/auth";
@@ -89,6 +90,9 @@ export default function SavedView() {
             )}
             <ShareCard ids={upcoming.map((s) => s.event.id)} title="On my list" kicker="Coming up" label="Share my list as a card" />
           </div>
+        )}
+        {upcoming.length > 0 && !picking && (
+          <RemindersCard events={upcoming.map((s) => s.event).filter(isRealEvent)} />
         )}
         {picking && (
           <p className="poll-hint" role="status">

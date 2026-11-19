@@ -5256,3 +5256,37 @@ a.board-link:focus-visible .board-thumb {
 @media (max-width: 899px) { .city-note { bottom: calc(5rem + env(safe-area-inset-bottom)); } }
 @media (prefers-reduced-motion: reduce) { .city-note { animation: none; } }
 .travel-est { color: var(--text-low); }
+
+/* Saved-event reminders (components/RemindersCard.tsx) */
+.remind {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: rgb(23 26 33 / 0.6);
+}
+.remind.is-on { border-color: rgb(255 107 87 / 0.35); background: var(--marigold-wash); }
+.remind-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--marigold-wash);
+  color: var(--marigold);
+}
+.remind-text { flex: 1; min-width: 0; }
+.remind-h { color: var(--text-hi); font-weight: 600; margin: 0; }
+.remind-sub { color: var(--text-mid); font-size: 0.9rem; margin: 0.15rem 0 0; line-height: 1.45; }
+.remind-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; flex: none; }
+.remind-actions .btn { min-height: 44px; }
+.remind-share { color: var(--text-mid); }
+@media (max-width: 640px) {
+  .remind { flex-wrap: wrap; align-items: flex-start; }
+  .remind-text { flex-basis: calc(100% - 3.5rem); }
+  .remind-actions { width: 100%; padding-left: calc(40px + 0.9rem); }
+}

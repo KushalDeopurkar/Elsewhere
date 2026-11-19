@@ -1,0 +1,31 @@
+# Sends saved-event reminders (push notifications) that have come due.
+# The endpoint only sends reminders that are due and unsent, so a late,
+# skipped or duplicate run is harmless. GitHub may start scheduled runs a
+# few minutes late; reminders go out 2 hours ahead, so that's fine.
+name: Send reminders
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: send-reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Send due reminders
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://elsewhere-in.vercel.app' }}
+        run: |
+          OUT=$(curl -sS -X POST --max-time 70 "$SITE_URL/api/reminders/run" || echo '{"error":"request failed"}')
+          echo "$OUT"
+          # Not set up yet (no VAPID keys) is not a failure.
+          echo "$OUT" | grep -q 'not configured' && exit 0
+          echo "$OUT" | grep -q '"error"' && exit 1 || exit 0
