@@ -1,3 +1,7 @@
 @import "tailwindcss";
+/* MapLibre's base styles load before ours so map.css can override them.
+   Loaded here, not with the map component: a stylesheet the component pulls
+   in later would win the cascade and collapse the map to zero height. */
+@import "maplibre-gl/dist/maplibre-gl.css";
 
 /* Tokens live in tokens.css; the site's own styles start in core.css. */

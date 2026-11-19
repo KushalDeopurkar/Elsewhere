@@ -1,6 +1,5 @@
 "use client";
 
-import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play } from "@phosphor-icons/react/ssr";
 import { LngLatBounds, MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
