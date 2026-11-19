@@ -26,6 +26,8 @@ const prefersReducedMotion = () =>
 
 export interface MapHandle {
   flyToEvent: (event: Event) => void;
+  /** A gentle glide to an event (swiping the phone card strip). */
+  glideToEvent: (event: Event) => void;
   /** With `travel` (or when the view is far away), the camera hops between cities. */
   flyToPoint: (lat: number, lng: number, travel?: boolean) => void;
 }
@@ -124,6 +126,20 @@ export default function EventMap({
             zoom: Math.max(instance.getZoom(), 15.5),
             pitch: 58,
             duration: prefersReducedMotion() ? 0 : 1200,
+            essential: true,
+          });
+        },
+        glideToEvent: (event) => {
+          if (event.lat == null || event.lng == null) return;
+          const to = new LngLat(event.lng, event.lat);
+          // Far away (another part of town): a short flight; nearby: a pan.
+          const far = instance.getCenter().distanceTo(to) > 6000;
+          instance.easeTo({
+            center: to,
+            zoom: Math.min(Math.max(instance.getZoom(), 13.5), 15.5),
+            // Keep the card strip from covering the venue.
+            offset: [0, -60],
+            duration: prefersReducedMotion() ? 0 : far ? 900 : 600,
             essential: true,
           });
         },

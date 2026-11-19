@@ -6,6 +6,8 @@ hidden until step 5 is done.
 
 ## 1. Run the migration
 Supabase dashboard > SQL Editor > paste `supabase/migrations/009_social.sql` > Run.
+
+**Polls (Ask friends):** also run `supabase/migrations/010_polls.sql` the same way.
 It is safe to run twice.
 
 ## 2. Allowed redirect URLs

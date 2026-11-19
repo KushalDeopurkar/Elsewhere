@@ -4887,3 +4887,318 @@ a.board-link:focus-visible .board-thumb {
 }
 .map-dim button[aria-pressed="true"] { background: var(--marigold); color: var(--on-marigold); }
 .map-dim button:focus-visible { outline: 2px solid var(--text-hi); outline-offset: 2px; }
+
+/* ==========================================================================
+   Map: phone card strip (components/MapStrip.tsx)
+   ========================================================================== */
+.map-strip { display: none; }
+
+@media (max-width: 899px) {
+  .map-strip {
+    display: flex;
+    gap: 0.6rem;
+    margin: auto -1rem 3.4rem; /* sits above the Map / List switch */
+    padding: 0.25rem calc((100% - min(82vw, 21rem)) / 2 + 1rem);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    list-style: none;
+  }
+  .map-strip::-webkit-scrollbar { display: none; }
+  /* The strip replaces the single-event peek on phones. */
+  .map-split .map-peek { display: none; }
+  .map-overlay:has(.map-strip) { padding-bottom: 0; }
+}
+
+.map-strip-card {
+  position: relative;
+  flex: 0 0 min(82vw, 21rem);
+  scroll-snap-align: center;
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--r-card);
+  background: rgb(23 26 33 / 0.94);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--lift-3);
+  opacity: 0.72;
+  transform: scale(0.96);
+  transition: transform var(--t-hover) var(--ease), opacity var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+}
+.map-strip-card.is-on {
+  opacity: 1;
+  transform: none;
+  border-color: color-mix(in oklab, var(--cat-hue) 70%, var(--line-strong));
+}
+.map-strip-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem;
+  min-height: 5.25rem;
+  text-align: left;
+  color: inherit;
+  border-radius: var(--r-card) 0 0 var(--r-card);
+  cursor: pointer;
+}
+.map-strip-thumb {
+  flex: 0 0 4rem;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.map-strip-body { display: grid; gap: 0.15rem; min-width: 0; }
+.map-strip-title {
+  font-weight: 650;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  color: var(--text-hi);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.map-strip-meta {
+  font-size: 0.8rem;
+  color: var(--text-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-strip-open {
+  flex: 0 0 2.9rem;
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--line);
+  color: var(--text-mid);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+}
+.map-strip-card.is-on .map-strip-open { color: var(--cat-hue); }
+.map-strip-main:focus-visible,
+.map-strip-open:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: -2px;
+}
+
+/* ==========================================================================
+   "Who's free?" polls (components/PollView.tsx, Saved "Ask friends")
+   ========================================================================== */
+.poll { max-width: 64rem; margin: 0 auto; padding: 2rem 0 4rem; display: grid; gap: 1.5rem; }
+.poll-head { display: grid; gap: 0.6rem; }
+.poll-asker { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-mid); font-size: 0.95rem; }
+.poll-asker strong { color: var(--text-hi); }
+.poll-title {
+  font-size: clamp(1.9rem, 4.5vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.poll-sub { color: var(--text-mid); }
+
+.poll-share {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-radius: var(--r-card);
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+}
+.poll-share.is-fresh { border-color: var(--marigold); background: linear-gradient(var(--marigold-wash), var(--marigold-wash)), var(--ink-850); }
+.poll-share-note { font-weight: 600; }
+.poll-share-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+.poll-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-card);
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+}
+.poll-name > span { font-weight: 600; }
+.poll-name input {
+  flex: 1 1 12rem;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border-radius: var(--r-control);
+  background: var(--ink-900);
+  border: 1px solid var(--line-strong);
+  color: var(--text-hi);
+  font: inherit;
+}
+.poll-name input:focus-visible { outline: 2px solid var(--marigold); outline-offset: 1px; }
+.poll-name-alt { min-height: 44px; padding: 0 0.5rem; color: var(--text-mid); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.poll-error { color: var(--danger); font-weight: 600; }
+
+.poll-opts {
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+.poll-opt {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--ink-850);
+  border: 1px solid var(--line);
+  transition: border-color var(--t-hover) var(--ease), opacity var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+}
+.poll-opt.is-mine { border-color: color-mix(in oklab, var(--cat-hue) 75%, var(--line)); }
+.poll-opt.is-winner { border-color: var(--live); transform: translateY(-2px); box-shadow: var(--lift-2); }
+.poll-opt.is-out { opacity: 0.55; }
+.poll-opt-media { position: relative; }
+.poll-opt-ph { aspect-ratio: 16 / 9; background: var(--ink-800); }
+.poll-opt-letter {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgb(14 16 21 / 0.85);
+  color: var(--text-hi);
+  font-weight: 700;
+}
+.poll-opt-lead {
+  position: absolute;
+  right: 0.6rem;
+  top: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--r-pill);
+  background: var(--marigold);
+  color: var(--on-marigold);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.poll-opt-body { display: grid; align-content: start; gap: 0.6rem; padding: 0.9rem 1rem 1rem; }
+.poll-opt-title { font-size: 1.1rem; line-height: 1.25; text-wrap: balance; }
+.poll-opt-meta { color: var(--text-mid); font-size: 0.9rem; line-height: 1.45; }
+.poll-bar { height: 0.5rem; border-radius: var(--r-pill); background: var(--ink-750); overflow: hidden; }
+.poll-bar-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--cat-hue);
+  transform-origin: left;
+  transform: scaleX(var(--share, 0));
+  transition: transform 600ms var(--ease);
+}
+.poll-count { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; color: var(--text-mid); font-size: 0.9rem; }
+.poll-count strong { color: var(--text-hi); font-size: 1.05rem; }
+.poll-voters { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.poll-voters .avatar + .avatar { margin-left: -0.55rem; box-shadow: 0 0 0 2px var(--ink-850); }
+.poll-voter-names { color: var(--text-low); }
+.poll-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 0.2rem; }
+.poll-vote { min-height: 44px; }
+.poll-lock,
+.poll-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.poll-lock { text-decoration: underline; text-underline-offset: 3px; }
+.poll-lock:hover, .poll-details:hover { color: var(--text-hi); }
+.poll-lock:disabled { opacity: 0.5; cursor: default; }
+.poll-reopen { text-align: center; }
+
+.poll-decided {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border-radius: var(--r-card);
+  background: linear-gradient(rgb(61 220 151 / 0.1), rgb(61 220 151 / 0.04)), var(--ink-850);
+  border: 1px solid rgb(61 220 151 / 0.5);
+}
+.poll-decided-kicker { color: var(--live); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.poll-decided-title { font-size: 1.5rem; line-height: 1.2; }
+.poll-decided-meta { color: var(--text-mid); }
+.poll-decided-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.3rem; }
+
+/* Saved: picking events for a poll */
+.poll-hint { color: var(--text-mid); margin: -0.25rem 0 1rem; }
+.saved-pick {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line-strong);
+  background: var(--ink-850);
+  color: var(--text-hi);
+  font-weight: 600;
+  cursor: pointer;
+}
+.saved-pick[aria-pressed="true"] { border-color: var(--marigold); color: var(--marigold-bright); }
+.saved-pick:disabled { opacity: 0.45; cursor: default; }
+.saved-item.is-picking .ecard { transition: transform var(--t-hover) var(--ease); }
+.saved-item.is-chosen .ecard { outline: 2px solid var(--marigold); outline-offset: 3px; border-radius: var(--r-card); }
+
+.poll-tray {
+  position: sticky;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem auto 0;
+  max-width: 40rem;
+  padding: 0.6rem;
+  border-radius: var(--r-card);
+  background: rgb(23 26 33 / 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--lift-3);
+}
+.poll-tray-x { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-control); color: var(--text-mid); cursor: pointer; }
+.poll-tray-q { flex: 1 1 10rem; }
+.poll-tray-q input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border-radius: var(--r-control);
+  background: var(--ink-900);
+  border: 1px solid var(--line-strong);
+  color: var(--text-hi);
+  font: inherit;
+}
+.poll-tray-q input:focus-visible, .poll-tray-x:focus-visible, .saved-pick:focus-visible { outline: 2px solid var(--marigold); outline-offset: 1px; }
+.poll-tray-n { color: var(--text-mid); min-width: 2.5rem; text-align: center; }
+.poll-tray .poll-error { flex-basis: 100%; }
+@media (max-width: 899px) {
+  .poll-tray { bottom: calc(5rem + env(safe-area-inset-bottom)); } /* clear of the tab bar */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-strip-card, .poll-opt, .poll-bar-fill { transition: none; }
+  .map-strip-card { transform: none; }
+}
+@media (max-width: 599px) {
+  /* Three options stack on a phone: shorter pictures keep them in reach. */
+  .poll-opt-media .eimg,
+  .poll-opt-ph { aspect-ratio: 21 / 9 !important; }
+}
+@media (max-width: 899px) {
+  /* Lift the zoom / compass buttons clear of the card strip. */
+  .map-page:has(.map-strip) .map-tools { bottom: 10.75rem; }
+}

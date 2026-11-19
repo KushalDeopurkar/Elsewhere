@@ -18,6 +18,7 @@ import { getCategoryColor } from "@/lib/categoryColors";
 import { whenOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import TimeScrubber from "@/components/TimeScrubber";
+import MapStrip from "@/components/MapStrip";
 import { HOUR, eventsAt, timelineStart } from "@/lib/timeline";
 
 // maplibre-gl touches window at import time, so the map never renders on the
@@ -87,10 +88,27 @@ export default function MapPage() {
     if (bounds.current) load(bounds.current, category);
   }, [category, load]);
 
+  // Phone card strip. Its cards stay put while you swipe or tap pins (the
+  // map moving to each venue would otherwise reload and reshuffle them);
+  // dragging the map, or changing a filter, lets it follow the view again.
+  const [stripLocked, setStripLocked] = useState(false);
   const pick = useCallback((event: Event) => {
+    setStripLocked(true);
     setSelected(event);
     setRoute(null);
     handle.current?.flyToEvent(event);
+  }, []);
+  const [deckSrc, setDeckSrc] = useState<Event[]>(events);
+  if (!stripLocked && deckSrc !== events) setDeckSrc(events);
+  const deck = useMemo(() => {
+    const sorted = [...deckSrc].sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time)).slice(0, 40);
+    return selected && !sorted.some((e) => e.id === selected.id) ? [selected, ...sorted] : sorted;
+  }, [deckSrc, selected]);
+  const glide = useCallback((event: Event) => {
+    setStripLocked(true);
+    setSelected(event);
+    setRoute(null);
+    handle.current?.glideToEvent(event);
   }, []);
 
   const hue = selected ? getCategoryColor(selected.category) : null;
@@ -188,7 +206,12 @@ export default function MapPage() {
         </button>
       </div>
 
-    <div className={`map-page${lightsOn ? " is-lights" : ""}`}>
+    <div
+      className={`map-page${lightsOn ? " is-lights" : ""}`}
+      onPointerDown={(e) => {
+        if (stripLocked && (e.target as HTMLElement).closest(".maplibregl-canvas-container")) setStripLocked(false);
+      }}
+    >
       <EventMap
         cityLights={lightsOn}
         events={events}
@@ -237,7 +260,13 @@ export default function MapPage() {
           <span className="map-count mono">
             <strong>{events.length}</strong> nearby
           </span>
-          <CategoryRail value={category} onChange={setCategory} />
+          <CategoryRail
+            value={category}
+            onChange={(c) => {
+              setStripLocked(false);
+              setCategory(c);
+            }}
+          />
         </div>
 
         <TimeScrubber
@@ -261,6 +290,8 @@ export default function MapPage() {
             Sample data, the API is not connected
           </span>
         )}
+
+        <MapStrip events={deck} selectedId={selected?.id ?? null} onFocus={glide} />
 
         {selected && (
           <article className="map-peek">
