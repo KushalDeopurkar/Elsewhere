@@ -3,6 +3,7 @@ import { Event, CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { eventZone, whenOf, timedOf } from "@/lib/formatDate";
 import { priceBadge, realTiers } from "@/lib/money";
+import { listingStatus } from "@/lib/eventFilters";
 import EventImage from "./EventImage";
 import SaveButton from "./SaveButton";
 
@@ -53,6 +54,7 @@ export default function EventCard({
   // "Online, Online" reads as a bug: say a place once.
   const where = [...new Set([event.location_name, event.city].filter(Boolean))].join(", ");
   const tiers = realTiers(event.tickets, event.title).length;
+  const status = listingStatus(event);
   const style = { "--cat": hue.color } as React.CSSProperties;
   const ratio = variant === "featured" ? "4 / 3" : variant === "list" ? "16 / 10" : "4 / 3";
 
@@ -76,6 +78,7 @@ export default function EventCard({
           <p className="ecard-kicker">
             <span className="ecard-line" aria-hidden="true" />
             {meta?.label ?? event.category}
+            {status && <span className="ecard-status">{status}</span>}
             {badge && <span className="ecard-badge">{badge}</span>}
             {!badge && tiers > 1 && <span className="ecard-tiers">{tiers} ticket types</span>}
           </p>

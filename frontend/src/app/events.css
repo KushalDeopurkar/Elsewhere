@@ -674,3 +674,10 @@
     aspect-ratio: 16 / 9 !important;
   }
 }
+
+.detail-tags li.is-status {
+  border-color: var(--crit);
+  color: var(--crit);
+  font-weight: 600;
+  text-transform: uppercase;
+}

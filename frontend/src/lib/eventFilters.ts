@@ -41,15 +41,40 @@ export function sortEvents(events: Event[], key: SortKey): Event[] {
   return list;
 }
 
-/** Upcoming only, de-duplicated by id, with a picture-first bias for showcases. */
+/** The same listing scraped from two sites: same title, same start minute, same city. */
+const sameListing = (e: Event) =>
+  `${e.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}|${e.start_time.slice(0, 16)}|${(e.city ?? "").toLowerCase()}`;
+
+/**
+ * Upcoming only, without duplicates (by id, and the same listing posted on
+ * two sites) and without listings whose own title says they're cancelled.
+ * Events with an unreadable start time are dropped rather than misplaced.
+ */
 export function upcoming(events: Event[], now = Date.now()): Event[] {
   const seen = new Set<string>();
   return events.filter((e) => {
-    if (seen.has(e.id)) return false;
+    const start = Date.parse(e.start_time);
+    if (Number.isNaN(start)) return false;
+    const twin = sameListing(e);
+    if (seen.has(e.id) || seen.has(twin)) return false;
     seen.add(e.id);
-    const end = e.end_time ? Date.parse(e.end_time) : Date.parse(e.start_time) + 3 * 3_600_000;
-    return end >= now;
+    seen.add(twin);
+    if (listingStatus(e) === "cancelled") return false;
+    const end = e.end_time ? Date.parse(e.end_time) : start + 3 * 3_600_000;
+    return (Number.isNaN(end) ? start + 3 * 3_600_000 : end) >= now;
   });
+}
+
+/**
+ * What the listing itself says about its status. There is no status column,
+ * so only an explicit word in the title counts; nothing is guessed.
+ */
+export function listingStatus(e: Pick<Event, "title">): "cancelled" | "postponed" | "sold out" | null {
+  const t = e.title.toLowerCase();
+  if (/\b(cancelled|canceled)\b/.test(t)) return "cancelled";
+  if (/\bpostponed\b/.test(t)) return "postponed";
+  if (/\bsold[\s-]?out\b/.test(t)) return "sold out";
+  return null;
 }
 
 /** Events worth putting in a large slot: a real picture and a real time. */

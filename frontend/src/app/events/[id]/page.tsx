@@ -26,6 +26,7 @@ import PassportStamp from "@/components/PassportStamp";
 import EventSocial from "@/components/EventSocial";
 import EventActionBar from "@/components/EventActionBar";
 import BookingWhen from "@/components/BookingWhen";
+import { listingStatus } from "@/lib/eventFilters";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -145,6 +146,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
               {priceKnown && <li className={free ? "is-free" : undefined}>{free ? "Free" : "Paid"}</li>}
               {event.city && <li>{event.city}</li>}
               <li>via {source}</li>
+              {listingStatus(event) && <li className="is-status">Listing says: {listingStatus(event)}</li>}
             </ul>
             <EventActions event={event} />
           </header>

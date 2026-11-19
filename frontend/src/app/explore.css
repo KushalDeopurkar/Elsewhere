@@ -672,3 +672,10 @@
   text-transform: uppercase;
   color: var(--fg-3);
 }
+
+.ecard-status {
+  padding: 1px 6px;
+  background: var(--crit-wash);
+  color: var(--crit);
+  letter-spacing: 0.06em;
+}
