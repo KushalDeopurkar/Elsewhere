@@ -6,14 +6,15 @@ import { Compass, MapTrifold, BookmarkSimple, MagnifyingGlass, Ticket, UserCircl
 import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
 import AccountButton from "./AccountButton";
+import CityClock from "./CityClock";
 import { useSaved } from "@/lib/saved";
 
-// Few, strong doors: tonight, explore, map. Saved, search and your account
-// sit on the right as icons.
+// Three doors, numbered like platforms. Saved, search and your account sit on
+// the right; on phones the same band becomes the bottom tab bar.
 const LINKS = [
-  { href: "/", label: "Tonight", icon: Ticket },
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/map", label: "Map", icon: MapTrifold },
+  { href: "/", label: "Tonight", n: "01" },
+  { href: "/explore", label: "Explore", n: "02" },
+  { href: "/map", label: "Map", n: "03" },
 ];
 
 const TABS = [
@@ -34,29 +35,37 @@ export default function Nav() {
 
   return (
     <>
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <nav className="topnav" aria-label="Main">
         <div className="shell topnav-inner">
           <TransitionLink href="/" className="brand" aria-label="Elsewhere home">
             <BrandMark className="brand-mark" />
-            <span>Elsewhere</span>
+            <span className="brand-word">Elsewhere</span>
           </TransitionLink>
 
           <div className="topnav-links">
-            {LINKS.map(({ href, label, icon: Icon }) => (
+            {LINKS.map(({ href, label, n }) => (
               <TransitionLink
                 key={href}
                 href={href}
                 className="topnav-link"
                 aria-current={active(pathname, href) ? "page" : undefined}
               >
-                <Icon size={16} weight={active(pathname, href) ? "fill" : "bold"} aria-hidden="true" />
+                <span className="topnav-n" aria-hidden="true">
+                  {n}
+                </span>
                 {label}
               </TransitionLink>
             ))}
           </div>
 
           <div className="topnav-end">
-            <LocationSelector />
+            <div className="topnav-city">
+              <LocationSelector />
+              <CityClock className="topnav-clock" />
+            </div>
             <TransitionLink href="/explore?focus=1" className="icon-btn" aria-label="Search events">
               <MagnifyingGlass size={18} weight="bold" />
             </TransitionLink>

@@ -121,3 +121,12 @@ export function matchesWindow(
   const weekday = f("wd", zone).format(new Date(iso));
   return diff <= 7 && (weekday === "Sat" || weekday === "Sun");
 }
+
+/** Short zone name for clocks: "IST", "GMT", "EST", "AEDT"; "LOCAL" when the platform only knows an offset. */
+export function zoneLabel(zone: string, at: number): string {
+  if (zone === "Asia/Kolkata") return "IST";
+  const part = new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "short" })
+    .formatToParts(at)
+    .find((p) => p.type === "timeZoneName")?.value;
+  return part && !part.startsWith("GMT+") && !part.startsWith("GMT-") ? part : "LOCAL";
+}

@@ -16,6 +16,7 @@ import { createStore } from "@/lib/clientStore";
 import { rememberPreview } from "@/lib/eventPreview";
 import { recordSignal } from "@/lib/taste";
 import SaveButton from "./SaveButton";
+import CategoryIcon from "./CategoryIcon";
 import "./stories.css";
 
 const STORY_MS = 6500;
@@ -43,27 +44,30 @@ export default function WeekendStories({ events, city }: { events: Event[]; city
 
   return (
     <section className="shell stories-tray-wrap" aria-label={`${label} in ${city}, as stories`}>
+      <div className="reel-head">
+        <p className="reel-title">
+          <span className="reel-code" aria-hidden="true">Reel</span>
+          {label.replace(/^\w/, (c) => c.toUpperCase())} in {city}
+        </p>
+        <button
+          type="button"
+          className="btn btn-ghost reel-play"
+          onClick={(e) => {
+            opener.current = e.currentTarget;
+            setOpen(allSeen ? 0 : firstNew);
+          }}
+        >
+          <Play size={16} weight="fill" aria-hidden="true" />
+          {allSeen ? "Play again" : "Play"}
+        </button>
+      </div>
       <ol className="stories-tray" role="list">
-        <li>
-          <button
-            type="button"
-            className="ws-ring is-lead"
-            onClick={(e) => {
-              opener.current = e.currentTarget;
-              setOpen(allSeen ? 0 : firstNew);
-            }}
-          >
-            <span className="ws-ring-art" aria-hidden="true">
-              <Play size={22} weight="fill" />
-            </span>
-            <span className="ws-ring-label">{label.replace(/^This /, "").replace(/^\w/, (c) => c.toUpperCase())}</span>
-          </button>
-        </li>
         {stories.map((e, i) => (
           <li key={e.id}>
             <button
               type="button"
               className={`ws-ring${seenSet.has(e.id) ? " is-seen" : ""}`}
+              style={{ "--cat": getCategoryColor(e.category).color } as React.CSSProperties}
               aria-label={`Story ${i + 1} of ${stories.length}: ${e.title}`}
               onClick={(ev) => {
                 opener.current = ev.currentTarget;
@@ -71,10 +75,18 @@ export default function WeekendStories({ events, city }: { events: Event[]; city
               }}
             >
               <span className="ws-ring-art">
-                <img src={sized(e.image_url, 80)!} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                {e.image_url ? (
+                  <img src={sized(e.image_url, 240)!} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="ws-ring-fallback" aria-hidden="true">
+                    <CategoryIcon category={e.category} size={28} weight="bold" />
+                  </span>
+                )}
+                <span className="ws-ring-n" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
               </span>
               <span className="ws-ring-label" aria-hidden="true">
-                {whenOf(e).split(",")[0]}
+                <span>{whenOf(e).split(",")[0]}</span>
+                <span className="ws-ring-name">{e.title}</span>
               </span>
             </button>
           </li>
@@ -248,7 +260,9 @@ function StoryPlayer({
       aria-label={`${label}: stories`}
       style={{ "--cat-hue": hue.color } as React.CSSProperties}
     >
-      <img className="ws-ambient" key={`a-${event.id}`} src={sized(event.image_url, 64)!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+      {event.image_url && (
+        <img className="ws-ambient" key={`a-${event.id}`} src={sized(event.image_url, 64)!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+      )}
       <button type="button" className="ws-side is-prev" aria-label="Previous story" onClick={() => go(-1)} disabled={index === 0}>
         <CaretLeft size={22} weight="bold" />
       </button>
@@ -267,8 +281,16 @@ function StoryPlayer({
         onContextMenu={(e) => e.preventDefault()}
       >
         <div className="ws-media" key={event.id}>
-          <img className="ws-blur" src={sized(event.image_url, 64)!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
-          <img className="ws-poster" src={sized(event.image_url, 480)!} alt="" referrerPolicy="no-referrer" draggable={false} />
+          {event.image_url ? (
+            <>
+              <img className="ws-blur" src={sized(event.image_url, 64)!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+              <img className="ws-poster" src={sized(event.image_url, 480)!} alt="" referrerPolicy="no-referrer" draggable={false} />
+            </>
+          ) : (
+            <span className="ws-poster ws-poster-art" aria-hidden="true">
+              <CategoryIcon category={event.category} size={96} weight="regular" />
+            </span>
+          )}
         </div>
         <div className="ws-shade" aria-hidden="true" />
 

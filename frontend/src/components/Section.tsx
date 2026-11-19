@@ -5,19 +5,27 @@ import { ArrowRight } from "@phosphor-icons/react/ssr";
 export function SectionHeader({
   title,
   kicker,
+  index,
   href,
   linkLabel = "See all",
   children,
 }: {
   title: string;
   kicker?: React.ReactNode;
+  /** Section number on the timetable, "01". */
+  index?: string;
   href?: string;
   linkLabel?: string;
   children?: React.ReactNode;
 }) {
   return (
     <div className="sec-head">
-      <div>
+      {index && (
+        <span className="sec-index" aria-hidden="true">
+          {index}
+        </span>
+      )}
+      <div className="sec-head-text">
         {kicker && <p className="sec-kicker">{kicker}</p>}
         <h2 className="sec-title">{title}</h2>
       </div>
@@ -25,7 +33,7 @@ export function SectionHeader({
         {children}
         {href && (
           <Link href={href} className="sec-link">
-            {linkLabel} <ArrowRight size={14} weight="bold" />
+            {linkLabel} <ArrowRight size={16} weight="bold" aria-hidden="true" />
           </Link>
         )}
       </div>

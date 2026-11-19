@@ -5,9 +5,9 @@ import "@fontsource-variable/geist-mono";
 import "./tokens.css";
 import "./globals.css";
 import "./redesign.css";
+import "./core.css";
 import Nav from "@/components/Nav";
 import RouteSignal from "@/components/RouteSignal";
-import CursorLayer from "@/components/CursorLayer";
 import SocialRoot from "@/components/SocialRoot";
 import CityGuess from "@/components/CityGuess";
 import AppRoot from "@/components/AppRoot";
@@ -55,12 +55,11 @@ export default function RootLayout({
         {IMAGE_PROXY_ORIGIN && <link rel="preconnect" href={IMAGE_PROXY_ORIGIN} />}
         <RouteSignal />
         <Nav />
-        <main>{children}</main>
+        <main id="main">{children}</main>
         <SocialRoot />
         <CityGuess />
         <AppRoot />
         <ThemeSync />
-        <CursorLayer />
         {ON_VERCEL && (
           <>
             <script

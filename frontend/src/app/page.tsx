@@ -3,15 +3,13 @@
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Compass, BookmarkSimple } from "@phosphor-icons/react/ssr";
-import KineticWord from "@/components/KineticWord";
 import WeekendStories from "@/components/WeekendStories";
 import { useSky } from "@/hooks/useSky";
 import HeroSearch from "@/components/HeroSearch";
-import DepartureBoard from "@/components/DepartureBoard";
+import Timetable from "@/components/Timetable";
 import EventCard from "@/components/EventCard";
 import Rail from "@/components/Rail";
-import CategoryTile from "@/components/CategoryTile";
+import CategoryLines from "@/components/CategoryLines";
 import SiteFooter from "@/components/SiteFooter";
 import { SectionHeader, CardSkeleton, EmptyState } from "@/components/Section";
 import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
@@ -21,9 +19,6 @@ import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
-
-// Kept to roughly the width of "step out." so the headline stays on two lines.
-const KINETIC = ["step out.", "show up.", "get lost.", "go out.", "say yes."];
 
 function RailOf({
   events,
@@ -59,6 +54,7 @@ export default function Home() {
   const city = useCity();
   const saved = useSaved();
   const sky = useSky();
+  const night = sky === "night" || sky === "dusk";
 
   // Old shared plan links were /?plan=…; the planner now has its own page.
   useEffect(() => {
@@ -97,48 +93,66 @@ export default function Home() {
       .slice(0, 12);
   }, [all, saved]);
 
-  const statFor = (v: string) => stats?.find((s) => s.value === v);
-  const tiles = CATEGORY_PAGES.filter((c) => c.value !== "other");
+  const lines = CATEGORY_PAGES.filter((c) => c.value !== "other");
+  const lineStat = (v: string) => {
+    const s = stats?.find((x) => x.value === v);
+    return s ? { count: s.count ?? null, capped: s.capped } : null;
+  };
+  const freeCount = all.filter((e) => e.is_free).length;
 
   return (
     <>
-      <section className="home-hero has-board" data-sky={sky}>
-        <div className="home-sky" aria-hidden="true" />
-        <div className="shell home-hero-inner">
-          <div className="home-hero-copy">
-            <p className="eyebrow-live">
-              <span className="live-dot" aria-hidden="true" />
-              {pool.loading
-                ? "Checking what's on"
-                : sky === "night" || sky === "dusk"
-                  ? `Tonight in ${city.name} · ${all.length}${all.length >= 100 ? "+" : ""} upcoming`
-                  : `${all.length}${all.length >= 100 ? "+" : ""} upcoming in ${city.name}`}
-            </p>
-            <h1 className="home-title">
-              Find your next reason to <span className="sr-only">step out.</span>
-              <KineticWord words={KINETIC} />
-            </h1>
-            <p className="home-lede">
-              Discover experiences, meet people, learn something new and explore what&apos;s happening around you.
-            </p>
-            <HeroSearch />
-          </div>
-          <div className="home-hero-art">
-            <DepartureBoard events={all} city={city.name} zone={cityZone(city)} loading={pool.loading} night={sky === "night" || sky === "dusk"} />
-          </div>
-        </div>
-      </section>
-
-      {!pool.loading && <WeekendStories events={all} city={city.name} />}
+      <div className="shell home-top">
+        <Timetable
+          events={all}
+          city={city.name}
+          zone={cityZone(city)}
+          loading={pool.loading}
+          night={night}
+          aside={
+            <>
+              <p className="home-lede">
+                Every gig, workshop, match, meetup and free walk in {city.name}, gathered from across the web and set out
+                like a timetable. Soonest first.
+              </p>
+              <HeroSearch />
+              {!pool.loading && all.length > 0 && (
+                <dl className="home-facts">
+                  <div>
+                    <dt>Upcoming</dt>
+                    <dd>
+                      {all.length}
+                      {all.length >= 100 ? "+" : ""}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Free entry</dt>
+                    <dd>{freeCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Next 3 hours</dt>
+                    <dd>{soon.length}</dd>
+                  </div>
+                </dl>
+              )}
+            </>
+          }
+        />
+      </div>
 
       {pool.isSample && (
         <div className="shell">
-          <p className="notice">Live data is unreachable right now, so these are sample events.</p>
+          <p className="notice">
+            <strong>Sample timetable.</strong> Live listings can&apos;t be reached right now, so these events are examples, not
+            real plans.
+          </p>
         </div>
       )}
 
+      {!pool.loading && <WeekendStories events={all} city={city.name} />}
+
       <section className="shell sec">
-        <SectionHeader kicker={`This week in ${city.name}`} title="Featured events" href="/explore?when=week" />
+        <SectionHeader index="01" kicker={`This week in ${city.name}`} title="Headliners" href="/explore?when=week" />
         {pool.loading ? (
           <div className="feature-grid">
             <CardSkeleton variant="featured" />
@@ -147,11 +161,10 @@ export default function Home() {
           </div>
         ) : featured.length === 0 ? (
           <EmptyState
-            icon={<Compass size={30} weight="duotone" />}
             title={`Nothing listed in ${city.name} yet`}
-            body="Try another city from the menu at the top, or explore everything."
+            body="New listings arrive every six hours. Try another city from the header, or browse everything."
           >
-            <Link href="/explore" className="btn btn-primary">Explore events</Link>
+            <Link href="/explore" className="btn btn-primary">Browse every listing</Link>
           </EmptyState>
         ) : (
           <div className="feature-grid">
@@ -165,8 +178,9 @@ export default function Home() {
       {soon.length > 0 && (
         <section className="shell sec">
           <SectionHeader
+            index="02"
             kicker={<><span className="live-dot" aria-hidden="true" /> Next 3 hours</>}
-            title={`Happening now in ${city.name}`}
+            title="Boarding now"
             href="/explore?when=today&sort=soonest"
             linkLabel="All of today"
           />
@@ -176,48 +190,53 @@ export default function Home() {
 
       {(pool.loading || thisWeek.length > 0) && (
         <section className="shell sec">
-          <SectionHeader title="Happening this week" href="/explore?when=week" />
+          <SectionHeader index="03" kicker="Next 7 days" title="This week" href="/explore?when=week" />
           <RailOf events={thisWeek} label="events this week" loading={pool.loading} />
         </section>
       )}
 
       <section className="shell sec">
-        <SectionHeader kicker="Every kind of event" title="Discover by category" href="/explore" linkLabel="Explore all" />
-        <Rail label="categories" size="compact">
-          {tiles.map((c) => {
-            const s = statFor(c.value);
-            return <CategoryTile key={c.slug} cat={c} image={s?.image} count={s?.count ?? null} capped={s?.capped} size="small" />;
-          })}
-        </Rail>
+        <SectionHeader index="04" kicker="Every kind of event" title="Lines" href="/explore" linkLabel="Browse everything" />
+        <CategoryLines cats={lines} stat={lineStat} city={city.name} />
       </section>
 
       <section className="shell sec">
-        <SectionHeader kicker="Based on what you saved" title="Handpicked for you" href={saved.length ? "/saved" : undefined} linkLabel="Your saved events" />
+        <SectionHeader
+          index="05"
+          kicker="From what you saved"
+          title="Handpicked for you"
+          href={saved.length ? "/saved" : undefined}
+          linkLabel="Your saved events"
+        />
         {picks.length > 0 ? (
           <RailOf events={picks} label="picks for you" loading={false} />
         ) : (
           <div className="handpick-empty">
-            <BookmarkSimple size={22} weight="duotone" aria-hidden="true" />
+            <p className="handpick-empty-title">
+              {saved.length === 0 ? "Nothing saved yet." : `Nothing new in ${city.name} like your saved events.`}
+            </p>
             <p>
               {saved.length === 0
-                ? "Save a few events you like and this fills with more of the same kind."
-                : `No new events in ${city.name} like the ones you saved yet.`}
+                ? "Tap the bookmark on any ticket. This line fills with more of the same kind, in your city."
+                : "New listings arrive every six hours; this line updates with them."}
             </p>
-            <Link href="/explore" className="sec-link">Explore events <ArrowRight size={14} weight="bold" /></Link>
+            <Link href="/explore" className="link-arrow">
+              Browse every listing
+            </Link>
           </div>
         )}
       </section>
 
       {free.length > 0 && (
         <section className="shell sec">
-          <SectionHeader kicker="No ticket needed" title="Free events" href="/explore?price=free" />
+          <SectionHeader index="06" kicker="No ticket needed" title="Free entry" href="/explore?price=free" />
           <RailOf events={free} label="free events" loading={false} />
         </section>
       )}
 
       {weekend.length > 0 && (
         <section className="shell sec">
-          <SectionHeader title="This weekend" href="/explore?when=weekend" />
+          <SectionHeader index="07" kicker="Saturday and Sunday" title="This weekend" href="/explore?when=weekend" />
           <RailOf events={weekend} label="weekend events" loading={false} />
         </section>
       )}
