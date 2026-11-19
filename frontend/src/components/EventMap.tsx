@@ -16,6 +16,7 @@ import type { MapBounds } from "@/lib/api";
 import type { CityLights } from "@/lib/cityLightsLayer";
 import { sized } from "@/lib/imageUrl";
 import { cityHop, isHopFrame } from "@/lib/cityHop";
+import { gridCluster } from "@/lib/mapClusters";
 
 // Must be set before the first Map is constructed. See
 // scripts/copy-maplibre-worker.mjs for why the worker is served from public/.
@@ -37,6 +38,10 @@ export interface MapHandle {
 
 /** Most pins drawn at once (the soonest events in view). */
 const MAX_PINS = 80;
+/** Clustering: below this zoom, with more than CLUSTER_FROM events in view, group pins within a CLUSTER_CELL px grid. */
+const CLUSTER_UNTIL_ZOOM = 14;
+const CLUSTER_FROM = 24;
+const CLUSTER_CELL = 64;
 
 export default function EventMap({
   events,
@@ -48,7 +53,10 @@ export default function EventMap({
   route = null,
   liveIds = null,
   cityLights = false,
+  hoverId = null,
 }: {
+  /** The event pointed at in the list beside the map: its pin lifts. */
+  hoverId?: string | null;
   /** Draw the 3D city of lights (streets and event beams) over the map. Desktop only. */
   cityLights?: boolean;
   route?: RouteLine | null;
@@ -64,6 +72,7 @@ export default function EventMap({
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const markers = useRef(new Map<string, Marker>());
+  const clusterMarkers = useRef(new Map<string, Marker>());
   const didLoad = useRef(false);
   const triedFallback = useRef(false);
   const [loaded, setLoaded] = useState(false);
@@ -237,11 +246,14 @@ export default function EventMap({
     }, 10000);
 
     const pins = markers.current;
+    const groups = clusterMarkers.current;
 
     return () => {
       clearTimeout(stall);
       pins.forEach((pin) => pin.remove());
       pins.clear();
+      groups.forEach((pin) => pin.remove());
+      groups.clear();
       instance.remove();
       map.current = null;
     };
@@ -312,19 +324,74 @@ export default function EventMap({
     const b = instance.getBounds();
     const padLat = (b.getNorth() - b.getSouth()) * 0.15;
     const padLng = (b.getEast() - b.getWest()) * 0.15;
-    const inView = events
-      .filter(
-        (e) =>
-          e.lat != null &&
-          e.lng != null &&
-          (e.id === selectedId ||
-            (e.lat >= b.getSouth() - padLat &&
-              e.lat <= b.getNorth() + padLat &&
-              e.lng >= b.getWest() - padLng &&
-              e.lng <= b.getEast() + padLng)),
-      )
+    const candidates = events.filter(
+      (e) =>
+        e.lat != null &&
+        e.lng != null &&
+        (e.id === selectedId ||
+          (e.lat >= b.getSouth() - padLat &&
+            e.lat <= b.getNorth() + padLat &&
+            e.lng >= b.getWest() - padLng &&
+            e.lng <= b.getEast() + padLng)),
+    );
+
+    // Zoomed out over a busy city, nearby events share one numbered marker;
+    // zoomed in (or when there are few), every event gets its own pin.
+    const crowded = instance.getZoom() < CLUSTER_UNTIL_ZOOM && candidates.length > CLUSTER_FROM;
+    const grouped = crowded
+      ? gridCluster(
+          candidates.map((e) => {
+            const pt = instance.project([e.lng!, e.lat!]);
+            return { item: e, x: pt.x, y: pt.y };
+          }),
+          CLUSTER_CELL,
+          (e) => e.id === selectedId,
+        )
+      : { singles: candidates, clusters: [] };
+
+    const inView = grouped.singles
       .sort((a, z) => (a.id === selectedId ? -1 : z.id === selectedId ? 1 : a.start_time.localeCompare(z.start_time)))
       .slice(0, MAX_PINS);
+
+    const wantedClusters = new Set<string>();
+    for (const c of grouped.clusters) {
+      const key = `c:${c.key}:${c.items.length}`;
+      wantedClusters.add(key);
+      if (clusterMarkers.current.has(key)) continue;
+      const lng = c.items.reduce((s, e) => s + e.lng!, 0) / c.items.length;
+      const lat = c.items.reduce((s, e) => s + e.lat!, 0) / c.items.length;
+      // The cluster wears the colour of its most common category.
+      const tally = new Map<string, number>();
+      c.items.forEach((e) => tally.set(e.category, (tally.get(e.category) ?? 0) + 1));
+      const top = [...tally.entries()].sort((x, y) => y[1] - x[1])[0][0] as Event["category"];
+      const anchor = document.createElement("div");
+      anchor.className = "pin-anchor";
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "pin-cluster";
+      el.style.setProperty("--pin-hue", getCategoryColorFixed(top).color);
+      el.textContent = String(c.items.length);
+      el.setAttribute("aria-label", `${c.items.length} events here. Zoom in`);
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const box = new LngLatBounds();
+        c.items.forEach((e) => box.extend([e.lng!, e.lat!]));
+        instance.fitBounds(box, { padding: 80, maxZoom: CLUSTER_UNTIL_ZOOM + 1, duration: prefersReducedMotion() ? 0 : 600 });
+      });
+      anchor.appendChild(el);
+      clusterMarkers.current.set(
+        key,
+        new Marker({ element: anchor, anchor: "center", rotationAlignment: "viewport", pitchAlignment: "viewport" })
+          .setLngLat([lng, lat])
+          .addTo(instance),
+      );
+    }
+    for (const [key, marker] of clusterMarkers.current) {
+      if (!wantedClusters.has(key)) {
+        marker.remove();
+        clusterMarkers.current.delete(key);
+      }
+    }
 
     const wanted = new Set<string>();
 
@@ -398,6 +465,11 @@ export default function EventMap({
       }
     }
   }, [events, loaded, viewRev, selectedId]);
+
+  // List and map are one surface: pointing at an event in the list lifts its pin.
+  useEffect(() => {
+    for (const [id, marker] of markers.current) marker.getElement().classList.toggle("is-hover", id === hoverId);
+  }, [hoverId, viewRev, events]);
 
   // Travel route from the viewer's start point to the selected venue. Lives
   // in its own source so a style swap (fallback basemap) can redraw it.

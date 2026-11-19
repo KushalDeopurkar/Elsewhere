@@ -54,6 +54,7 @@ export default function MapPage() {
   const events = at ? at.events : allEvents;
   const [category, setCategory] = useState<EventCategory | null>(null);
   const [selected, setSelected] = useState<Event | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
   const [isSample, setIsSample] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -210,6 +211,10 @@ export default function MapPage() {
                 <button
                   type="button"
                   className={`map-item${selected?.id === e.id ? " is-active" : ""}`}
+                  onPointerEnter={() => setHoverId(e.id)}
+                  onPointerLeave={() => setHoverId((h) => (h === e.id ? null : h))}
+                  onFocus={() => setHoverId(e.id)}
+                  onBlur={() => setHoverId((h) => (h === e.id ? null : h))}
                   onClick={() => {
                     pick(e);
                     setMobileView("map");
@@ -280,6 +285,7 @@ export default function MapPage() {
         }}
         route={selected ? route : null}
         liveIds={at?.live ?? null}
+        hoverId={hoverId}
       />
 
       <p className="map-fly" ref={flyLabel} aria-hidden="true" />
