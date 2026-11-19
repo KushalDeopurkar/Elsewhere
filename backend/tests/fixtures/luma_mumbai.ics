@@ -1,0 +1,38 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Luma//What’s Happening in Mumbai//EN
+X-WR-CALNAME:What’s Happening in Mumbai
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART:20261120T133000Z
+DTEND:20261120T163000Z
+DTSTAMP:20261119T190823Z
+ORGANIZER;CN="Events The Charter":MAILTO:calendar-invite@lu.ma
+UID:evt-kdaXORPj2YH0yHZ@events.lu.ma
+SUMMARY:Games Night
+DESCRIPTION:Get up-to-date information at: https://luma.com/4ivdbx65\n\nAd
+ dress:\nCheck event page for more details.\n\nThis is your chance to get c
+ ompetitive with other founders over a board game. Bluff, plan, win a few, 
+ lose a few, and meet people along the way.\n\nHosted by Events The Charter
+  & The Charter
+LOCATION:https://luma.com/event/evt-kdaXORPj2YH0yHZ
+GEO:19.00554142033711;72.8226703122288
+STATUS:TENTATIVE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20261121T013000Z
+DTEND:20261121T023000Z
+DTSTAMP:20261119T190823Z
+UID:evt-BwIPSTCqJbcAU74@events.lu.ma
+SUMMARY:BR Shake Out Run w/ Only What's Needed
+DESCRIPTION:Get up-to-date information at: https://luma.com/lmp9bj2q\n\nAd
+ dress:\nCarter Road Amphitheatre\nMumbai, India\n\nJoin Bombay Running at 
+ Carter Road Amphitheatre on November 21 for a shake-out by the sea.\n\nHos
+ ted by Bombay Running
+LOCATION:Carter Road Amphitheatre, 3, Sherly Rajan Rd, Pali Hill, Mumbai, M
+ aharashtra 400050, India
+GEO:19.0670322;72.8237635
+STATUS:TENTATIVE
+END:VEVENT
+END:VCALENDAR

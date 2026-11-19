@@ -201,3 +201,26 @@ async def test_eventfinda_pages_by_count_and_skips_countries_without_account(htt
     assert len(got) == 24 and len(httpx_mock.get_requests()) == 2
     # Sydney has no Australian account set: no request at all.
     assert await eventfinda.EventfindaScraper(username="u", password="p").scrape(city="Sydney") == []
+
+
+def test_luma_feed_parsing():
+    from datetime import datetime, timezone
+    from pathlib import Path
+    from app.scrapers.ics_feeds import parse_feed
+
+    text = (Path(__file__).parent / "fixtures" / "luma_mumbai.ics").read_text(encoding="utf-8")
+    feed = {"url": "https://api.luma.com/ics/get?entity=discover&id=x", "name": "Luma · Mumbai", "city": "Mumbai",
+            "country": "IN", "lat": 19.07, "lng": 72.87, "tz": "Asia/Kolkata", "category": "community"}
+    got = parse_feed(text, feed, now=datetime(2026, 11, 19, 12, tzinfo=timezone.utc))
+    assert [e.title for e in got] == ["Games Night", "BR Shake Out Run w/ Only What's Needed"]
+    games, run = got
+    # Link pulled out of the boilerplate; hidden address isn't shown as a URL.
+    assert games.url == "https://luma.com/4ivdbx65"
+    assert games.location_name is None
+    assert games.description.startswith("This is your chance")
+    assert "Hosted by" not in games.description and "Get up-to-date" not in games.description
+    assert abs(games.lat - 19.0055) < 1e-3
+    assert run.url == "https://luma.com/lmp9bj2q"
+    assert run.location_name.startswith("Carter Road Amphitheatre")
+    assert run.city == "Mumbai" and run.source == "ics"
+    assert run.category.value == "sports"

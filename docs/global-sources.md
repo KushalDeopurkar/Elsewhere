@@ -10,7 +10,7 @@ Eventbrite, Resident Advisor, Meetup, Luma or AllEvents, which ban scraping).
 | SeatGeek | US and Canada: sports, concerts, theatre | Free | `SEATGEEK_CLIENT_ID` |
 | Eventfinda | New Zealand, Australia, Singapore: arts, community, festivals | Free | `EVENTFINDA_USERNAME`, `EVENTFINDA_PASSWORD` |
 | Que faire à Paris | Paris: culture, workshops, walks, kids, lots of free events | None (ODbL open data) | none |
-| iCal feeds | Any public `.ics` calendar you list in `backend/feeds.json` | None | none |
+| iCal feeds | Public `.ics` calendars in `backend/feeds.json` (Luma city calendars for 32 cities included) | None | none |
 
 A source whose secret isn't set is skipped with a log line, so you can add them one at a time.
 Paris works straight away with no key.
@@ -60,6 +60,17 @@ them to `backend/feeds.json`:
 ```
 
 `lat`/`lng` place events whose feed has no coordinates; use the city's centre if unsure.
+
+**Already listed: Luma city calendars.** `feeds.json` ships with the public "What's
+happening in <city>" feed for 32 cities (Mumbai, Bengaluru, Delhi and most of the world
+list). These are Luma's own "Add iCal Subscription" links, each event carries its venue's
+coordinates, and every event links back to its Luma page. To add a city: open
+`https://luma.com/<city>`, click the calendar icon ("Add iCal Subscription"), copy the
+URL (`https://api.luma.com/ics/get?entity=discover&id=discplace-…`) and add an entry.
+Cities Luma has no page for (Hyderabad, Pune, Chennai, Manchester, Perth…) just redirect
+to its Discover page; skip those.
+
+Test one feed without saving: `python run_scrapers.py --source ics --city Mumbai --dry-run`.
 
 ## Cities
 

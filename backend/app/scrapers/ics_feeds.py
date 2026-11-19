@@ -22,6 +22,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -74,6 +75,30 @@ def _category(text: str, fallback: Optional[str]) -> EventCategory:
         return EventCategory.OTHER
 
 
+_INFO = re.compile(r"(?:get up-to-date information at|more info(?:rmation)? at)\s*:?\s*(https?://\S+)", re.I)
+_ADDRESS = re.compile(r"^address:\s*\n(.+?)(?:\n\s*\n|$)", re.I | re.M | re.S)
+
+
+def _clean_description(text: str) -> tuple:
+    """Pull the event link and street address out of a feed description, and
+    drop that boilerplate from what's shown (Luma, Meetup and others add it)."""
+    link = None
+    m = _INFO.search(text)
+    if m:
+        link = m.group(1).rstrip(".,)")
+        text = text[: m.start()] + text[m.end() :]
+    address = None
+    a = _ADDRESS.search(text.strip())
+    if a:
+        lines = [ln.strip() for ln in a.group(1).splitlines() if ln.strip()]
+        if lines and not lines[0].lower().startswith("check event page"):
+            address = ", ".join(lines)[:200]
+        body = text.strip()
+        text = body[: a.start()] + body[a.end() :]
+    text = re.sub(r"\n?\s*hosted by [^\n]+\s*$", "", text.strip(), flags=re.I)
+    return ((strip_html(text) or "").strip() or None), link, address
+
+
 def parse_feed(text: str, feed: Dict[str, Any], now: Optional[datetime] = None) -> List[EventCreate]:
     from icalendar import Calendar  # optional dependency, imported only when feeds exist
 
@@ -106,20 +131,27 @@ def parse_feed(text: str, feed: Dict[str, Any], now: Optional[datetime] = None) 
             items = cats if isinstance(cats, list) else [cats]
             cat_text = " ".join(str(c) for item in items for c in getattr(item, "cats", [item]))
         uid = str(comp.get("UID") or f"{title}|{start.isoformat()}")
-        desc = strip_html(str(comp.get("DESCRIPTION") or "")) or None
+        raw_desc = str(comp.get("DESCRIPTION") or "")
+        desc, link, address = _clean_description(raw_desc)
+        location = str(comp.get("LOCATION") or "").strip()
+        if location.startswith(("http://", "https://")):
+            # Luma hides some addresses until you register; the "location" is then a link.
+            link = link or location
+            location = address or ""
+        url = str(comp.get("URL") or "") or link or feed.get("link") or None
         out.append(
             EventCreate(
                 title=title,
                 description=desc,
-                category=_category(f"{cat_text} {title}", feed.get("category")),
+                category=_category(f"{cat_text} {title} {desc or ''}"[:600], feed.get("category")),
                 start_time=start,
                 end_time=end if end and end > start else None,
-                location_name=str(comp.get("LOCATION") or "") or feed.get("name"),
+                location_name=location or None,
                 city=feed.get("city"),
                 country=(feed.get("country") or "US").upper(),
                 lat=lat if lat is not None else feed.get("lat"),
                 lng=lng if lng is not None else feed.get("lng"),
-                url=str(comp.get("URL") or "") or feed.get("link") or None,
+                url=url,
                 is_free=bool(feed.get("free")),
                 source="ics",
                 source_id=hashlib.sha1(f"{feed['url']}|{uid}".encode()).hexdigest()[:24],
