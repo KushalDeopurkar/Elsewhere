@@ -722,3 +722,45 @@
   color: var(--on-signal);
   font-size: 0.75rem;
 }
+
+/* ==========================================================================
+   Planner, timetable edition: ruled cards, inputs that look like fields
+   ========================================================================== */
+.planner-card {
+  background: var(--bg);
+  border: 0;
+  border-top: 2px solid var(--fg);
+  border-radius: 0;
+  padding: var(--s-4) 0 0;
+  box-shadow: none;
+}
+
+.planner-card-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 80%;
+  font-size: var(--t-xl);
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+
+.planner input:not([type="range"]):not([type="radio"]):not([type="checkbox"]),
+.planner select,
+.planner textarea {
+  background: var(--bg);
+  border: 1.5px solid var(--rule-strong);
+  border-radius: var(--r-control);
+  color: var(--fg);
+}
+
+.planner input:focus-visible,
+.planner select:focus-visible,
+.planner textarea:focus-visible {
+  border-color: var(--fg);
+}
+
+.planner .prompt {
+  border-style: solid;
+  border-radius: 0;
+  background: transparent;
+}

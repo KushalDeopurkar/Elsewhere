@@ -280,6 +280,7 @@
 }
 
 .pp-recap strong {
+  color: var(--board-fg);
   font-family: var(--font-display);
   font-weight: 800;
   font-stretch: 80%;
@@ -318,6 +319,8 @@
 .pp-stats p {
   display: flex;
   flex-direction: column-reverse;
+  align-items: flex-start;
+  text-align: left;
   gap: 2px;
   margin: 0;
   padding: var(--s-3) var(--s-3) var(--s-3) 0;

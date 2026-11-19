@@ -53,3 +53,10 @@ npm run dev                  # http://localhost:3000
 Next.js 16 (app router), React 19, Tailwind CSS 4 (as the CSS pipeline; styles are plain CSS on the tokens), Motion, MapLibre GL, Supabase (accounts and social), web-push.
 
 Screenshots above use the bundled sample events with the poster fallback art, so no listing is shown with someone else's image.
+
+## Credits
+
+- Type: [Archivo](https://github.com/Omnibus-Type/Archivo) by Omnibus-Type and [Geist](https://github.com/vercel/geist-font) by Vercel, both under the SIL Open Font License, self-hosted through Fontsource. The static Archivo cuts in `src/app/api/card/fonts/` are instances of the variable font, made for the share images.
+- Icons: [Phosphor](https://phosphoricons.com) (MIT).
+- Maps: [MapLibre GL JS](https://maplibre.org) (BSD) with OpenStreetMap data.
+- Listings come from the public sources named on each event page; Paris listings from Que faire à Paris, Ville de Paris, under the ODbL.
