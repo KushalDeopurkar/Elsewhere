@@ -68,7 +68,6 @@ export default function WeekendStories({ events, city }: { events: Event[]; city
               type="button"
               className={`ws-ring${seenSet.has(e.id) ? " is-seen" : ""}`}
               style={{ "--cat": getCategoryColor(e.category).color } as React.CSSProperties}
-              aria-label={`Story ${i + 1} of ${stories.length}: ${e.title}`}
               onClick={(ev) => {
                 opener.current = ev.currentTarget;
                 setOpen(i);
@@ -84,7 +83,10 @@ export default function WeekendStories({ events, city }: { events: Event[]; city
                 )}
                 <span className="ws-ring-n" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
               </span>
-              <span className="ws-ring-label" aria-hidden="true">
+              <span className="ws-ring-label">
+                <span className="sr-only">
+                  Story {i + 1} of {stories.length}:{" "}
+                </span>
                 <span>{whenOf(e).split(",")[0]}</span>
                 <span className="ws-ring-name">{e.title}</span>
               </span>

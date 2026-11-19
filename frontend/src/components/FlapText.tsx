@@ -15,8 +15,11 @@ export default function FlapText({
   length,
   delay = 0,
   className = "",
+  label,
 }: {
   text: string;
+  /** What a screen reader hears instead of the tiles; defaults to the text. */
+  label?: string;
   length: number;
   delay?: number;
   className?: string;
@@ -62,7 +65,8 @@ export default function FlapText({
   }, [target, delay, text]);
 
   return (
-    <span className={`flap ${className}`} aria-hidden="true">
+    <span className={`flap ${className}`}>
+      <span className="sr-only">{label ?? text}</span>
       {target.split("").map((c, i) => (
         <span
           key={i}
@@ -70,6 +74,7 @@ export default function FlapText({
             tiles.current[i] = el;
           }}
           className={`flap-t${c === " " ? " is-blank" : ""}`}
+          aria-hidden="true"
         >
           {c}
         </span>

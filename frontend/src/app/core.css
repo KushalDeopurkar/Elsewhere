@@ -1433,7 +1433,8 @@ p {
 }
 
 .ecard-link:focus-visible {
-  outline: none;
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
   box-shadow: none;
 }
 
@@ -2014,7 +2015,8 @@ p {
 
 .hsearch-input:focus-visible {
   box-shadow: none;
-  outline: none;
+  outline: 2px solid var(--fg);
+  outline-offset: -4px;
 }
 
 .hsearch-go {
@@ -2188,13 +2190,13 @@ p {
 }
 
 .tt-link:focus-visible {
-  outline: none;
+  outline: 2px solid var(--fg);
+  outline-offset: 0;
   box-shadow: none;
 }
 
 .tt-link:focus-visible::before {
   transform: scaleX(1);
-  outline: 2px solid var(--fg);
 }
 
 @media (hover: hover) {

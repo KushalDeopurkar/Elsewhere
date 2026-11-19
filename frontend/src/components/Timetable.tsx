@@ -100,8 +100,8 @@ export default function Timetable({
           </span>{" "}
           <span className="tt-in">in {city}</span>
         </h1>
-        <div className="tt-clock" aria-label={now ? `Time in ${city}: ${time}` : undefined}>
-          <FlapText text={time} length={5} className="tt-clock-face" />
+        <div className="tt-clock">
+          <FlapText text={time} length={5} className="tt-clock-face" label={now ? `Time in ${city}: ${time}` : ""} />
           <span className="tt-clock-zone">{now ? zoneLabel(zone, now) : ""}</span>
         </div>
       </header>
@@ -174,21 +174,27 @@ export default function Timetable({
                         kind="event"
                         preview={r.event}
                         className="tt-link"
-                        aria-label={`${r.day ? `${r.day} ` : ""}${r.time === "ALL DAY" ? "all day" : r.time}, ${r.title}${r.area ? `, ${r.area}` : ""}, ${r.status.toLowerCase()}`}
                       >
                         <span className="tt-time">
                           {r.day && <span className="tt-day">{r.day}</span>}
-                          <FlapText text={r.time === "ALL DAY" ? "--:--" : r.time} length={5} delay={i * 45} />
+                          <FlapText
+                            text={r.time === "ALL DAY" ? "--:--" : r.time}
+                            label={r.time === "ALL DAY" ? "All day" : r.time}
+                            length={5}
+                            delay={i * 45}
+                          />
                         </span>
                         <span className="tt-dest">
                           <span className="tt-name">{r.title}</span>
                           <span className="tt-cat">{catCode(r.event.category)}</span>
                         </span>
                         <span className="tt-plat">
+                          <span className="sr-only">, at </span>
                           {r.area || "Venue on listing"}
                           {r.time === "ALL DAY" && <span className="tt-note"> · times on listing</span>}
                         </span>
                         <span className="tt-status">
+                          <span className="sr-only">, </span>
                           {r.tone === "live" && <span className="live-dot" aria-hidden="true" />}
                           {r.status}
                         </span>
