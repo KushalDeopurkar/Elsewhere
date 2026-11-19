@@ -1,4 +1,4 @@
-import { Event, EventCategory, EventFormat } from "./types";
+import { CATEGORIES, Event, EventCategory, EventFormat } from "./types";
 import { matchesWindow, eventZone } from "./formatDate";
 import { detectCity } from "./cities";
 
@@ -83,6 +83,10 @@ const GOAL_CATEGORIES: Record<Goal, EventCategory[]> = {
   create: ["arts", "education"],
   give: ["community"],
 };
+
+const CATEGORY_LABEL: Record<EventCategory, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.value, c.label]),
+) as Record<EventCategory, string>;
 
 const GOAL_LABEL: Record<Goal, string> = {
   learn: "Learn", meet: "Meet people", build: "Build", move: "Get active",
@@ -273,7 +277,13 @@ export function scoreEvent(event: Event, intent: Intent): Scored | null {
       (s) => s.kind === "interest" && s.value === event.category,
     );
     score += named ? 3 : 2;
-    reasons.push(named ? `Matches ${named.label}` : "Related to what you asked for");
+    // Say which part of the request it answers: a named interest, or a goal
+    // ("meet people") whose categories include this one.
+    const goal = intent.goals.find((g) => GOAL_CATEGORIES[g].includes(event.category));
+    const cat = CATEGORY_LABEL[event.category];
+    reasons.push(
+      named ? `Matches ${named.label}` : goal ? `${cat}, for “${GOAL_LABEL[goal]}”` : `${cat}, related to your request`,
+    );
   }
 
   if (intent.when !== "any") {

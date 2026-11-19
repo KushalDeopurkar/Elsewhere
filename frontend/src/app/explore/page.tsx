@@ -14,7 +14,7 @@ export default function ExplorePage() {
     <>
       <PageHeader
         title="Explore"
-        lede="Every upcoming event near you. Describe what you want in plain words, then narrow it down."
+        lede="Every upcoming event near you, in every category. Ask in plain words and see why each one matches, or narrow it down with filters."
         crumbs={[{ label: "Home", href: "/" }, { label: "Explore" }]}
       />
       <Suspense fallback={<div className="shell explore-fallback" />}>

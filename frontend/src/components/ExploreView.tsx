@@ -363,7 +363,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         }}
       >
         <label className="xsearch-label" htmlFor="xsearch-input">
-          Where to?
+          Ask Elsewhere, or search
         </label>
         <input
           ref={inputRef}
@@ -371,7 +371,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           className="xsearch-input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Free workshops"
+          placeholder="Free AI workshops"
           enterKeyHint="search"
         />
         {draft && (
