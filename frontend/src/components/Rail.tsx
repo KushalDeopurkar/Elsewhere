@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react/ssr";
 
 /**
@@ -27,6 +27,16 @@ export default function Rail({
       end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4,
     });
   }, []);
+
+  // Know from the start whether there is anything to page to; a rail that
+  // fits shows no arrows at all.
+  useEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [update]);
 
   const page = (dir: 1 | -1) => {
     const el = track.current;

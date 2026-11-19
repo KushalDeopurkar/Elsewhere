@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:₹$£€+";
+const DIGITS = "0123456789";
 
 /**
  * Split-flap tiles: one tile per character, padded to `length`. When the
@@ -52,7 +53,9 @@ export default function FlapText({
         } else {
           busy = true;
           if (now >= t0 + i * 18 && target[i] !== " ") {
-            el.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+            // Digits riffle through digits only, the way a clock board does.
+            const pool = /\d/.test(target[i]) ? DIGITS : CHARS;
+            el.textContent = pool[Math.floor(Math.random() * pool.length)];
             el.classList.add("is-flipping");
           }
         }

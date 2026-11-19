@@ -764,3 +764,11 @@
   border-radius: 0;
   background: transparent;
 }
+
+/* One box, not two: the field draws the border, the input inside does not */
+.planner-input .search-input,
+.planner-input .search-input:focus-visible {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none;
+}

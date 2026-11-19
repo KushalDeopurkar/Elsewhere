@@ -1,6 +1,6 @@
 # Missile log: Elsewhere frontend
 
-status: stage=0 iteration=3 verdict=CONTINUE updated=2026-11-19T22:06:32.633Z
+status: stage=0 iteration=4 verdict=CONTINUE updated=2026-11-19T22:17:34.515Z
 mode: full (existing project, redesign)
 branch: missile/20261120
 url: none
@@ -25,19 +25,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 ## Scoreboard
 
 <!-- scoreboard:start -->
-| dimension | baseline | it1 | it2 | it3 | target |
-|---|---|---|---|---|---|
-| first_impression | 6 | 7 | 8 | 8 | 9+ |
-| design_system | 4 | 7 | 7 | 8 | 9+ |
-| layout | 6 | 6 | 7 | 8 | 9+ |
-| motion | 5 | 6 | 7 | 8 | 9+ |
-| ux_completeness | 5 | 6 | 7 | 8 | 9+ |
-| accessibility | 6 | 8 | 7 | 8 | 9+ |
-| performance | 6 | 8 | 9 | 9 | 9+ |
-| code_health | 6 | 7 | 7 | 8 | 9+ |
-| story | 4 | 7 | 8 | 9 | 9+ |
-| shipped | 5 | 5 | 5 | 5 | 9+ |
-| **mean** | 5.3 | 6.7 | 7.2 | 7.9 | 9.5+ |
+| dimension | baseline | it1 | it2 | it3 | it4 | target |
+|---|---|---|---|---|---|---|
+| first_impression | 6 | 7 | 8 | 8 | 9 | 9+ |
+| design_system | 4 | 7 | 7 | 8 | 8 | 9+ |
+| layout | 6 | 6 | 7 | 8 | 8 | 9+ |
+| motion | 5 | 6 | 7 | 8 | 8 | 9+ |
+| ux_completeness | 5 | 6 | 7 | 8 | 8 | 9+ |
+| accessibility | 6 | 8 | 7 | 8 | 9 | 9+ |
+| performance | 6 | 8 | 9 | 9 | 9 | 9+ |
+| code_health | 6 | 7 | 7 | 8 | 9 | 9+ |
+| story | 4 | 7 | 8 | 9 | 9 | 9+ |
+| shipped | 5 | 5 | 5 | 5 | 5 | 9+ |
+| **mean** | 5.3 | 6.7 | 7.2 | 7.9 | 8.2 | 9.5+ |
 <!-- scoreboard:end -->
 
 ## Plan
@@ -106,6 +106,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
   - [M] design_system: Remove the box-in-a-box on the planner prompt field, replace the 13 hex literals with tokens and fold reel.css into core.css, unify the saved, friends and settings empty states on one .empty container, and set alert and privacy titles in the Archivo display style. (src/app/planner.css, src/components/DayPlanner.tsx, src/app/reel.css, src/app/core.css, src/app/alert/page.tsx, src/app/privacy/page.tsx)
   - [S] motion: Cut the sunset crossfade in core.css:42 from 500 ms to 240 ms, and reserve the board's final height while listings load so home CLS (0.085) drops back under 0.06. (src/app/core.css, src/components/Timetable.tsx)
   - [M] shipped: Owner's call after the loop: push the branch, verify the Vercel preview in a private window at 390 and 1440, run a fresh clone per the README, then tag. (README.md)
+
+### Iteration 4 · 2026-11-19T22:17:34.515Z
+- mean 8.2, min 5, verdict **CONTINUE**
+- url: http://localhost:3100
+- screens: /, /explore, /map, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101, /categories/technology, /saved, /passport, /plan-my-day, /settings, /friends, /recap, /alert, /privacy, /opengraph-image, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101/opengraph-image
+- next fixes:
+  - [S] ux_completeness: Finish the home de-duplication: seed page.tsx's shown set with the board rows actually displayed, and filter the reel against it, so Weekend Volunteer Drive, Basement Tapes and Vinyasa each appear once below the board. The it3 fix covered the rails only. (src/app/page.tsx)
+  - [S] motion: Bring the hero sequence inside 900 ms and readable from the first frame. Cap the board riffle so tiles settle within 500 ms of their row and use digit-only glyphs in time cells. Add a metric-matched Archivo fallback and preload the wdth woff2 so 'TONIGHT IN MUMBAI' shows at 100 ms without a reflow. This also lowers home CLS (0.087). (src/components/FlapText.tsx, src/app/tokens.css, src/app/layout.tsx, src/app/core.css)
+  - [M] shipped: Owner's call after the loop: push the branch, verify the Vercel preview in a private window at 390 and 1440, run a fresh clone per the README, then tag. (README.md)
+  - [S] layout: Hide rail arrows when the rail does not overflow (the 'This weekend' rail at 1440), make the planner's 'In your own words' panel sticky above 1024 px, and shorten the clipped category search placeholder at 390. (src/components/Rail.tsx, src/app/planner.css, src/app/categories/[slug]/page.tsx)
+  - [S] design_system: Remove the planner prompt's inner border (box-in-a-box, asked in it3 and not applied), and give the /map and event tile-failure cards one stripe and fill with left-aligned body text. (src/app/planner.css, src/app/map.css, src/app/events.css)
+  - [S] code_health: Capitalise each sentence in composeRequest (the planner preview reads '. starting' and '. keep'), and add tests for it and for FlapText settle. (src/components/DayPlanner.tsx, src/components/FlapText.tsx, src/lib/)
+  - [S] story: Add docs/home-phone.png (the first viewport of home-390-night.png) to the README hero row. (README.md, docs/)
 
 <!-- iterations:end -->
 

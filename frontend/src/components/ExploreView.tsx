@@ -309,7 +309,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           className="xsearch-input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Free workshops this weekend"
+          placeholder="Free workshops"
           enterKeyHint="search"
         />
         {draft && (

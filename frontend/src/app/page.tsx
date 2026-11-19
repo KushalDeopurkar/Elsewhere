@@ -17,6 +17,7 @@ import { useCity } from "@/lib/cityPref";
 import { cityZone } from "@/lib/cities";
 import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
+import { pickStories } from "@/lib/stories";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
 
@@ -77,7 +78,7 @@ export default function Home() {
   // one first (headliners, starting soon, the weekend, free), then the rest
   // of the week. A section with fewer than three left is dropped.
   const { thisWeek, free, weekend } = useMemo(() => {
-    const shown = new Set([...featured, ...soon.map((s) => s.event)].map((e) => e.id));
+    const shown = new Set([...pickStories(all).events, ...featured, ...soon.map((s) => s.event)].map((e) => e.id));
     const take = (list: Event[]) => {
       const out = list.filter((e) => !shown.has(e.id)).slice(0, 14);
       if (out.length < 3) return [];

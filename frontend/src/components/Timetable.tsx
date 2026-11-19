@@ -234,7 +234,7 @@ function Row({ r, i }: { r: BoardRow; i: number }) {
             text={r.time === "ALL DAY" ? "--:--" : r.time}
             label={r.time === "ALL DAY" ? "All day" : r.time}
             length={5}
-            delay={i * 45}
+            delay={Math.min(i, 6) * 40}
           />
         </span>
         <span className="tt-dest">

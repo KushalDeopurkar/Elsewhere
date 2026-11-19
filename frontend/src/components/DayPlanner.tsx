@@ -97,7 +97,11 @@ export function composeRequest(d: Details, city: string, sym = "₹"): string {
     d.close ? "keep the stops close together" : "happy to travel between stops",
     d.notes.trim(),
   ].filter(Boolean);
-  return parts.join(". ").replace(/\.\./g, ".");
+  // Each part is its own sentence, capitalised like one.
+  return parts
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(". ")
+    .replace(/\.\./g, ".");
 }
 
 const STEPS = [
