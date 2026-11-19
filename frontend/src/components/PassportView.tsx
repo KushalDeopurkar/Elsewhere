@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Fire, MapPin, FilmSlate } from "@phosphor-icons/react/ssr";
+import { Check, CalendarCheck, MapPin, FilmSlate } from "@phosphor-icons/react/ssr";
 import CategoryIcon from "./CategoryIcon";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
@@ -27,7 +27,7 @@ export default function PassportView() {
   return (
     <div className="passport">
       <Link href="/recap" className="pp-recap">
-        <FilmSlate size={22} weight="duotone" aria-hidden="true" />
+        <FilmSlate size={22} weight="bold" aria-hidden="true" />
         <span>
           <strong>Your month in Elsewhere</strong>
           <small>A one-minute replay of what you explored. Shareable.</small>
@@ -39,7 +39,7 @@ export default function PassportView() {
         <p><strong>{got}</strong>/{cats.length} stamps</p>
         <p><strong>{earned}</strong>/{list.length} badges</p>
         <p><strong>{Object.keys(p.venues).length}</strong> venues</p>
-        <p><Fire size={18} weight="fill" aria-hidden="true" /> <strong>{streak}</strong> day streak</p>
+        <p><CalendarCheck size={18} weight="bold" aria-hidden="true" /> <strong>{streak}</strong> day streak</p>
       </div>
 
       <section className="pp-sec" aria-labelledby="pp-stamps">

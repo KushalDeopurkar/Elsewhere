@@ -273,7 +273,11 @@ export default function MapPage() {
             h.jumpToPoint(lastCityPoint.current.lat, lastCityPoint.current.lng);
           }
         }}
-        onError={(m) => setMapError((prev) => prev ?? m)}
+        onError={(m) => {
+          setMapError((prev) => prev ?? m);
+          // Without tiles the list is the useful view on a phone.
+          setMobileView("list");
+        }}
         route={selected ? route : null}
         liveIds={at?.live ?? null}
       />
@@ -320,6 +324,7 @@ export default function MapPage() {
           />
         </div>
 
+        {!mapError && (
         <TimeScrubber
           zone={cityZone(city)}
           events={allEvents}
@@ -334,6 +339,7 @@ export default function MapPage() {
           shown={events.length}
           live={at?.live.size ?? 0}
         />
+        )}
 
         {isSample && !mapError && (
           <span className="sample-note" style={{ alignSelf: "flex-start" }}>
@@ -341,7 +347,7 @@ export default function MapPage() {
           </span>
         )}
 
-        <MapStrip events={deck} selectedId={selected?.id ?? null} onFocus={glide} />
+        {!mapError && <MapStrip events={deck} selectedId={selected?.id ?? null} onFocus={glide} />}
 
         {selected && (
           <article className="map-peek">

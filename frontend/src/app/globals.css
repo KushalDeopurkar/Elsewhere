@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "maplibre-gl/dist/maplibre-gl.css";
 
 /* Tokens live in tokens.css (imported first by layout.tsx). */
 

@@ -566,3 +566,45 @@
 .pp-stamp.is-got {
   border-style: solid;
 }
+
+/* Phones: results as dense ticket rows, poster beside the stub */
+@media (max-width: 639px) {
+  .xgrid {
+    gap: var(--s-3);
+  }
+  .xgrid .ecard {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+  .xgrid .ecard-media {
+    border-bottom: 0;
+    border-right: 1px solid var(--rule);
+  }
+  .xgrid .ecard-media .eimg {
+    height: 100%;
+    aspect-ratio: auto !important;
+    border-radius: var(--r-card) 0 0 var(--r-card);
+  }
+  .xgrid .ecard-price {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  .xgrid .ecard-body {
+    grid-template-columns: 1fr;
+    padding: var(--s-3) var(--s-3) var(--s-3) var(--s-3);
+    padding-right: 52px;
+  }
+  .xgrid .ecard-body::before,
+  .xgrid .ecard-body::after,
+  .xgrid .ecard-when {
+    display: none;
+  }
+  .xgrid .ecard-title {
+    font-size: var(--t-base);
+    -webkit-line-clamp: 2;
+  }
+  .xgrid .ecard-save .save-icon {
+    width: 36px;
+    height: 36px;
+  }
+}

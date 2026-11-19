@@ -47,7 +47,8 @@ export default function EventCard({
   const stub = stubDate(event.start_time, zone);
   const timed = timedOf(event);
   const price = priceBadge(event);
-  const where = [event.location_name, event.city].filter(Boolean).join(", ");
+  // "Online, Online" reads as a bug: say a place once.
+  const where = [...new Set([event.location_name, event.city].filter(Boolean))].join(", ");
   const tiers = realTiers(event.tickets, event.title).length;
   const style = { "--cat": hue.color } as React.CSSProperties;
   const ratio = variant === "featured" ? "4 / 3" : variant === "list" ? "16 / 10" : "4 / 3";

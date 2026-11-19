@@ -44,9 +44,24 @@ function matchesLocally(event: Event, params: SearchParams): boolean {
   return true;
 }
 
+const kmBetween = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+  const r = Math.PI / 180;
+  const h =
+    Math.sin(((bLat - aLat) * r) / 2) ** 2 +
+    Math.cos(aLat * r) * Math.cos(bLat * r) * Math.sin(((bLng - aLng) * r) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+};
+
+/** Like the API: within the search radius of the point; online events go everywhere. */
+function nearLocally(event: Event, params: SearchParams): boolean {
+  if (params.lat == null || params.lng == null) return true;
+  if (event.format === "online" || event.lat == null || event.lng == null) return true;
+  return kmBetween(params.lat, params.lng, event.lat, event.lng) <= (params.radius_km ?? 40);
+}
+
 function sampleFor(params: SearchParams): EventsResult {
   return {
-    events: DEMO_EVENTS.filter((e) => matchesLocally(e, params)),
+    events: DEMO_EVENTS.filter((e) => matchesLocally(e, params) && nearLocally(e, params)),
     isSample: true,
   };
 }

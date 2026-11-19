@@ -201,12 +201,6 @@ p {
   padding-block: clamp(2.5rem, 6vw, 4.5rem);
 }
 
-/* Off-screen home rails and grids skip rendering until scrolled near. */
-.shell.sec {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 520px;
-}
-
 /* ---- Buttons and links -------------------------------------------------- */
 .btn {
   display: inline-flex;
@@ -2384,7 +2378,7 @@ p {
 
 @media (prefers-reduced-motion: no-preference) {
   .tt-now-rule {
-    animation: now-draw 900ms var(--ease) both 200ms;
+    animation: now-draw 600ms var(--ease) both 200ms;
   }
 }
 
@@ -2456,6 +2450,17 @@ p {
   width: 36px;
   height: 36px;
   border: 1px solid var(--rule-strong);
+}
+
+@media (max-width: 1023px) {
+  /* Phones and tablets: the departures come straight after the masthead.
+     The panel keeps a floor so rows arriving don't push the page about. */
+  .tt-aside {
+    order: 2;
+  }
+  .tt-board [role="tabpanel"] {
+    min-height: 23rem;
+  }
 }
 
 @media (max-width: 767px) {

@@ -85,7 +85,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .rt-w > span {
-    animation: rt-rise 520ms var(--ease) both;
+    animation: rt-rise 360ms var(--ease) both;
   }
 }
 
@@ -626,3 +626,32 @@
 .detail.is-loading .skel {
   background: var(--bg-3);
 }
+
+.plan-map-box {
+  position: relative;
+  height: 100%;
+}
+
+.plan-map-failed {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  gap: var(--s-2);
+  padding: var(--s-5);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 31px, var(--board-rule) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, var(--board-rule) 31px 32px),
+    var(--board);
+  color: var(--board-fg-2);
+  font-size: var(--t-sm);
+}
+
+.plan-map-failed-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 85%;
+  font-size: var(--t-lg);
+  color: var(--board-fg);
+}
+.detail-map .plan-map, .detail-map .plan-map-box { height: 100%; border-radius: 0; }

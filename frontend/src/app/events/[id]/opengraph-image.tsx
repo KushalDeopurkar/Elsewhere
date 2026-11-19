@@ -3,11 +3,13 @@ import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
 import { formatFull, eventZone } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
+import { OG, OG_FONTS } from "@/lib/ogTheme";
+import { CATEGORIES } from "@/lib/types";
 
 /**
  * The preview people see when an event link is shared on WhatsApp,
- * Instagram DMs or X: the poster, title, time, place and price on the
- * Elsewhere look, instead of a bare scraped poster.
+ * Instagram DMs or X: a ticket on the night board. The poster on the right,
+ * the date and time set large, the title, the place and the price.
  */
 export const runtime = "nodejs";
 export const alt = "Event on Elsewhere";
@@ -38,60 +40,70 @@ const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trim
 
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [event, bold, text] = await Promise.all([
+  const [event, black, bold, text] = await Promise.all([
     getEvent(id),
-    load(new URL("../../api/card/fonts/Bricolage-Bold.ttf", import.meta.url)),
-    load(new URL("../../api/card/fonts/Geist-Regular.ttf", import.meta.url)),
+    load(OG_FONTS.black),
+    load(OG_FONTS.bold),
+    load(OG_FONTS.text),
   ]);
   const img = await poster(event?.image_url ?? null);
-  const D = bold && text ? "Bricolage" : "Geist";
-  const title = event ? clip(event.title, 70) : "Find your next reason to show up";
-  const when = event ? formatFull(event.start_time, eventZone(event)) : "";
-  const where = event?.location_name ? clip(event.location_name, 40) : event?.city ?? "";
+  const fonts = black && bold && text;
+  const title = event ? clip(event.title, 72) : "Everything on in your city, tonight";
+  const zone = event ? eventZone(event) : "Asia/Kolkata";
+  const at = event ? new Date(event.start_time) : null;
+  const part = (o: Intl.DateTimeFormatOptions) => (at ? new Intl.DateTimeFormat("en-GB", { timeZone: zone, ...o }).format(at) : "");
+  const day = part({ day: "2-digit" });
+  const mon = `${part({ weekday: "short" })} ${part({ month: "short" })}`.toUpperCase();
+  const time = part({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const where = event?.location_name ? clip(event.location_name, 40) : (event?.city ?? "");
+  const line = event ? (CATEGORIES.find((c) => c.value === event.category)?.label ?? "") : "";
+  const textW = img ? 720 : 1072;
 
   return new ImageResponse(
     (
-      <div style={{ width: 1200, height: 630, display: "flex", background: "#0e1015", color: "#f2f3f7", fontFamily: "Geist", position: "relative" }}>
-        {img && (
-          <img src={img} alt="" width={1200} height={630} style={{ position: "absolute", inset: 0, width: 1200, height: 630, objectFit: "cover", opacity: 0.25, filter: "blur(36px)" }} />
-        )}
-        <div style={{ position: "absolute", inset: 0, display: "flex", background: "linear-gradient(90deg, #0e1015 35%, rgba(14,16,21,0.55))" }} />
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "56px 0 56px 64px", width: img ? 700 : 1100, position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 34, fontWeight: 700, fontFamily: D }}>
-            <div style={{ width: 18, height: 18, borderRadius: 99, background: "#ff6b57" }} />
-            Elsewhere
+      <div style={{ width: 1200, height: 630, display: "flex", background: OG.board, color: OG.boardFg, fontFamily: "Geist", padding: 64, gap: 48 }}>
+        <div style={{ display: "flex", flexDirection: "column", width: textW, justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, fontFamily: "ArchivoBold", fontSize: 30, letterSpacing: 1 }}>
+            <div style={{ width: 16, height: 16, background: OG.lamp }} />
+            ELSEWHERE
+            {line ? <span style={{ marginLeft: 12, fontFamily: "Geist", fontSize: 22, color: OG.boardFg2, letterSpacing: 3 }}>{line.toUpperCase()}</span> : null}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ display: "flex", fontSize: title.length > 40 ? 54 : 66, lineHeight: 1.04, fontWeight: 700, letterSpacing: -1.5, fontFamily: D }}>{title}</div>
-            {event && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 28, color: "#c6cad6" }}>
-                <span>{when}</span>
-                {where && <span>{where}</span>}
+          <div style={{ display: "flex", fontFamily: "ArchivoBold", fontSize: title.length > 44 ? 58 : 72, lineHeight: 1.0, letterSpacing: -1 }}>{title}</div>
+          {event ? (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 36, borderTop: `2px dashed ${OG.boardFg2}`, paddingTop: 24 }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: 20, color: OG.boardFg2, letterSpacing: 3 }}>{mon}</span>
+                <span style={{ fontFamily: "ArchivoBlack", fontSize: 96, lineHeight: 0.9, color: OG.lamp }}>{day}</span>
               </div>
-            )}
-          </div>
-          {event && (
-            <div style={{ display: "flex", alignSelf: "flex-start", padding: "10px 22px", borderRadius: 99, background: "#ff6b57", color: "#2a0a05", fontSize: 28, fontWeight: 700, fontFamily: D }}>
-              {priceBadge(event)}
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: 20, color: OG.boardFg2, letterSpacing: 3 }}>DEPARTS</span>
+                <span style={{ fontFamily: "ArchivoBlack", fontSize: 96, lineHeight: 0.9, color: OG.lamp }}>{time}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginLeft: "auto", alignItems: "flex-end" }}>
+                <span style={{ display: "flex", padding: "8px 16px", background: OG.lamp, color: OG.board, fontFamily: "ArchivoBold", fontSize: 28 }}>{priceBadge(event)}</span>
+                {where ? <span style={{ fontSize: 24, color: OG.boardFg2 }}>{where}</span> : null}
+              </div>
             </div>
+          ) : (
+            <div style={{ display: "flex", fontSize: 28, color: OG.boardFg2 }}>Gigs, workshops, matches and meetups, soonest first.</div>
           )}
         </div>
         {img && (
-          <div style={{ display: "flex", position: "absolute", right: 64, top: 56, width: 400, height: 518, borderRadius: 28, overflow: "hidden", boxShadow: "0 30px 80px rgba(0,0,0,0.6)" }}>
-            <img src={img} alt="" width={400} height={518} style={{ width: 400, height: 518, objectFit: "cover" }} />
+          <div style={{ display: "flex", width: 368, height: 502, border: `4px solid ${OG.boardFg}`, overflow: "hidden" }}>
+            <img src={img} alt="" width={368} height={502} style={{ width: 368, height: 502, objectFit: "cover" }} />
           </div>
         )}
       </div>
     ),
     {
       ...size,
-      fonts:
-        bold && text
-          ? [
-              { name: "Geist", data: text, weight: 400, style: "normal" },
-              { name: "Bricolage", data: bold, weight: 700, style: "normal" },
-            ]
-          : undefined,
+      fonts: fonts
+        ? [
+            { name: "Geist", data: text, weight: 400, style: "normal" },
+            { name: "ArchivoBold", data: bold, weight: 700, style: "normal" },
+            { name: "ArchivoBlack", data: black, weight: 900, style: "normal" },
+          ]
+        : undefined,
     },
   );
 }

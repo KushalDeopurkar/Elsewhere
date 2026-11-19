@@ -948,7 +948,7 @@
 
 /* Event card picture grows into the event page hero. */
 ::view-transition-group(ev-hero) {
-  animation-duration: 560ms;
+  animation-duration: 280ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   border-radius: var(--r-card);
   overflow: hidden;
@@ -958,10 +958,10 @@
 ::view-transition-new(ev-hero) {
   height: 100%;
   object-fit: cover;
-  animation-duration: 560ms;
+  animation-duration: 280ms;
 }
 html[data-vt="event"]::view-transition-old(root) { animation-duration: 160ms; }
-html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both; }
+html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 280ms var(--ease) 60ms both; }
 @keyframes vt-in-soft { from { opacity: 0; } }
 
 /* The nav stays put. */
@@ -1281,7 +1281,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .pp-badge-text strong { color: var(--fg); }
 .pp-badge-text small { color: var(--fg-2); font-size: 0.8125rem; }
 .pp-bar { height: 4px; margin-top: 0.3rem; border-radius: 2px; background: var(--bg-4); overflow: hidden; }
-.pp-bar > span { display: block; height: 100%; background: var(--signal); transform-origin: left; transition: transform 600ms var(--ease); }
+.pp-bar > span { display: block; height: 100%; background: var(--signal); transform-origin: left; transition: transform 300ms var(--ease); }
 .pp-cities { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; list-style: none; }
 .pp-cities li { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; border-radius: var(--r-pill); background: var(--bg-2); border: 1px solid var(--rule-soft); }
 .pp-cities svg { color: var(--signal-text); }
@@ -1310,11 +1310,11 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   border: 1px solid var(--rule);
   box-shadow: var(--lift-3);
   pointer-events: auto;
-  animation: ptoast-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: ptoast-in 280ms var(--ease) both;
 }
 .ptoast strong { display: block; font-size: 0.875rem; color: var(--fg); }
 .ptoast small { display: block; font-size: 0.8125rem; color: var(--fg-2); }
-.ptoast-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--signal); color: var(--on-signal); animation: ptoast-stamp 520ms 120ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.ptoast-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--signal); color: var(--on-signal); animation: ptoast-stamp 520ms 120ms var(--ease) both; }
 .ptoast.is-badge .ptoast-icon { background: var(--fg); color: var(--bg); }
 @keyframes ptoast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
 @keyframes ptoast-stamp { from { transform: scale(1.8) rotate(-18deg); opacity: 0; } }
@@ -1434,7 +1434,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 
 /* Event page: going / interested */
 .esocial { display: grid; gap: 0.6rem; margin-top: 1rem; padding: 0.9rem; border-radius: var(--r-card); background: var(--bg-2); border: 1px solid var(--rule-soft); }
-.detail:not(.is-loading) .esocial { animation: stage-in 640ms cubic-bezier(0.16, 1, 0.3, 1) 560ms both; }
+.detail:not(.is-loading) .esocial { animation: stage-in 240ms var(--ease) 200ms both; }
 .esocial-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .esocial-choice { display: flex; gap: 0.5rem; flex: 1; min-width: 15rem; }
 .esocial-btn {
@@ -1628,7 +1628,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .rc-stage { position: relative; z-index: 2; width: min(40rem, 100% - 3rem); pointer-events: none; }
 .rc-stage a, .rc-stage button { pointer-events: auto; }
 .rc-slide { position: relative; display: grid; gap: 1rem; }
-.rc-slide > * { animation: stage-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rc-slide > * { animation: stage-in 360ms var(--ease) both; }
 .rc-slide > *:nth-child(2) { animation-delay: 120ms; }
 .rc-slide > *:nth-child(3) { animation-delay: 240ms; }
 .rc-slide > *:nth-child(4) { animation-delay: 360ms; }
@@ -1669,7 +1669,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   font-size: 0.8125rem;
   font-weight: 700;
   text-align: center;
-  animation: stamp-slam 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: stamp-slam 280ms var(--ease) both;
 }
 .rc-stamps li span { color: var(--fg); }
 .rc-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.75rem; margin: 0; }
@@ -1710,7 +1710,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .pp-recap-go { color: var(--signal-text); font-weight: 700; white-space: nowrap; }
 
 /* Passport: fresh stamps slam onto the page with an ink ring; bars fill. */
-.pp-stamp.is-fresh { animation: stamp-slam 560ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0ms) both; position: relative; }
+.pp-stamp.is-fresh { animation: stamp-slam 280ms var(--ease) var(--d, 0ms) both; position: relative; }
 .pp-stamp.is-fresh::after {
   content: "";
   position: absolute;
@@ -1718,11 +1718,11 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   border-radius: inherit;
   border: 2px solid var(--cat-hue);
   opacity: 0;
-  animation: ink-ring 700ms ease-out calc(var(--d, 0ms) + 260ms) both;
+  animation: ink-ring 360ms var(--ease) calc(var(--d, 0ms) + 160ms) both;
   pointer-events: none;
 }
 @keyframes ink-ring { 0% { opacity: 0.8; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.18); } }
-.pp-bar > span { animation: bar-fill 900ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both; }
+.pp-bar > span { animation: bar-fill 480ms var(--ease) 200ms both; }
 @keyframes bar-fill { from { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) {
   .pp-stamp.is-fresh, .pp-stamp.is-fresh::after, .pp-bar > span { animation: none; }
@@ -1996,7 +1996,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   background: var(--cat-hue);
   transform-origin: left;
   transform: scaleX(var(--share, 0));
-  transition: transform 600ms var(--ease);
+  transition: transform 300ms var(--ease);
 }
 .poll-count { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; color: var(--fg-2); font-size: 0.9rem; }
 .poll-count strong { color: var(--fg); font-size: 1.05rem; }
@@ -2192,4 +2192,11 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   .remind { flex-wrap: wrap; align-items: flex-start; }
   .remind-text { flex-basis: calc(100% - 3.5rem); }
   .remind-actions { width: 100%; padding-left: calc(40px + 0.9rem); }
+}
+
+
+/* Category worlds play a few cycles on the recap, then settle. */
+.cworld,
+.cworld * {
+  animation-iteration-count: 3 !important;
 }

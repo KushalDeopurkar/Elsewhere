@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { OG, OG_FONTS } from "@/lib/ogTheme";
 import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
 import { whenOf } from "@/lib/formatDate";
@@ -13,10 +14,10 @@ const load = (u: URL) =>
     .then((b) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer)
     .catch(() => null);
 let fontsP: Promise<[ArrayBuffer | null, ArrayBuffer | null]> | null = null;
-/** Bricolage Grotesque Bold for display, Geist for text (static TTFs; satori can't read woff2). */
+/** Archivo (condensed black) for display, Geist for text (static TTFs; satori can't read woff2). */
 function cardFonts() {
   fontsP ??= Promise.all([
-    load(new URL("./fonts/Bricolage-Bold.ttf", import.meta.url)),
+    load(OG_FONTS.black),
     load(new URL("./fonts/Geist-Regular.ttf", import.meta.url)),
   ]);
   return fontsP;
@@ -44,7 +45,7 @@ async function inlineImage(url: string | null): Promise<string | null> {
 /** satori has no oklch(): convert the category colour to sRGB hex. */
 function oklchHex(css: string): string {
   const m = /oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(css);
-  if (!m) return "#c6cad6";
+  if (!m) return OG.boardFg2;
   const [L, C, H] = [Number(m[1]), Number(m[2]), (Number(m[3]) * Math.PI) / 180];
   const a = C * Math.cos(H);
   const b = C * Math.sin(H);
@@ -88,38 +89,38 @@ export async function GET(req: Request) {
   const story = format === "story";
   const thumb = story ? 190 : 150;
   const [bold, text] = await cardFonts();
-  const D = bold && text ? "Bricolage" : "Geist";
+  const D = bold && text ? "Archivo" : "Geist";
 
   return new ImageResponse(
     (
-      <div style={{ width: W, height: H, display: "flex", flexDirection: "column", background: "#0e1015", color: "#f2f3f7", position: "relative", fontFamily: "Geist" }}>
+      <div style={{ width: W, height: H, display: "flex", flexDirection: "column", background: OG.board, color: OG.boardFg, position: "relative", fontFamily: "Geist" }}>
         {hero && (
           <img src={hero} alt="" width={W} height={H} style={{ position: "absolute", inset: 0, width: W, height: H, objectFit: "cover", opacity: 0.22, filter: "blur(40px)" }} />
         )}
-        <div style={{ position: "absolute", inset: 0, display: "flex", background: "radial-gradient(900px 700px at 90% 0%, rgba(255,107,87,0.35), transparent 70%), linear-gradient(to bottom, rgba(14,16,21,0.2), #0e1015 70%)" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", background: "transparent" }} />
         <div style={{ display: "flex", flexDirection: "column", padding: story ? "110px 80px 90px" : "70px 70px 60px", flex: 1, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: story ? 40 : 32, fontWeight: 700, fontFamily: D }}>
-            <div style={{ width: story ? 22 : 18, height: story ? 22 : 18, borderRadius: 99, background: "#ff6b57" }} />
+            <div style={{ width: story ? 22 : 18, height: story ? 22 : 18, borderRadius: 99, background: OG.lamp }} />
             Elsewhere
           </div>
-          <div style={{ display: "flex", marginTop: story ? 80 : 44, fontSize: story ? 34 : 26, color: "#ff8a7a", textTransform: "uppercase", letterSpacing: 4 }}>{kicker}</div>
+          <div style={{ display: "flex", marginTop: story ? 80 : 44, fontSize: story ? 34 : 26, color: OG.lamp, textTransform: "uppercase", letterSpacing: 4 }}>{kicker}</div>
           <div style={{ display: "flex", marginTop: 14, fontSize: story ? 96 : 70, lineHeight: 1.02, fontWeight: 700, letterSpacing: -2, fontFamily: D }}>{title}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: story ? 34 : 22, marginTop: story ? 70 : 40 }}>
             {events.map((e, i) => {
               const hue = oklchHex(getCategoryColorFixed(e.category).color);
               return (
-                <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 28, padding: story ? 22 : 16, borderRadius: 28, background: "rgba(29,32,41,0.82)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ display: "flex", width: thumb, height: thumb, borderRadius: 20, overflow: "hidden", background: "#232734", flexShrink: 0, position: "relative" }}>
+                <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 28, padding: story ? 22 : 16, borderRadius: 0, background: OG.board2, border: `1px solid ${OG.board2}` }}>
+                  <div style={{ display: "flex", width: thumb, height: thumb, borderRadius: 0, overflow: "hidden", background: OG.board2, flexShrink: 0, position: "relative" }}>
                     {images[i] ? (
                       <img src={images[i]!} alt="" width={thumb} height={thumb} style={{ width: thumb, height: thumb, objectFit: "cover" }} />
                     ) : (
                       <div style={{ display: "flex", width: thumb, height: thumb, background: hue, opacity: 0.4 }} />
                     )}
-                    <div style={{ position: "absolute", top: 10, left: 10, display: "flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 99, background: "#ff6b57", color: "#2a0a05", fontSize: 26, fontWeight: 700, fontFamily: D }}>{i + 1}</div>
+                    <div style={{ position: "absolute", top: 10, left: 10, display: "flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 99, background: OG.lamp, color: OG.board, fontSize: 26, fontWeight: 700, fontFamily: D }}>{i + 1}</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", fontSize: story ? 40 : 32, fontWeight: 700, lineHeight: 1.1, fontFamily: D }}>{clip(e.title, story ? 60 : 44)}</div>
-                    <div style={{ display: "flex", fontSize: story ? 28 : 22, color: "#c6cad6" }}>
+                    <div style={{ display: "flex", fontSize: story ? 28 : 22, color: OG.boardFg2 }}>
                       {clip(`${whenOf(e)}${e.location_name ? ` · ${e.location_name}` : ""}`, story ? 52 : 46)}
                     </div>
                     <div style={{ display: "flex", fontSize: story ? 26 : 20, color: hue }}>{priceBadge(e)}</div>
@@ -128,9 +129,9 @@ export async function GET(req: Request) {
               );
             })}
           </div>
-          <div style={{ display: "flex", marginTop: "auto", justifyContent: "space-between", alignItems: "center", fontSize: story ? 30 : 24, color: "#8e94a6" }}>
+          <div style={{ display: "flex", marginTop: "auto", justifyContent: "space-between", alignItems: "center", fontSize: story ? 30 : 24, color: OG.boardFg2 }}>
             <span>elsewhere-in.vercel.app</span>
-            {ids.length > events.length ? null : <span style={{ color: "#c6cad6" }}>{events.length} {events.length === 1 ? "pick" : "picks"}</span>}
+            {ids.length > events.length ? null : <span style={{ color: OG.boardFg2 }}>{events.length} {events.length === 1 ? "pick" : "picks"}</span>}
           </div>
         </div>
       </div>
@@ -142,7 +143,7 @@ export async function GET(req: Request) {
         bold && text
           ? [
               { name: "Geist", data: text, weight: 400, style: "normal" },
-              { name: "Bricolage", data: bold, weight: 700, style: "normal" },
+              { name: "Archivo", data: bold, weight: 700, style: "normal" },
             ]
           : undefined,
       headers: { "cache-control": "public, max-age=3600" },

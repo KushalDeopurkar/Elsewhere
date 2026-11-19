@@ -1,6 +1,6 @@
 # Missile log: Elsewhere frontend
 
-status: stage=0 iteration=0 verdict=CONTINUE updated=2026-11-19T21:01:11.847Z
+status: stage=0 iteration=1 verdict=CONTINUE updated=2026-11-19T21:38:14.840Z
 mode: full (existing project, redesign)
 branch: missile/20261120
 url: none
@@ -25,19 +25,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 ## Scoreboard
 
 <!-- scoreboard:start -->
-| dimension | baseline | target |
-|---|---|---|
-| first_impression | 6 | 9+ |
-| design_system | 4 | 9+ |
-| layout | 6 | 9+ |
-| motion | 5 | 9+ |
-| ux_completeness | 5 | 9+ |
-| accessibility | 6 | 9+ |
-| performance | 6 | 9+ |
-| code_health | 6 | 9+ |
-| story | 4 | 9+ |
-| shipped | 5 | 9+ |
-| **mean** | 5.3 | 9.5+ |
+| dimension | baseline | it1 | target |
+|---|---|---|---|
+| first_impression | 6 | 7 | 9+ |
+| design_system | 4 | 7 | 9+ |
+| layout | 6 | 6 | 9+ |
+| motion | 5 | 6 | 9+ |
+| ux_completeness | 5 | 6 | 9+ |
+| accessibility | 6 | 8 | 9+ |
+| performance | 6 | 8 | 9+ |
+| code_health | 6 | 7 | 9+ |
+| story | 4 | 7 | 9+ |
+| shipped | 5 | 5 | 9+ |
+| **mean** | 5.3 | 6.7 | 9.5+ |
 <!-- scoreboard:end -->
 
 ## Plan
@@ -67,6 +67,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
   - [S] code_health: Stop the /api/events proxy 500s when the backend is down (health check or local sample route handler), and add .env.example (src/lib/api.ts, next.config.ts, .env.example)
   - [L] design_system: Replace the near-black plus coral palette with a subject-grounded OKLCH @theme, drop the lilac second accent, and merge redesign.css into one token-driven stylesheet (src/app/globals.css, src/app/redesign.css, src/components/stories.css)
   - [M] story: Rewrite README.md for a judge with two minutes and add a root opengraph-image.tsx (README.md, src/app/opengraph-image.tsx)
+
+### Iteration 1 · 2026-11-19T21:38:14.840Z
+- mean 6.7, min 5, verdict **CONTINUE**
+- url: http://localhost:3100
+- screens: /, /explore, /map, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101, /categories/technology, /saved, /passport, /plan-my-day, /settings, /friends, /recap, /alert, /privacy
+- next fixes:
+  - [S] layout: Delete content-visibility and contain-intrinsic-size from .shell.sec (core.css:205-208) so home renders every rail instead of about 2,300 px of blank paper; re-shoot to confirm. This was flagged in it0 and not applied. (src/app/core.css)
+  - [S] ux_completeness: Filter sample events by a 40 km radius from the chosen city, so neither 'Tonight in Mumbai' nor '18 events near Mumbai' lists Bengaluru or Delhi events; print 'Online' once. Flagged in it0 and not applied. (src/lib/api.ts, src/lib/demoEvents.ts, src/hooks/useCityEvents.ts)
+  - [S] code_health: Add an /api/events/search route handler with a timeout that returns the labelled sample set with HTTP 200 when the backend is down, removing the console 500 on every home and explore load; fix the shot sensor so it records console errors. (src/app/api/events/search/route.ts, next.config.ts, src/lib/api.ts)
+  - [S] first_impression: Under 640 px, put the departures table directly under the masthead and move the search and 'Try' prompts below it, so the first phone viewport shows the NOW line and two departures. (src/app/page.tsx, src/app/core.css)
+  - [M] layout: On phones, hide the tab bar while the event action bar is pinned, stop the map peek strip overlapping the error card, and replace the empty WHERE box with an address-and-directions row when tiles fail. (src/components/EventActionBar.tsx, src/components/Nav.tsx, src/app/map/page.tsx, src/components/EventMap.tsx, src/app/events.css)
+  - [S] motion: Remove the overshoot curves and the cw-* infinite loops, set --t-enter to 200ms, and cap the 520 to 900 ms entrances at 240 ms. (src/app/redesign.css, src/app/tokens.css)
+  - [L] design_system: Restyle /passport to the timetable system (square stamps, ruled numbered sections, no wash banner or Fire icon), then fold the rules still used from redesign.css and stories.css into the core sheets and delete both files. (src/components/PassportView.tsx, src/app/redesign.css, src/components/stories.css, src/app/core.css)
 
 <!-- iterations:end -->
 

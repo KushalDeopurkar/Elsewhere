@@ -1,5 +1,6 @@
 "use client";
 
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play } from "@phosphor-icons/react/ssr";
 import { LngLatBounds, MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
@@ -98,6 +99,7 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
   const markers = useRef<Marker[]>([]);
   const ready = useRef(false);
   const latest = useRef(stops);
+  const [failed, setFailed] = useState(false);
 
   // The style can finish loading after newer stops arrive; keep the latest.
   useEffect(() => {
@@ -124,9 +126,12 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
       draw(instance, latest.current, markers);
     });
     instance.on("error", () => {
-      if (!ready.current && !triedFallback) {
+      if (ready.current) return;
+      if (!triedFallback) {
         triedFallback = true;
         instance.setStyle(FALLBACK_STYLE_URL);
+      } else {
+        setFailed(true);
       }
     });
 
@@ -210,7 +215,21 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
     return () => window.clearInterval(id);
   }, [stops, animate, show]);
 
-  const mapEl = <div ref={container} className="plan-map" aria-label="Map of your plan" role="img" />;
+  const mapEl = (
+    <div className="plan-map-box">
+      <div ref={container} className="plan-map" aria-label="Map of your plan" role="img" />
+      {failed && (
+        <div className="plan-map-failed" role="status">
+          <p className="plan-map-failed-title">The map couldn&apos;t load here.</p>
+          <p>
+            {pts.length === 1
+              ? `${pts[0].event.location_name || "The venue"} is at ${pts[0].event.lat!.toFixed(4)}, ${pts[0].event.lng!.toFixed(4)}. Directions open in Google Maps.`
+              : "Your stops and times are listed below. Each one opens in Google Maps."}
+          </p>
+        </div>
+      )}
+    </div>
+  );
   if (!animate || pts.length < 2) return mapEl;
 
   const at = stopIndexAt(progress, pts.length);

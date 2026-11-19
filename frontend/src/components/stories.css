@@ -193,7 +193,7 @@
   object-fit: cover;
   filter: blur(48px) saturate(1.4) brightness(0.45);
   opacity: 0.9;
-  animation: ws-fade 600ms ease both;
+  animation: ws-fade 300ms var(--ease) both;
   pointer-events: none;
 }
 @keyframes ws-fade {
@@ -335,7 +335,7 @@
   padding: 1.25rem 1.25rem 1rem;
   display: grid;
   gap: 0.5rem;
-  animation: ws-rise 520ms var(--ease) both;
+  animation: ws-rise 280ms var(--ease) both;
 }
 .ws-media + .ws-shade + .ws-top + .ws-body {
   animation-delay: 80ms;
