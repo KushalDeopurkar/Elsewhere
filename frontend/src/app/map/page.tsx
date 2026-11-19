@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { preconnect, preload } from "react-dom";
+import { STYLE_URL } from "@/lib/mapTheme";
 import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
 import { useCapable3D } from "@/hooks/useCapable3D";
 import EventImage from "@/components/EventImage";
@@ -34,7 +36,16 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
 
 const RETRY_DELAYS = [3000, 8000, 15000];
 
+// Start downloading the map code and its style as soon as this page's code
+// runs, instead of after the page has rendered.
+if (typeof window !== "undefined") {
+  void import("@/components/EventMap");
+}
+
 export default function MapPage() {
+  // Warm the connection to the map host and fetch the style early.
+  preconnect(new URL(STYLE_URL).origin, { crossOrigin: "anonymous" });
+  preload(STYLE_URL, { as: "fetch", crossOrigin: "anonymous" });
   const [allEvents, setEvents] = useState<Event[]>([]);
   const [now] = useState(() => Date.now());
   const [timeOn, setTimeOn] = useState(false);
@@ -82,6 +93,16 @@ export default function MapPage() {
     },
     [load, category],
   );
+
+  // Fetch the city's events straight away, so the list and cards fill in
+  // while the map is still loading; the map's own view takes over once up.
+  const firstLoad = useRef(false);
+  useEffect(() => {
+    if (firstLoad.current || bounds.current) return;
+    firstLoad.current = true;
+    const c = zoneCity;
+    load({ south: c.lat - 0.18, north: c.lat + 0.18, west: c.lng - 0.22, east: c.lng + 0.22 }, category);
+  }, [load, category, zoneCity]);
 
   // Refetch when the category changes without waiting for the next pan.
   useEffect(() => {
