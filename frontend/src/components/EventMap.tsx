@@ -14,6 +14,7 @@ import {
 } from "@/lib/mapTheme";
 import type { MapBounds } from "@/lib/api";
 import type { CityLights } from "@/lib/cityLightsLayer";
+import { sized } from "@/lib/imageUrl";
 import { cityHop, isHopFrame } from "@/lib/cityHop";
 
 // Must be set before the first Map is constructed. See
@@ -315,7 +316,7 @@ export default function EventMap({
         // Falls back to the plain dot if the image will not load.
         el.classList.add("pin-thumb");
         const img = document.createElement("img");
-        img.src = event.image_url;
+        img.src = sized(event.image_url, 64) ?? event.image_url;
         img.alt = "";
         img.loading = "lazy";
         img.decoding = "async";

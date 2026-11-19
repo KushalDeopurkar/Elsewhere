@@ -507,7 +507,7 @@ export default function DayPlanner({ city }: { city: string }) {
                       <div className="plan-card" style={{ ["--stop-hue" as string]: hue.color }}>
                         <span className="plan-num">{i + 1}</span>
                         <div className="plan-thumb">
-                          <EventImage src={e.image_url} category={e.category} ratio="1 / 1" />
+                          <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
                         </div>
                         <div className="plan-card-body">
                           <p className="plan-time">

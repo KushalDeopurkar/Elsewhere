@@ -101,7 +101,7 @@ export default function MapStrip({
               }}
             >
               <span className="map-strip-thumb">
-                <EventImage src={e.image_url} category={e.category} ratio="1 / 1" />
+                <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
               </span>
               <span className="map-strip-body">
                 <span className="map-strip-title">{e.title}</span>

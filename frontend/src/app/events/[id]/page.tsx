@@ -127,7 +127,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
         <div className="shell detail-stage">
           <TrailerMedia>
-            <EventImage src={event.image_url} alt="" category={event.category} ratio="21 / 9" priority />
+            <EventImage src={event.image_url} alt="" category={event.category} ratio="21 / 9" priority width={1100} />
           </TrailerMedia>
         </div>
 

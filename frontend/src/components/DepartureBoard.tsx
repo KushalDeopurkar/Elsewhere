@@ -1,5 +1,6 @@
 "use client";
 
+import { sized } from "@/lib/imageUrl";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CaretLeft, CaretRight } from "@phosphor-icons/react/ssr";
@@ -134,7 +135,7 @@ export default function DepartureBoard({
                 <FlapText text={r.time === "ALL DAY" ? "--:--" : r.time} length={5} delay={i * 70} className="board-time" />
                 <span className="board-event">
                   {r.event.image_url ? (
-                    <img className="board-thumb" data-vt-media src={r.event.image_url} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                    <img className="board-thumb" data-vt-media src={sized(r.event.image_url, 48)!} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
                   ) : (
                     <span className="board-thumb is-empty" data-vt-media />
                   )}

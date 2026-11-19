@@ -187,7 +187,7 @@ export default function PollView({ id, fresh = false }: { id: string; fresh?: bo
               style={{ "--cat-hue": hue, "--share": r.share } as React.CSSProperties}
             >
               <div className="poll-opt-media">
-                {e ? <EventImage src={e.image_url} category={e.category} ratio="16 / 9" /> : <div className="poll-opt-ph" />}
+                {e ? <EventImage src={e.image_url} category={e.category} ratio="16 / 9" width={360} /> : <div className="poll-opt-ph" />}
                 <span className="poll-opt-letter" aria-hidden="true">{String.fromCharCode(65 + i)}</span>
                 {r.leading && total > 0 && !decided && (
                   <span className="poll-opt-lead"><Crown size={13} weight="fill" aria-hidden="true" /> Leading</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { sized } from "@/lib/imageUrl";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { MagnifyingGlass, Users, UserPlus, UserCheck, LinkSimple, Check, CalendarCheck } from "@phosphor-icons/react/ssr";
@@ -173,7 +174,7 @@ export default function FriendsView() {
             {plans.map(({ event, plan }) => (
               <li key={event.id}>
                 <Link href={`/events/${event.id}`} className="fr-plan">
-                  {event.image_url ? <img src={event.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span className="fr-plan-ph" />}
+                  {event.image_url ? <img src={sized(event.image_url, 56)!} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span className="fr-plan-ph" />}
                   <span className="fr-plan-text">
                     <strong>{event.title}</strong>
                     <small>{whenOf(event)}{event.location_name ? ` · ${event.location_name}` : ""}</small>

@@ -22,7 +22,7 @@ export default function LoadingEvent() {
       <div className="shell detail-stage">
         <div className="detail-media is-trailer">
           {p ? (
-            <EventImage src={p.image_url} alt="" category={p.category} ratio="21 / 9" priority />
+            <EventImage src={p.image_url} alt="" category={p.category} ratio="21 / 9" priority width={1100} />
           ) : (
             <div className="skel detail-media-skel" />
           )}

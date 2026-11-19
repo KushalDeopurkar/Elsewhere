@@ -138,8 +138,28 @@ export default function MapPage() {
   // Follow the location selector: fly to the chosen city once the map is up.
   const city = useCity();
   const can3d = useCapable3D();
-  // City lights over the map wherever the device can carry it; pins otherwise.
-  const lightsOn = can3d;
+  // City lights over the map on big screens that can carry it; pins otherwise.
+  // They animate every frame, so they wait until the page has settled (a
+  // moment after load, or the first drag/scroll): the first view stays quick.
+  const [awake, setAwake] = useState(false);
+  const lightsOn = can3d && awake;
+  const wake = useCallback(() => setAwake(true), []);
+  // Woken by a gesture: switch on once the finger lifts and the map has
+  // coasted, so the tilt-in never fights a drag in progress.
+  const wakeAfterGesture = useCallback(() => {
+    window.addEventListener("pointerup", () => window.setTimeout(wake, 700), { once: true });
+  }, [wake]);
+  useEffect(() => {
+    if (!can3d || awake) return;
+    let idle = 0;
+    const t = window.setTimeout(() => {
+      idle = window.requestIdleCallback ? window.requestIdleCallback(wake, { timeout: 2000 }) : window.setTimeout(wake, 0);
+    }, 2500);
+    return () => {
+      window.clearTimeout(t);
+      if (idle && window.cancelIdleCallback) window.cancelIdleCallback(idle);
+    };
+  }, [can3d, awake, wake]);
   const flyLabel = useRef<HTMLParagraphElement>(null);
   const ready = useRef(false);
   // Changing city flies across the country to it, with a title card.
@@ -198,7 +218,7 @@ export default function MapPage() {
                   }}
                 >
                   <span className="map-item-thumb">
-                    <EventImage src={e.image_url} category={e.category} ratio="1 / 1" />
+                    <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
                   </span>
                   <span className="map-item-body">
                     <span className="map-item-title">{e.title}</span>
@@ -229,7 +249,9 @@ export default function MapPage() {
 
     <div
       className={`map-page${lightsOn ? " is-lights" : ""}`}
+      onWheel={awake ? undefined : () => window.setTimeout(wake, 900)}
       onPointerDown={(e) => {
+        if (!awake && (e.target as HTMLElement).closest(".maplibregl-canvas-container")) wakeAfterGesture();
         if (stripLocked && (e.target as HTMLElement).closest(".maplibregl-canvas-container")) setStripLocked(false);
       }}
     >
@@ -317,7 +339,7 @@ export default function MapPage() {
         {selected && (
           <article className="map-peek">
             <div className="map-peek-media">
-                <EventImage src={selected.image_url} category={selected.category} ratio="16 / 9" />
+                <EventImage src={selected.image_url} category={selected.category} ratio="16 / 9" width={380} />
               <button
                 type="button"
                 className="map-peek-close"

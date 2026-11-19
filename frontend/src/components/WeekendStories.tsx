@@ -1,5 +1,6 @@
 "use client";
 
+import { sized } from "@/lib/imageUrl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUp, CaretLeft, CaretRight, MapPin, Pause, Play, X } from "@phosphor-icons/react/ssr";
@@ -70,7 +71,7 @@ export default function WeekendStories({ events, city }: { events: Event[]; city
               }}
             >
               <span className="ws-ring-art">
-                <img src={e.image_url!} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                <img src={sized(e.image_url, 80)!} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
               </span>
               <span className="ws-ring-label" aria-hidden="true">
                 {whenOf(e).split(",")[0]}
@@ -194,7 +195,7 @@ function StoryPlayer({
     if (next?.image_url) {
       const img = new Image();
       img.referrerPolicy = "no-referrer";
-      img.src = next.image_url;
+      img.src = sized(next.image_url, 480)!;
     }
   }, [index, stories]);
 
@@ -247,7 +248,7 @@ function StoryPlayer({
       aria-label={`${label}: stories`}
       style={{ "--cat-hue": hue.color } as React.CSSProperties}
     >
-      <img className="ws-ambient" key={`a-${event.id}`} src={event.image_url!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+      <img className="ws-ambient" key={`a-${event.id}`} src={sized(event.image_url, 64)!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
       <button type="button" className="ws-side is-prev" aria-label="Previous story" onClick={() => go(-1)} disabled={index === 0}>
         <CaretLeft size={22} weight="bold" />
       </button>
@@ -266,8 +267,8 @@ function StoryPlayer({
         onContextMenu={(e) => e.preventDefault()}
       >
         <div className="ws-media" key={event.id}>
-          <img className="ws-blur" src={event.image_url!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
-          <img className="ws-poster" src={event.image_url!} alt="" referrerPolicy="no-referrer" draggable={false} />
+          <img className="ws-blur" src={sized(event.image_url, 64)!} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+          <img className="ws-poster" src={sized(event.image_url, 480)!} alt="" referrerPolicy="no-referrer" draggable={false} />
         </div>
         <div className="ws-shade" aria-hidden="true" />
 

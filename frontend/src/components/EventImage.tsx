@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import type { EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import CategoryIcon from "./CategoryIcon";
+import { sized } from "@/lib/imageUrl";
 
 /**
  * The one image component every event picture goes through.
@@ -25,6 +26,7 @@ export default function EventImage({
   ratio = "4 / 3",
   priority = false,
   className = "",
+  width = 360,
 }: {
   src: string | null | undefined;
   alt?: string;
@@ -33,8 +35,13 @@ export default function EventImage({
   ratio?: string;
   priority?: boolean;
   className?: string;
+  /** How wide it is drawn, in CSS pixels: the picture is fetched at that size. */
+  width?: number;
 }) {
   const [failed, setFailed] = useState(!src);
+  // Resized copy first; if the resizer can't fetch it, the original once.
+  const [useOriginal, setUseOriginal] = useState(false);
+  const url = useOriginal ? src : sized(src, width);
   const [fit, setFit] = useState<"cover" | "contain">("cover");
   const [w, h] = ratio.split("/").map((n) => Number(n.trim()));
   const frame = w && h ? w / h : 4 / 3;
@@ -74,18 +81,18 @@ export default function EventImage({
         </div>
       ) : (
         <>
-          {fit === "contain" && <img className="eimg-backdrop" src={src!} alt="" aria-hidden="true" />}
+          {fit === "contain" && <img className="eimg-backdrop" src={(useOriginal ? src : sized(src, 48))!} alt="" aria-hidden="true" />}
           <img
             ref={ref}
             className={`eimg-img is-${fit}`}
-            src={src!}
+            src={url!}
             alt={alt}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
             decoding="async"
             referrerPolicy="no-referrer"
             onLoad={(e) => measure(e.currentTarget)}
-            onError={() => setFailed(true)}
+            onError={() => (url !== src ? setUseOriginal(true) : setFailed(true))}
           />
         </>
       )}

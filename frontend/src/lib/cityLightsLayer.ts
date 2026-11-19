@@ -134,6 +134,7 @@ export interface CityLights {
 
 export function createCityLights(map: MapLibreMap): CityLights {
   let renderer: THREE.WebGLRenderer | null = null;
+  let pending = 0;
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
   const streetMat = pointsMaterial(false);
@@ -309,6 +310,8 @@ export function createCityLights(map: MapLibreMap): CityLights {
       buildBeacons();
     },
     onRemove() {
+      window.clearTimeout(pending);
+      pending = 0;
       dispose(streets);
       dispose(ripples);
       streets = null;
@@ -339,7 +342,9 @@ export function createCityLights(map: MapLibreMap): CityLights {
       camera.projectionMatrix = mvp;
       renderer.resetState();
       renderer.render(scene, camera);
-      map.triggerRepaint();
+      // The ripples need a steady redraw, but the pulse is slow: ~30 fps looks
+      // the same and leaves the main thread half free.
+      if (!pending) pending = window.setTimeout(() => ((pending = 0), map.triggerRepaint()), 33);
     },
   };
 

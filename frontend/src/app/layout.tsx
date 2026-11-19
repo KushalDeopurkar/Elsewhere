@@ -10,6 +10,7 @@ import CursorLayer from "@/components/CursorLayer";
 import SocialRoot from "@/components/SocialRoot";
 import CityGuess from "@/components/CityGuess";
 import AppRoot from "@/components/AppRoot";
+import { IMAGE_PROXY_ORIGIN } from "@/lib/imageUrl";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body>
+        {IMAGE_PROXY_ORIGIN && <link rel="preconnect" href={IMAGE_PROXY_ORIGIN} />}
         <RouteSignal />
         <Nav />
         <main>{children}</main>

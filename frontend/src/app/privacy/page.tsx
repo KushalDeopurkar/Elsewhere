@@ -111,6 +111,7 @@ export default function PrivacyPage() {
             <li>Brevo: sends alert emails. Telegram: delivers Telegram alerts.</li>
             <li>Google, Mozilla, Apple or Microsoft: deliver reminder notifications to your browser (whichever your browser uses). They see only an encrypted message.</li>
             <li>OpenFreeMap and CARTO: serve the map tiles your browser loads, and so see your IP address.</li>
+            <li>wsrv.nl: shrinks event pictures to the size they are shown. Your browser loads them from it, so it sees your IP address.</li>
           </ul>
           <p>We don&apos;t sell your data or share it with advertisers.</p>
 
