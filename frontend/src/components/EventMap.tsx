@@ -35,6 +35,9 @@ export interface MapHandle {
   jumpToPoint: (lat: number, lng: number) => void;
 }
 
+/** Most pins drawn at once (the soonest events in view). */
+const MAX_PINS = 80;
+
 export default function EventMap({
   events,
   selectedId,
@@ -66,6 +69,8 @@ export default function EventMap({
   const [loaded, setLoaded] = useState(false);
   const [bearing, setBearing] = useState<number>(DEFAULT_VIEW.bearing);
   const [styleRev, setStyleRev] = useState(0);
+  // Bumped when the map settles somewhere new, so pins are re-picked for the view.
+  const [viewRev, setViewRev] = useState(0);
   const originPin = useRef<Marker | null>(null);
   const lights = useRef<CityLights | null>(null);
   const lightsOn = useRef(cityLights);
@@ -284,15 +289,46 @@ export default function EventMap({
     lights.current?.setEvents(events, liveIds, selectedId, Date.now());
   }, [events, liveIds, selectedId, cityLights, loaded]);
 
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !loaded) return;
+    const onSettle = (e: unknown) => {
+      if (!isHopFrame(e)) setViewRev((n) => n + 1);
+    };
+    instance.on("moveend", onSettle);
+    return () => {
+      instance.off("moveend", onSettle);
+    };
+  }, [loaded]);
+
   // Reconcile markers against the event list: add what is new, drop what is
   // gone, and leave untouched pins alone so they do not flicker on refetch.
+  // Only pins in (or just around) the view are drawn, the soonest MAX_PINS of
+  // them: every pin is a DOM element the browser moves on each frame.
   useEffect(() => {
     const instance = map.current;
     if (!instance || !loaded) return;
 
+    const b = instance.getBounds();
+    const padLat = (b.getNorth() - b.getSouth()) * 0.15;
+    const padLng = (b.getEast() - b.getWest()) * 0.15;
+    const inView = events
+      .filter(
+        (e) =>
+          e.lat != null &&
+          e.lng != null &&
+          (e.id === selectedId ||
+            (e.lat >= b.getSouth() - padLat &&
+              e.lat <= b.getNorth() + padLat &&
+              e.lng >= b.getWest() - padLng &&
+              e.lng <= b.getEast() + padLng)),
+      )
+      .sort((a, z) => (a.id === selectedId ? -1 : z.id === selectedId ? 1 : a.start_time.localeCompare(z.start_time)))
+      .slice(0, MAX_PINS);
+
     const wanted = new Set<string>();
 
-    for (const event of events) {
+    for (const event of inView) {
       if (event.lat == null || event.lng == null) continue;
       wanted.add(event.id);
       if (markers.current.has(event.id)) continue;
@@ -361,7 +397,7 @@ export default function EventMap({
         markers.current.delete(id);
       }
     }
-  }, [events, loaded]);
+  }, [events, loaded, viewRev, selectedId]);
 
   // Travel route from the viewer's start point to the selected venue. Lives
   // in its own source so a style swap (fallback basemap) can redraw it.
@@ -437,7 +473,7 @@ export default function EventMap({
       marker.getElement().classList.toggle("is-active", id === selectedId);
       marker.getElement().classList.toggle("is-live", liveIds?.has(id) ?? false);
     }
-  }, [selectedId, events, liveIds]);
+  }, [selectedId, events, liveIds, viewRev]);
 
   const nudge = useCallback((delta: number) => {
     map.current?.easeTo({

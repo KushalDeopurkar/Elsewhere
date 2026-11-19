@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { preconnect, preload } from "react-dom";
+import { preconnect } from "react-dom";
 import { STYLE_URL } from "@/lib/mapTheme";
 import { X, Sparkle, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
 import { useCapable3D } from "@/hooks/useCapable3D";
@@ -36,16 +36,10 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
 
 const RETRY_DELAYS = [3000, 8000, 15000];
 
-// Start downloading the map code and its style as soon as this page's code
-// runs, instead of after the page has rendered.
-if (typeof window !== "undefined") {
-  void import("@/components/EventMap");
-}
-
 export default function MapPage() {
-  // Warm the connection to the map host and fetch the style early.
+  // Warm the connection to the map host. The map code itself loads after the
+  // page has painted, so the header, filters and cards show up first.
   preconnect(new URL(STYLE_URL).origin, { crossOrigin: "anonymous" });
-  preload(STYLE_URL, { as: "fetch", crossOrigin: "anonymous" });
   const [allEvents, setEvents] = useState<Event[]>([]);
   const [now] = useState(() => Date.now());
   const [timeOn, setTimeOn] = useState(false);
@@ -139,8 +133,8 @@ export default function MapPage() {
   const city = useCity();
   const can3d = useCapable3D();
   // City lights over the map on big screens that can carry it; pins otherwise.
-  // They animate every frame, so they wait until the page has settled (a
-  // moment after load, or the first drag/scroll): the first view stays quick.
+  // They animate every frame, so they start with the first drag, scroll or
+  // zoom: the page itself loads and settles without them.
   const [awake, setAwake] = useState(false);
   const lightsOn = can3d && awake;
   const wake = useCallback(() => setAwake(true), []);
@@ -149,17 +143,6 @@ export default function MapPage() {
   const wakeAfterGesture = useCallback(() => {
     window.addEventListener("pointerup", () => window.setTimeout(wake, 700), { once: true });
   }, [wake]);
-  useEffect(() => {
-    if (!can3d || awake) return;
-    let idle = 0;
-    const t = window.setTimeout(() => {
-      idle = window.requestIdleCallback ? window.requestIdleCallback(wake, { timeout: 2000 }) : window.setTimeout(wake, 0);
-    }, 2500);
-    return () => {
-      window.clearTimeout(t);
-      if (idle && window.cancelIdleCallback) window.cancelIdleCallback(idle);
-    };
-  }, [can3d, awake, wake]);
   const flyLabel = useRef<HTMLParagraphElement>(null);
   const ready = useRef(false);
   // Changing city flies across the country to it, with a title card.
@@ -264,7 +247,13 @@ export default function MapPage() {
 
     <div
       className={`map-page${lightsOn ? " is-lights" : ""}`}
-      onWheel={awake ? undefined : () => window.setTimeout(wake, 900)}
+      onWheel={
+        awake
+          ? undefined
+          : (e) => {
+              if ((e.target as HTMLElement).closest(".maplibregl-canvas-container")) window.setTimeout(wake, 900);
+            }
+      }
       onPointerDown={(e) => {
         if (!awake && (e.target as HTMLElement).closest(".maplibregl-canvas-container")) wakeAfterGesture();
         if (stripLocked && (e.target as HTMLElement).closest(".maplibregl-canvas-container")) setStripLocked(false);
