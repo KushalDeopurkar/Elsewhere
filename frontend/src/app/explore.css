@@ -149,12 +149,7 @@
 @media (min-width: 1024px) {
   .xside {
     display: block;
-    position: sticky;
-    top: calc(var(--nav-h) + var(--s-4));
     align-self: start;
-    max-height: calc(100svh - var(--nav-h) - var(--s-6));
-    overflow-y: auto;
-    scrollbar-width: thin;
   }
 }
 

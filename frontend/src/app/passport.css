@@ -2,142 +2,6 @@
    Tokens only (tokens.css); shared primitives live in core.css. */
 
 /* ==========================================================================
-   Category worlds (components/CategoryWorld.tsx)
-   ========================================================================== */
-.cat-hero { position: relative; overflow: hidden; isolation: isolate; }
-.cat-hero > :not(.cworld) { position: relative; z-index: 1; }
-.cworld {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  color: var(--cat-hue, var(--signal));
-  /* Keep the left (title side) calm and readable. */
-  mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.35) 38%, #000 70%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.35) 38%, #000 70%);
-}
-.cworld > span { position: absolute; display: block; }
-
-/* Music & nightlife: an equaliser along the bottom. */
-.cworld.is-bars { display: flex; align-items: flex-end; gap: 6px; padding: 0 2% 0 40%; }
-.cworld.is-bars > span {
-  position: relative;
-  flex: 1;
-  height: 70%;
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(to top, currentColor, transparent);
-  opacity: 0.32;
-  transform-origin: bottom;
-  animation: cw-eq ease-in-out infinite alternate;
-}
-@keyframes cw-eq { from { transform: scaleY(0.12); } to { transform: scaleY(1); } }
-
-/* Tech & business: a glowing grid with a scan line. */
-.cworld.is-grid {
-  background-image:
-    linear-gradient(to right, color-mix(in oklch, currentColor 22%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, currentColor 22%, transparent) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-.cw-scan {
-  inset: 0 auto 0 0;
-  width: 30%;
-  background: linear-gradient(90deg, transparent, color-mix(in oklch, currentColor 26%, transparent), transparent);
-  animation: cw-scan 5s linear infinite;
-}
-@keyframes cw-scan { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
-
-/* Food: steam rising. */
-.cworld.is-steam > span {
-  bottom: -20%;
-  width: 70px;
-  height: 160px;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in oklch, currentColor 45%, transparent), transparent);
-  filter: blur(14px);
-  animation: cw-steam 6s ease-in infinite;
-}
-@keyframes cw-steam {
-  0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 0; }
-  30% { opacity: 0.8; }
-  100% { transform: translate3d(20px, -220px, 0) scale(1.4); opacity: 0; }
-}
-
-/* Sports & outdoors: speed lines. */
-.cworld.is-lines > span {
-  right: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, transparent, currentColor);
-  opacity: 0.45;
-  animation: cw-dash 3s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-}
-@keyframes cw-dash { from { transform: translateX(110%); } to { transform: translateX(-260%); } }
-
-/* Arts: slow colour fields. */
-.cworld.is-blobs > span {
-  width: 22rem;
-  height: 22rem;
-  border-radius: 50%;
-  filter: blur(50px);
-  opacity: 0.35;
-  animation: cw-drift 14s ease-in-out infinite alternate;
-}
-.cworld.is-blobs > span:nth-child(1) { right: 5%; top: -40%; background: currentColor; }
-.cworld.is-blobs > span:nth-child(2) { right: 30%; top: 10%; background: var(--fg); animation-delay: -5s; }
-.cworld.is-blobs > span:nth-child(3) { right: -8%; top: 30%; background: var(--signal); animation-delay: -9s; }
-@keyframes cw-drift { to { transform: translate3d(-60px, 40px, 0) scale(1.15); } }
-
-/* Education: a twinkling constellation. */
-.cworld.is-stars > span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 10px currentColor;
-  animation: cw-twinkle 4s ease-in-out infinite;
-}
-@keyframes cw-twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.6); } 50% { opacity: 0.9; transform: scale(1.2); } }
-
-/* Wellbeing: breathing rings. */
-.cworld.is-breath > span {
-  right: 12%;
-  top: 50%;
-  width: 16rem;
-  height: 16rem;
-  margin-top: -8rem;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  opacity: 0;
-  animation: cw-breath 6s ease-in-out infinite;
-}
-@keyframes cw-breath { 0% { transform: scale(0.3); opacity: 0; } 40% { opacity: 0.45; } 100% { transform: scale(1.3); opacity: 0; } }
-
-/* Community & family: floating bubbles. */
-.cworld.is-bubbles > span {
-  bottom: -40px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  opacity: 0.5;
-  animation: cw-rise 9s linear infinite;
-}
-@keyframes cw-rise { from { transform: translate3d(0, 0, 0); opacity: 0; } 15% { opacity: 0.55; } to { transform: translate3d(-18px, -300px, 0); opacity: 0; } }
-
-.cworld.is-glow { background: radial-gradient(30rem 14rem at 85% 30%, var(--cat-wash), transparent 70%); }
-
-@media (prefers-reduced-motion: reduce) {
-  .cworld *, .cworld > span { animation: none !important; }
-  .cworld.is-bars > span { transform: scaleY(0.5); }
-  .cworld.is-steam > span, .cworld.is-bubbles > span, .cworld.is-breath > span { opacity: 0.25; }
-  .cw-scan { display: none; }
-}
-@media (pointer: coarse) {
-  /* Lighter on phones: fewer moving parts. */
-  .cworld.is-bars > span:nth-child(n + 15), .cworld.is-stars > span:nth-child(n + 14) { display: none; }
-}
-
-/* ==========================================================================
    Passport (/passport) and stamp toasts
    ========================================================================== */
 .passport { display: grid; gap: 2rem; padding-bottom: 3rem; }
@@ -314,7 +178,6 @@
 .rc-line { margin: 0; font-size: 1.125rem; color: var(--fg-2); max-width: 32ch; }
 .rc-cat { display: flex; align-items: center; gap: 0.75rem; color: var(--cat-hue, var(--fg)); }
 .rc-slide.is-world { min-height: 16rem; align-content: center; }
-.rc-slide.is-world .cworld { inset: -40% -20%; mask-image: none; -webkit-mask-image: none; opacity: 0.8; }
 .rc-stamps { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
 .rc-stamps li {
   display: grid;
@@ -387,8 +250,235 @@
   .pp-stamp.is-fresh, .pp-stamp.is-fresh::after, .pp-bar > span { animation: none; }
 }
 
-/* Category worlds play a few cycles on the recap, then settle. */
-.cworld,
-.cworld * {
-  animation-iteration-count: 3 !important;
+/* ==========================================================================
+   Passport, timetable edition: visa stamps, a ledger and ruled badges
+   ========================================================================== */
+.passport {
+  display: grid;
+  gap: var(--s-7);
+}
+
+.pp-recap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  background: var(--board);
+  color: var(--board-fg);
+  border: 0;
+  border-radius: 0;
+}
+
+.pp-recap svg {
+  color: var(--lamp);
+}
+
+.pp-recap span {
+  display: grid;
+  gap: 2px;
+}
+
+.pp-recap strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 80%;
+  font-size: var(--t-xl);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.pp-recap small {
+  color: var(--board-fg-2);
+  font-size: var(--t-sm);
+}
+
+.pp-recap .pp-recap-go {
+  padding: 6px 12px;
+  background: var(--lamp);
+  color: var(--on-signal);
+  font-weight: 700;
+  font-size: var(--t-sm);
+}
+
+@media (hover: hover) {
+  .pp-recap:hover .pp-recap-go {
+    background: var(--board-fg);
+  }
+}
+
+.pp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-top: 2px solid var(--fg);
+  border-bottom: 1px solid var(--rule);
+}
+
+.pp-stats p {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  margin: 0;
+  padding: var(--s-3) var(--s-3) var(--s-3) 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.pp-stats p + p {
+  padding-left: var(--s-3);
+  border-left: 1px solid var(--rule);
+}
+
+.pp-stats p svg {
+  display: none;
+}
+
+.pp-stats strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 62%;
+  font-size: 2.6rem;
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg);
+}
+
+@media (max-width: 639px) {
+  .pp-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pp-stats p:nth-child(3) {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+/* Visa stamps: dashed until you've been, inked and set at an angle once you have */
+.pp-stamps {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: var(--s-3);
+}
+
+.pp-stamp {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas:
+    "ring name"
+    "ring date";
+  align-items: center;
+  justify-items: start;
+  column-gap: var(--s-3);
+  min-height: 76px;
+  padding: var(--s-3);
+  text-align: left;
+  border: 1.5px dashed var(--rule-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg-3);
+  transform: none;
+}
+
+.pp-ring {
+  grid-area: ring;
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  border: 1.5px solid currentColor;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.pp-name {
+  grid-area: name;
+  font-weight: 650;
+  font-size: var(--t-sm);
+  color: var(--fg-2);
+}
+
+.pp-date {
+  grid-area: date;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pp-stamp.is-got {
+  border: 2px solid var(--cat-hue);
+  color: var(--cat-hue);
+  background: color-mix(in oklch, var(--cat-hue) 7%, transparent);
+  transform: rotate(var(--tilt, -2deg));
+}
+
+.pp-stamp.is-got .pp-ring {
+  opacity: 1;
+  border-width: 2px;
+  box-shadow: none;
+  background: var(--cat-hue);
+  color: var(--bg);
+}
+
+.pp-stamp.is-got .pp-name {
+  color: var(--fg);
+}
+
+@media (hover: hover) {
+  .pp-stamp:hover {
+    border-color: var(--fg);
+    color: var(--fg);
+    transform: none;
+  }
+}
+
+/* Badges: a ruled ledger */
+.pp-badges {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  column-gap: var(--s-6);
+  row-gap: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.pp-badge {
+  padding: var(--s-3) 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+}
+
+.pp-badge-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+  border: 1.5px solid var(--rule-strong);
+  background: transparent;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.pp-bar {
+  height: 3px;
+  border-radius: 0;
+}
+
+.pp-cities li {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+}
+
+.pp-reset {
+  font-size: var(--t-sm);
+  color: var(--fg-3);
+  text-decoration: underline;
 }

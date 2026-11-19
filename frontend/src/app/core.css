@@ -649,7 +649,8 @@ p {
   color: var(--lamp);
 }
 
-/* City picker: a native select under a styled face */
+/* City picker: a native select under a styled face. Board colours in the
+   header band; page colours anywhere else. */
 .loc {
   position: relative;
   display: inline-flex;
@@ -657,13 +658,21 @@ p {
   gap: 6px;
   min-height: 36px;
   padding: 0 var(--s-1);
-  color: var(--board-fg);
+  color: var(--fg);
   font-weight: 600;
   font-size: var(--t-sm);
   cursor: pointer;
 }
 
 .loc svg:first-child {
+  color: var(--signal-text);
+}
+
+.topnav .loc {
+  color: var(--board-fg);
+}
+
+.topnav .loc svg:first-child {
   color: var(--lamp);
 }
 
@@ -877,6 +886,14 @@ p {
     transform: scaleX(1);
   }
 
+  .tabbar.is-off {
+    display: none;
+  }
+
+  :root:has(.tabbar.is-off) {
+    --tabbar-h: 0px;
+  }
+
   .count-dot.is-tab {
     top: 6px;
     right: calc(50% - 22px);
@@ -950,8 +967,9 @@ p {
 
 .foot-col a,
 .foot-legal a {
-  display: inline-block;
-  padding-block: 4px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   color: var(--board-fg);
   font-size: var(--t-sm);
 }
@@ -2408,6 +2426,21 @@ p {
   }
 }
 
+.tt-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--fg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
 .tt-skel {
   display: grid;
   grid-template-columns: 6.2rem 1fr;
@@ -2481,7 +2514,7 @@ p {
 }
 
 @media (max-width: 767px) {
-  .tt-board [role="tabpanel"] {
+  .tt-rows.is-loading {
     min-height: 18rem;
   }
 }

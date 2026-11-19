@@ -99,6 +99,9 @@ export default function Home() {
     return s ? { count: s.count ?? null, capped: s.capped } : null;
   };
   const freeCount = all.filter((e) => e.is_free).length;
+  // Sections are numbered in the order they appear; some only show when they have something.
+  let section = 0;
+  const no = () => String(++section).padStart(2, "0");
 
   return (
     <>
@@ -149,7 +152,7 @@ export default function Home() {
       {!pool.loading && <WeekendStories events={all} city={city.name} />}
 
       <section className="shell sec">
-        <SectionHeader index="01" kicker={`This week in ${city.name}`} title="Headliners" href="/explore?when=week" />
+        <SectionHeader index={no()} kicker={`This week in ${city.name}`} title="Headliners" href="/explore?when=week" />
         {pool.loading ? (
           <div className="feature-grid">
             <CardSkeleton variant="featured" />
@@ -175,7 +178,7 @@ export default function Home() {
       {soon.length > 0 && (
         <section className="shell sec">
           <SectionHeader
-            index="02"
+            index={no()}
             kicker={<><span className="live-dot" aria-hidden="true" /> Next 3 hours</>}
             title="Boarding now"
             href="/explore?when=today&sort=soonest"
@@ -187,19 +190,19 @@ export default function Home() {
 
       {(pool.loading || thisWeek.length > 0) && (
         <section className="shell sec">
-          <SectionHeader index="03" kicker="Next 7 days" title="This week" href="/explore?when=week" />
+          <SectionHeader index={no()} kicker="Next 7 days" title="This week" href="/explore?when=week" />
           <RailOf events={thisWeek} label="events this week" loading={pool.loading} />
         </section>
       )}
 
       <section className="shell sec">
-        <SectionHeader index="04" kicker="Every kind of event" title="Lines" href="/explore" linkLabel="Browse everything" />
+        <SectionHeader index={no()} kicker="Every kind of event" title="Lines" href="/explore" linkLabel="Browse everything" />
         <CategoryLines cats={lines} stat={lineStat} city={city.name} />
       </section>
 
       <section className="shell sec">
         <SectionHeader
-          index="05"
+          index={no()}
           kicker="From what you saved"
           title="Handpicked for you"
           href={saved.length ? "/saved" : undefined}
@@ -226,14 +229,14 @@ export default function Home() {
 
       {free.length > 0 && (
         <section className="shell sec">
-          <SectionHeader index="06" kicker="No ticket needed" title="Free entry" href="/explore?price=free" />
+          <SectionHeader index={no()} kicker="No ticket needed" title="Free entry" href="/explore?price=free" />
           <RailOf events={free} label="free events" loading={false} />
         </section>
       )}
 
       {weekend.length > 0 && (
         <section className="shell sec">
-          <SectionHeader index="07" kicker="Saturday and Sunday" title="This weekend" href="/explore?when=weekend" />
+          <SectionHeader index={no()} kicker="Saturday and Sunday" title="This weekend" href="/explore?when=weekend" />
           <RailOf events={weekend} label="weekend events" loading={false} />
         </section>
       )}

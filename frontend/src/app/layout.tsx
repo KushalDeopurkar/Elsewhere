@@ -7,6 +7,7 @@ import "./globals.css";
 import "./core.css";
 import "./events.css";
 import "./explore.css";
+import "./reel.css";
 import "./map.css";
 import "./planner.css";
 import "./social.css";

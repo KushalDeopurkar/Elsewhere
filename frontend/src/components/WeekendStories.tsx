@@ -17,7 +17,6 @@ import { rememberPreview } from "@/lib/eventPreview";
 import { recordSignal } from "@/lib/taste";
 import SaveButton from "./SaveButton";
 import CategoryIcon from "./CategoryIcon";
-import "./stories.css";
 
 const STORY_MS = 6500;
 const HOLD_MS = 180;

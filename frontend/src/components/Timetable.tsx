@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowRight, CaretLeft, CaretRight } from "@phosphor-icons/react/ssr";
 import type { Event } from "@/lib/types";
 import { CATEGORIES } from "@/lib/types";
-import { boardRows, pages, type BoardTab } from "@/lib/board";
+import { boardRows, pages, type BoardRow, type BoardTab } from "@/lib/board";
 import { useNow } from "@/lib/clock";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { zoneLabel } from "@/lib/formatDate";
@@ -78,6 +78,12 @@ export default function Timetable({
   // The NOW line goes after the last departure already running.
   const lastLive = current.reduce((at, r, i) => (r.tone === "live" ? i : at), -1);
   const showNow = tab === "today" && now > 0 && page % pageCount === 0;
+  // A thin night: carry on into tomorrow's first departures under a rule,
+  // so the board never looks empty while there is something to go to.
+  const later = useMemo(
+    () => (tab === "today" && now && rows.length < 3 ? boardRows(events, "tomorrow", now).slice(0, 5 - rows.length) : []),
+    [tab, now, rows.length, events],
+  );
   const settled = !loading && now > 0;
 
   return (
@@ -164,56 +170,20 @@ export default function Timetable({
                 {showNow && lastLive === -1 && <NowLine time={time} />}
                 {current.map((r, i) => (
                   <Fragment key={`${tab}-${r.event.id}`}>
-                    <li
-                      className={`tt-row is-${r.tone}`}
-                      data-vt-card
-                      style={{ "--cat": getCategoryColor(r.event.category).color, "--i": i } as React.CSSProperties}
-                    >
-                      <TransitionLink
-                        href={`/events/${r.event.id}`}
-                        kind="event"
-                        preview={r.event}
-                        className="tt-link"
-                      >
-                        <span className="tt-time">
-                          {r.day && <span className="tt-day">{r.day}</span>}
-                          <FlapText
-                            text={r.time === "ALL DAY" ? "--:--" : r.time}
-                            label={r.time === "ALL DAY" ? "All day" : r.time}
-                            length={5}
-                            delay={i * 45}
-                          />
-                        </span>
-                        <span className="tt-dest">
-                          <span className="tt-name">{r.title}</span>
-                          <span className="tt-cat">{catCode(r.event.category)}</span>
-                        </span>
-                        <span className="tt-plat">
-                          <span className="sr-only">, at </span>
-                          {r.area || "Venue on listing"}
-                          {r.time === "ALL DAY" && <span className="tt-note"> · times on listing</span>}
-                        </span>
-                        <span className="tt-status">
-                          <span className="sr-only">, </span>
-                          {r.tone === "live" && <span className="live-dot" aria-hidden="true" />}
-                          {r.status}
-                        </span>
-                        {r.event.image_url && (
-                          <img
-                            className="tt-peek"
-                            data-vt-media
-                            src={sized(r.event.image_url, 240)!}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                            referrerPolicy="no-referrer"
-                          />
-                        )}
-                      </TransitionLink>
-                    </li>
+                    <Row r={r} i={i} />
                     {showNow && i === lastLive && <NowLine time={time} />}
                   </Fragment>
                 ))}
+                {later.length > 0 && (
+                  <>
+                    <li className="tt-divider">
+                      <span>Tomorrow</span>
+                    </li>
+                    {later.map((r, i) => (
+                      <Row key={`later-${r.event.id}`} r={r} i={current.length + i} />
+                    ))}
+                  </>
+                )}
               </ol>
             )}
           </div>
@@ -242,6 +212,58 @@ export default function Timetable({
         </div>
       </div>
     </section>
+  );
+}
+
+function Row({ r, i }: { r: BoardRow; i: number }) {
+  return (
+    <li
+      className={`tt-row is-${r.tone}`}
+      data-vt-card
+      style={{ "--cat": getCategoryColor(r.event.category).color, "--i": i } as React.CSSProperties}
+    >
+      <TransitionLink
+        href={`/events/${r.event.id}`}
+        kind="event"
+        preview={r.event}
+        className="tt-link"
+      >
+        <span className="tt-time">
+          {r.day && <span className="tt-day">{r.day}</span>}
+          <FlapText
+            text={r.time === "ALL DAY" ? "--:--" : r.time}
+            label={r.time === "ALL DAY" ? "All day" : r.time}
+            length={5}
+            delay={i * 45}
+          />
+        </span>
+        <span className="tt-dest">
+          <span className="tt-name">{r.title}</span>
+          <span className="tt-cat">{catCode(r.event.category)}</span>
+        </span>
+        <span className="tt-plat">
+          <span className="sr-only">, at </span>
+          {r.area || "Venue on listing"}
+          {r.time === "ALL DAY" && <span className="tt-note"> · times on listing</span>}
+        </span>
+        <span className="tt-status">
+          <span className="sr-only">, </span>
+          {r.tone === "live" && <span className="live-dot" aria-hidden="true" />}
+          {r.status}
+        </span>
+        {r.event.image_url && (
+          <img
+            className="tt-peek"
+            data-vt-media
+            src={sized(r.event.image_url, 240)!}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
+        )}
+      </TransitionLink>
+    </li>
   );
 }
 

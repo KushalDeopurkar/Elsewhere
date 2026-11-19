@@ -1,6 +1,6 @@
 # Missile log: Elsewhere frontend
 
-status: stage=0 iteration=1 verdict=CONTINUE updated=2026-11-19T21:38:14.840Z
+status: stage=0 iteration=2 verdict=CONTINUE updated=2026-11-19T21:54:06.881Z
 mode: full (existing project, redesign)
 branch: missile/20261120
 url: none
@@ -25,19 +25,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 ## Scoreboard
 
 <!-- scoreboard:start -->
-| dimension | baseline | it1 | target |
-|---|---|---|---|
-| first_impression | 6 | 7 | 9+ |
-| design_system | 4 | 7 | 9+ |
-| layout | 6 | 6 | 9+ |
-| motion | 5 | 6 | 9+ |
-| ux_completeness | 5 | 6 | 9+ |
-| accessibility | 6 | 8 | 9+ |
-| performance | 6 | 8 | 9+ |
-| code_health | 6 | 7 | 9+ |
-| story | 4 | 7 | 9+ |
-| shipped | 5 | 5 | 9+ |
-| **mean** | 5.3 | 6.7 | 9.5+ |
+| dimension | baseline | it1 | it2 | target |
+|---|---|---|---|---|
+| first_impression | 6 | 7 | 8 | 9+ |
+| design_system | 4 | 7 | 7 | 9+ |
+| layout | 6 | 6 | 7 | 9+ |
+| motion | 5 | 6 | 7 | 9+ |
+| ux_completeness | 5 | 6 | 7 | 9+ |
+| accessibility | 6 | 8 | 7 | 9+ |
+| performance | 6 | 8 | 9 | 9+ |
+| code_health | 6 | 7 | 7 | 9+ |
+| story | 4 | 7 | 8 | 9+ |
+| shipped | 5 | 5 | 5 | 9+ |
+| **mean** | 5.3 | 6.7 | 7.2 | 9.5+ |
 <!-- scoreboard:end -->
 
 ## Plan
@@ -80,6 +80,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
   - [M] layout: On phones, hide the tab bar while the event action bar is pinned, stop the map peek strip overlapping the error card, and replace the empty WHERE box with an address-and-directions row when tiles fail. (src/components/EventActionBar.tsx, src/components/Nav.tsx, src/app/map/page.tsx, src/components/EventMap.tsx, src/app/events.css)
   - [S] motion: Remove the overshoot curves and the cw-* infinite loops, set --t-enter to 200ms, and cap the 520 to 900 ms entrances at 240 ms. (src/app/redesign.css, src/app/tokens.css)
   - [L] design_system: Restyle /passport to the timetable system (square stamps, ruled numbered sections, no wash banner or Fire icon), then fold the rules still used from redesign.css and stories.css into the core sheets and delete both files. (src/components/PassportView.tsx, src/app/redesign.css, src/components/stories.css, src/app/core.css)
+
+### Iteration 2 · 2026-11-19T21:54:06.881Z
+- mean 7.2, min 5, verdict **CONTINUE**
+- url: http://localhost:3100
+- screens: /, /explore, /map, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101, /categories/technology, /saved, /passport, /plan-my-day, /settings, /friends, /recap, /alert, /privacy, /opengraph-image, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101/opengraph-image
+- next fixes:
+  - [S] accessibility: Fix the two day-theme contrast failures: delete social.css:621-623 so footer Privacy/Terms use --board-fg (now 1.6:1 on every page), and give the plan-my-day city select color var(--fg) on paper (now about 1.05:1). Add both to the tokens contrast test. (src/app/social.css, src/app/core.css, src/app/planner.css, src/components/PlanMyDayView.tsx)
+  - [S] code_health: Add an /api/events/search route handler with a 3 s timeout that returns the labelled sample set with HTTP 200 when the backend fails, removing the console 500 on home, explore, map and category pages. This was the it1 fix and was not applied. Then re-shoot from HEAD. (src/app/api/events/search/route.ts, src/lib/api.ts, next.config.ts)
+  - [M] first_impression: Keep the hero board at three or more departures: when tonight has fewer, continue with tomorrow's rows under a ruled 'Tomorrow' divider, and drop the 18rem panel floor once rows settle so phones show no blank band. (src/components/Timetable.tsx, src/app/core.css)
+  - [M] layout: On phones, hide the tab bar while the event action bar is pinned. Replace the dark WHERE frame with an address-and-Directions row when tiles fail. Remove the cut-off on the explore filter rail. Number home sections from what is rendered (no skipped 02). The first two were it1 fixes and are not applied. (src/components/EventActionBar.tsx, src/components/Nav.tsx, src/components/EventMap.tsx, src/app/events.css, src/app/explore.css, src/app/page.tsx)
+  - [S] motion: Delete the cw-* infinite loops (moved, not removed, in it2) and pin-pulse, set --t-enter to 200ms, and cut the 500 ms theme crossfade to 240 ms. (src/app/passport.css, src/app/map.css, src/app/tokens.css, src/app/core.css, src/components/CategoryWorld.tsx)
+  - [S] story: Add a README Credits section, re-shoot the docs screenshots from HEAD with one phone shot, and give /map its own title and description. (README.md, docs/, src/app/map/page.tsx)
+  - [L] design_system: Restyle /passport (square stamps, ruled Archivo heads, mono counters, no wash banner or round badge counters) and the plan-my-day panels to the timetable system, then fold components/stories.css into the core sheets and delete it. (src/components/PassportView.tsx, src/components/PassportStamp.tsx, src/app/passport.css, src/app/planner.css, src/components/stories.css)
 
 <!-- iterations:end -->
 

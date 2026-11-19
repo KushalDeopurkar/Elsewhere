@@ -557,7 +557,7 @@
     display: flex;
     align-items: center;
     gap: var(--s-2);
-    padding: var(--s-2) var(--s-4);
+    padding: var(--s-2) var(--s-4) calc(var(--s-2) + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
     border-top: 2px solid var(--fg);
   }
@@ -639,12 +639,25 @@
   align-content: center;
   gap: var(--s-2);
   padding: var(--s-5);
-  background:
-    repeating-linear-gradient(0deg, transparent 0 31px, var(--board-rule) 31px 32px),
-    repeating-linear-gradient(90deg, transparent 0 31px, var(--board-rule) 31px 32px),
-    var(--board);
-  color: var(--board-fg-2);
+  background: var(--bg-2);
+  color: var(--fg-2);
   font-size: var(--t-sm);
+  border-left: 4px solid var(--signal);
+}
+
+/* On the event page a failed map collapses to a note, not an empty frame */
+.detail-map:has(.plan-map-failed) {
+  height: auto;
+  background: transparent;
+  border: 0;
+}
+
+.detail-map:has(.plan-map-failed) .plan-map {
+  display: none;
+}
+
+.detail-map .plan-map-failed {
+  position: static;
 }
 
 .plan-map-failed-title {
@@ -652,7 +665,7 @@
   font-weight: 800;
   font-stretch: 85%;
   font-size: var(--t-lg);
-  color: var(--board-fg);
+  color: var(--fg);
 }
 .detail-map .plan-map, .detail-map .plan-map-box { height: 100%; border-radius: 0; }
 

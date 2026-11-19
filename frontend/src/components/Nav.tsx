@@ -83,7 +83,9 @@ export default function Nav() {
         </div>
       </nav>
 
-      <nav className="tabbar" aria-label="Sections">
+      {/* On an event page the phone's bottom edge belongs to the event's own
+          action bar (price, going, tickets); the header still leads home. */}
+      <nav className={`tabbar${pathname.startsWith("/events/") ? " is-off" : ""}`} aria-label="Sections">
         {TABS.map(({ href, label, icon: Icon }) => {
           const on = active(pathname, href);
           return (

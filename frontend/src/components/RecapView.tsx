@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CaretLeft, CaretRight, DownloadSimple, Pause, Play, ShareNetwork, X } from "@phosphor-icons/react/ssr";
 import CategoryIcon from "./CategoryIcon";
-import CategoryWorld from "./CategoryWorld";
 import { useSaved } from "@/lib/saved";
 import { usePassport } from "@/lib/passport";
 import { tasteSummary, useTaste } from "@/lib/taste";
@@ -210,7 +209,6 @@ export default function RecapView() {
         )}
         {current === "top" && recap.top && (
           <div className="rc-slide is-on is-world">
-            <CategoryWorld category={recap.top.value} />
             <p className="rc-kicker">Your top vibe</p>
             <p className="rc-big rc-cat">
               <CategoryIcon category={recap.top.value} size={56} weight="fill" /> {recap.top.label}

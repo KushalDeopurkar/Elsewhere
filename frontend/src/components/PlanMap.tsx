@@ -223,7 +223,7 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
           <p className="plan-map-failed-title">The map couldn&apos;t load here.</p>
           <p>
             {pts.length === 1
-              ? `${pts[0].event.location_name || "The venue"} is at ${pts[0].event.lat!.toFixed(4)}, ${pts[0].event.lng!.toFixed(4)}. Directions open in Google Maps.`
+              ? "The directions link below opens the exact spot in Google Maps."
               : "Your stops and times are listed below. Each one opens in Google Maps."}
           </p>
         </div>

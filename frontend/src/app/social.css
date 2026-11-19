@@ -618,9 +618,6 @@
 /* ==========================================================================
    Legal pages, footer links, account deletion
    ========================================================================== */
-.foot-legal { display: flex; gap: 1.25rem; }
-.foot-legal a { color: var(--fg-2); min-height: 44px; display: inline-flex; align-items: center; }
-.foot-legal a:hover { color: var(--fg); }
 .signin-fine a { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; }
 
 .legal { max-width: 44rem; margin: 0 auto; padding: 2.5rem 0 1rem; line-height: 1.65; color: var(--fg-2); }
