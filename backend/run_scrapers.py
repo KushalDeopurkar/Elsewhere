@@ -34,10 +34,11 @@ from app.scrapers.seatgeek import SeatGeekScraper
 from app.scrapers.eventfinda import EventfindaScraper
 from app.scrapers.paris_opendata import ParisOpenDataScraper
 from app.scrapers.ics_feeds import IcsFeedsScraper
+from app.scrapers.football import FootballScraper
 from app.services.dedupe import dedupe
 
 INDIA_SOURCES = ["allevents", "district", "meetup"]
-GLOBAL_SOURCES = ["ticketmaster", "seatgeek", "eventfinda", "paris", "ics"]
+GLOBAL_SOURCES = ["ticketmaster", "seatgeek", "eventfinda", "paris", "ics", "football"]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -114,6 +115,8 @@ async def main():
         scrapers.append(ParisOpenDataScraper())
     if wanted("ics"):
         scrapers.append(IcsFeedsScraper())
+    if wanted("football"):
+        scrapers.append(FootballScraper())
 
     # Run all selected scrapers
     all_events = []

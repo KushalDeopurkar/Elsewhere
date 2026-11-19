@@ -224,3 +224,33 @@ def test_luma_feed_parsing():
     assert run.location_name.startswith("Carter Road Amphitheatre")
     assert run.city == "Mumbai" and run.source == "ics"
     assert run.category.value == "sports"
+
+
+def test_football_fixtures_home_matches_in_covered_cities():
+    from datetime import date, datetime, timezone
+    from app.scrapers.football import parse_league, season_for, short_name
+
+    assert season_for(date(2026, 11, 20)) == "2026-27"
+    assert season_for(date(2027, 3, 1)) == "2026-27"
+    assert season_for(date(2027, 7, 1)) == "2027-28"
+    assert short_name("Manchester City FC") == "Manchester City"
+    assert short_name("AFC Ajax") == "Ajax"
+    assert short_name("Paris FC") == "Paris FC"
+
+    data = {"matches": [
+        {"round": "Matchday 11", "date": "2026-11-21", "time": "15:00", "team1": "Chelsea FC", "team2": "Leeds United FC"},
+        {"round": "Matchday 11", "date": "2026-11-21", "time": "17:30", "team1": "Newcastle United FC", "team2": "Arsenal FC"},
+        {"round": "Matchday 10", "date": "2026-11-08", "time": "15:00", "team1": "Arsenal FC", "team2": "Everton FC", "score": {"ft": [1, 0]}},
+        {"round": "Matchday 12", "date": "2026-11-28", "team1": "Manchester United FC", "team2": "Fulham FC"},
+        {"round": "Matchday 30", "date": "2027-04-10", "time": "15:00", "team1": "Arsenal FC", "team2": "Fulham FC"},
+    ]}
+    got = parse_league(data, "en.1", "Premier League", now=datetime(2026, 11, 19, 12, tzinfo=timezone.utc))
+    assert [e.title for e in got] == ["Chelsea vs Leeds United", "Manchester United vs Fulham"]
+    chelsea, united = got
+    assert chelsea.city == "London" and chelsea.location_name == "Stamford Bridge"
+    assert chelsea.start_time == datetime(2026, 11, 21, 15, 0, tzinfo=timezone.utc)  # GMT in November
+    assert chelsea.category.value == "sports" and chelsea.source == "football"
+    assert "Matchday 11" in chelsea.description
+    # Date-only match: midnight local, with a note that the time isn't out yet.
+    assert united.start_time == datetime(2026, 11, 28, 0, 0, tzinfo=timezone.utc)
+    assert "not announced" in united.description

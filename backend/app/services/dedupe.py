@@ -16,7 +16,7 @@ from typing import Dict, List, Tuple
 from app.models.event import EventCreate
 
 # Lower is preferred.
-PRIORITY = {"ticketmaster": 0, "eventfinda": 1, "paris-opendata": 1, "seatgeek": 2, "ics": 3}
+PRIORITY = {"ticketmaster": 0, "eventfinda": 1, "paris-opendata": 1, "seatgeek": 2, "ics": 3, "football": 4}
 NOISE = re.compile(r"\b(tickets?|live( at| in)?|presents?|the|20\d\d)\b")
 
 

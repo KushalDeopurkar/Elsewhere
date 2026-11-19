@@ -10,6 +10,7 @@ Eventbrite, Resident Advisor, Meetup, Luma or AllEvents, which ban scraping).
 | SeatGeek | US and Canada: sports, concerts, theatre | Free | `SEATGEEK_CLIENT_ID` |
 | Eventfinda | New Zealand, Australia, Singapore: arts, community, festivals | Free | `EVENTFINDA_USERNAME`, `EVENTFINDA_PASSWORD` |
 | Que faire à Paris | Paris: culture, workshops, walks, kids, lots of free events | None (ODbL open data) | none |
+| Football fixtures | openfootball (CC0): Premier League, Championship, La Liga, Bundesliga, Ligue 1, Eredivisie home matches in London, Manchester, Birmingham, Madrid, Barcelona, Berlin, Paris, Amsterdam | None | none |
 | iCal feeds | Public `.ics` calendars in `backend/feeds.json` (Luma city calendars for 32 cities included) | None | none |
 
 A source whose secret isn't set is skipped with a log line, so you can add them one at a time.
@@ -71,6 +72,18 @@ Cities Luma has no page for (Hyderabad, Pune, Chennai, Manchester, Perth…) jus
 to its Discover page; skip those.
 
 Test one feed without saving: `python run_scrapers.py --source ics --city Mumbai --dry-run`.
+
+## 4. Football fixtures
+
+`app/scrapers/football.py` reads the season's fixtures from
+[openfootball](https://github.com/openfootball/football.json) (public domain) and keeps home
+matches of clubs whose ground is in a covered city (`STADIUMS`, with each stadium's
+coordinates and ticket page). Kick-off times there can lag TV rescheduling and some leagues
+only give dates, so the event says to check the club. To add a club, add its openfootball
+team name to `STADIUMS`; to add a league, add its file code to `LEAGUES`.
+
+No Indian league is in openfootball, and TheSportsDB's free key returns too little (and
+rate-limits hard), so ISL/IPL aren't covered yet.
 
 ## Cities
 

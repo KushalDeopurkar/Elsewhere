@@ -52,6 +52,7 @@ const SOURCE_NAMES: Record<string, string> = {
   eventfinda: "Eventfinda",
   "paris-opendata": "Que faire à Paris",
   ics: "the organiser's calendar",
+  football: "the club's site",
   sample: "Sample data",
 };
 
@@ -80,7 +81,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     d.language && { k: "Language", v: d.language },
     d.organizer && { k: "Organiser", v: d.organizer },
   ].filter(Boolean) as { k: string; v: string }[];
-  const source = SOURCE_NAMES[event.source] ?? event.source;
+  const source = /^https:\/\/(www\.)?(luma\.com|lu\.ma)\//.test(event.url ?? "")
+    ? "Luma"
+    : (SOURCE_NAMES[event.source] ?? event.source);
   const mapsUrl =
     event.lat != null && event.lng != null
       ? `https://www.google.com/maps/search/?api=1&query=${event.lat},${event.lng}`

@@ -24,6 +24,7 @@ on:
           - eventfinda
           - paris
           - ics
+          - football
       city:
         description: 'Specific city to scrape (optional)'
         required: false
