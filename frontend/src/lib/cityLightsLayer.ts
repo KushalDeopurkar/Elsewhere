@@ -17,7 +17,7 @@
 import * as THREE from "three";
 import { MercatorCoordinate, type CustomLayerInterface, type MapLibreMap } from "maplibre-gl";
 import type { Event } from "./types";
-import { getCategoryColor } from "./categoryColors";
+import { getCategoryColorFixed } from "./categoryColors";
 import { vectorSourceId } from "./mapTheme";
 
 const LAYER_ID = "ee-city-lights";
@@ -186,7 +186,7 @@ export function createCityLights(map: MapLibreMap): CityLights {
     const index: number[] = [];
     list.forEach((e, i) => {
       const [x, y] = toLocal(e.lng!, e.lat!);
-      const c = cssColor(getCategoryColor(e.category).color);
+      const c = cssColor(getCategoryColorFixed(e.category).color);
       const b = e.id === sel ? 1 : live?.has(e.id) ? 0.7 : 0;
       for (let v = 0; v < 4; v++) {
         const k = i * 4 + v;

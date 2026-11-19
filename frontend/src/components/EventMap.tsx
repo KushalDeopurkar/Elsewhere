@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LngLat, LngLatBounds, MapLibreMap, Marker, setWorkerUrl, GeoJSONSource } from "maplibre-gl";
 import type { RouteLine } from "@/components/TravelTime";
 import { Event } from "@/lib/types";
-import { getCategoryColor } from "@/lib/categoryColors";
+import { getCategoryColorFixed } from "@/lib/categoryColors";
 import {
   STYLE_URL,
   FALLBACK_STYLE_URL,
@@ -333,7 +333,7 @@ export default function EventMap({
       wanted.add(event.id);
       if (markers.current.has(event.id)) continue;
 
-      const hue = getCategoryColor(event.category);
+      const hue = getCategoryColorFixed(event.category);
 
       // MapLibre owns the marker element's position and transform (it writes
       // an inline translate on every frame). Keep that element bare and put
@@ -531,7 +531,7 @@ export default function EventMap({
         </button>
         <button type="button" className="map-tool map-compass" onClick={resetNorth} aria-label="Point north" title="Point north">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ transform: `rotate(${-bearing}deg)` }}>
-            <path d="M12 3l3.5 9h-7z" fill="var(--marigold)" />
+            <path d="M12 3l3.5 9h-7z" fill="var(--signal)" />
             <path d="M12 21l-3.5-9h7z" fill="currentColor" opacity="0.5" />
           </svg>
         </button>

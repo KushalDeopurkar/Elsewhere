@@ -28,7 +28,7 @@
   gap: 0.4rem;
   width: 76px;
   border-radius: var(--r-sm);
-  color: var(--text-mid);
+  color: var(--fg-2);
   font-size: 0.75rem;
   font-weight: 560;
 }
@@ -43,7 +43,7 @@
   height: 68px;
   border-radius: 50%;
   padding: 3px;
-  background: conic-gradient(from 210deg, var(--marigold), var(--lilac), var(--marigold-bright), var(--marigold));
+  background: conic-gradient(from 210deg, var(--signal), var(--fg), var(--signal-hi), var(--signal));
   transition: transform var(--t-hover) var(--ease);
 }
 .ws-ring-art img {
@@ -56,15 +56,15 @@
   box-sizing: border-box;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--ink-900);
-  background: var(--ink-800);
+  border: 3px solid var(--bg);
+  background: var(--bg-3);
 }
 .ws-ring.is-seen .ws-ring-art {
-  background: var(--line-strong);
+  background: var(--rule-strong);
 }
 .ws-ring.is-lead .ws-ring-art {
-  background: var(--marigold);
-  color: var(--on-marigold);
+  background: var(--signal);
+  color: var(--on-signal);
 }
 .ws-ring-label {
   max-width: 76px;
@@ -73,13 +73,13 @@
   white-space: nowrap;
 }
 .ws-ring.is-lead .ws-ring-label {
-  color: var(--text-hi);
+  color: var(--fg);
 }
 .ws-ring:hover .ws-ring-art {
   transform: scale(1.05);
 }
 .ws-ring:focus-visible {
-  outline: 2px solid var(--marigold);
+  outline: 2px solid var(--signal);
   outline-offset: 3px;
 }
 
@@ -127,7 +127,7 @@
   height: min(100dvh, 92dvh);
   border-radius: 18px;
   overflow: hidden;
-  background: var(--ink-900);
+  background: var(--bg);
   box-shadow: 0 30px 90px rgb(0 0 0 / 0.6);
   user-select: none;
   -webkit-user-select: none;
@@ -269,7 +269,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cat-hue, var(--marigold));
+  color: var(--cat-hue, var(--signal));
 }
 .ws-count {
   justify-self: start;
@@ -286,7 +286,7 @@
   color: var(--live);
 }
 .ws-title {
-  font-family: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.6rem, 4.5vh, 2.3rem);
   line-height: 1.05;
   font-weight: 700;

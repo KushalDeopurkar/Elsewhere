@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
 import { whenOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
-import { getCategoryColor } from "@/lib/categoryColors";
+import { getCategoryColorFixed } from "@/lib/categoryColors";
 import type { Event } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -106,7 +106,7 @@ export async function GET(req: Request) {
           <div style={{ display: "flex", marginTop: 14, fontSize: story ? 96 : 70, lineHeight: 1.02, fontWeight: 700, letterSpacing: -2, fontFamily: D }}>{title}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: story ? 34 : 22, marginTop: story ? 70 : 40 }}>
             {events.map((e, i) => {
-              const hue = oklchHex(getCategoryColor(e.category).color);
+              const hue = oklchHex(getCategoryColorFixed(e.category).color);
               return (
                 <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 28, padding: story ? 22 : 16, borderRadius: 28, background: "rgba(29,32,41,0.82)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <div style={{ display: "flex", width: thumb, height: thumb, borderRadius: 20, overflow: "hidden", background: "#232734", flexShrink: 0, position: "relative" }}>

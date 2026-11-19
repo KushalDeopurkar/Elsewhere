@@ -179,7 +179,7 @@ export default function PollView({ id, fresh = false }: { id: string; fresh?: bo
           const e = events.get(r.eventId);
           const isMine = poll.mine === r.eventId;
           const isWinner = decided === r.eventId;
-          const hue = e ? getCategoryColor(e.category).color : "var(--marigold)";
+          const hue = e ? getCategoryColor(e.category).color : "var(--signal)";
           return (
             <li
               key={r.eventId}

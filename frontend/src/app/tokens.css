@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Elsewhere: the city timetable. Design tokens, the single source of truth.
+
+   Every city is a timetable and every event is a departure. By day the site
+   is a printed station timetable: cool white paper, blue-black ink, one
+   signal-yellow band. When the sun goes down in the chosen city it becomes
+   the lit departure board: deep blue, warm white type, amber light.
+
+   The theme is set on <html data-theme="day|night"> before first paint (see
+   lib/theme.ts). Both palettes are designed, not inverted. Components use
+   the semantic names below and never a literal colour.
+   ========================================================================== */
+
+:root {
+  /* Surfaces: page, raised, sunken/hover, strongest fill */
+  --bg: oklch(0.985 0.004 250);
+  --bg-2: oklch(0.962 0.007 252);
+  --bg-3: oklch(0.928 0.011 255);
+  --bg-4: oklch(0.885 0.014 258);
+
+  /* Ink: headline, body, quiet. --fg-3 clears 4.5:1 on --bg and --bg-2. */
+  --fg: oklch(0.215 0.045 263);
+  --fg-2: oklch(0.36 0.035 263);
+  --fg-3: oklch(0.48 0.03 263);
+
+  /* Rules carry the structure; boxes are rare. */
+  --rule-soft: oklch(0.215 0.045 263 / 0.09);
+  --rule: oklch(0.215 0.045 263 / 0.16);
+  --rule-strong: oklch(0.215 0.045 263 / 0.34);
+  --rule-ink: var(--fg);
+
+  /* The one accent: signal yellow. A fill with ink on it, a band, a line.
+     On paper it is never used as text; --signal-text is its readable form. */
+  --signal: oklch(0.885 0.175 96);
+  --signal-hi: oklch(0.92 0.16 98);
+  --on-signal: oklch(0.2 0.045 263);
+  --signal-wash: oklch(0.885 0.175 96 / 0.28);
+  --signal-text: oklch(0.47 0.11 82);
+
+  /* Status, kept apart from the accent */
+  --live: oklch(0.56 0.15 152);
+  --crit: oklch(0.53 0.2 27);
+  --crit-wash: oklch(0.53 0.2 27 / 0.1);
+
+  /* The night board, used by the map and the hero board in either theme */
+  --board: oklch(0.2 0.045 262);
+  --board-2: oklch(0.255 0.05 262);
+  --board-fg: oklch(0.955 0.012 90);
+  --board-fg-2: oklch(0.76 0.025 255);
+  --board-rule: oklch(0.955 0.012 90 / 0.14);
+  --lamp: oklch(0.84 0.16 80);
+
+  /* Shape. Paper is cut square; the only round things are dots and faces. */
+  --r-card: 2px;
+  --r-control: 2px;
+  --r-sm: 2px;
+  --r-pill: 2px;
+  --r-round: 999px;
+
+  /* Elevation only for things that float over the page. */
+  --lift-2: 0 1px 0 var(--rule);
+  --lift-3: 0 18px 40px -12px oklch(0.2 0.05 263 / 0.28), 0 2px 6px oklch(0.2 0.05 263 / 0.12);
+
+  /* Type roles */
+  --font-display: "Archivo Variable", "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-body: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  /* Type scale, 1.25 from 16px, plus two display sizes for times and the masthead */
+  --t-xs: 0.8125rem;
+  --t-sm: 0.875rem;
+  --t-base: 1rem;
+  --t-lg: 1.25rem;
+  --t-xl: 1.5625rem;
+  --t-2xl: 1.953rem;
+  --t-3xl: 2.441rem;
+  --t-4xl: 3.052rem;
+  --t-mast: clamp(3.4rem, 9.5vw, 9.5rem);
+  --t-time: clamp(2.6rem, 5.2vw, 4.6rem);
+
+  /* Space, 4px base */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 72px;
+  --s-9: 112px;
+
+  /* Motion. Exponential ease-out, no bounce. */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-tap: 120ms;
+  --t-hover: 200ms;
+  --t-enter: 420ms;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+
+  --shell: 84rem;
+  color-scheme: light;
+}
+
+:root[data-theme="night"],
+[data-theme="night"] {
+  --bg: oklch(0.185 0.04 263);
+  --bg-2: oklch(0.222 0.045 263);
+  --bg-3: oklch(0.262 0.048 263);
+  --bg-4: oklch(0.305 0.05 263);
+
+  --fg: oklch(0.955 0.012 90);
+  --fg-2: oklch(0.83 0.02 95);
+  --fg-3: oklch(0.71 0.03 255);
+
+  --rule-soft: oklch(0.955 0.012 90 / 0.07);
+  --rule: oklch(0.955 0.012 90 / 0.13);
+  --rule-strong: oklch(0.955 0.012 90 / 0.3);
+
+  --signal: oklch(0.84 0.16 80);
+  --signal-hi: oklch(0.88 0.15 84);
+  --on-signal: oklch(0.2 0.045 263);
+  --signal-wash: oklch(0.84 0.16 80 / 0.16);
+  --signal-text: oklch(0.86 0.15 82);
+
+  --live: oklch(0.78 0.16 152);
+  --crit: oklch(0.72 0.17 25);
+  --crit-wash: oklch(0.72 0.17 25 / 0.14);
+
+  --board: oklch(0.15 0.038 263);
+  --board-2: oklch(0.2 0.045 263);
+
+  --lift-2: 0 1px 0 var(--rule);
+  --lift-3: 0 22px 48px -14px oklch(0.08 0.03 263 / 0.7), 0 2px 8px oklch(0.08 0.03 263 / 0.4);
+
+  color-scheme: dark;
+}
+
+/* Category hues are data, not brand: one hue per category, lightness per theme. */
+:root { --cat-l: 0.5; --cat-c: 0.13; }
+:root[data-theme="night"],
+[data-theme="night"] { --cat-l: 0.8; --cat-c: 0.11; }

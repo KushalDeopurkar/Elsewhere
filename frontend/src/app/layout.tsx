@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
+import "./tokens.css";
 import "./globals.css";
 import "./redesign.css";
 import Nav from "@/components/Nav";
@@ -10,6 +11,8 @@ import CursorLayer from "@/components/CursorLayer";
 import SocialRoot from "@/components/SocialRoot";
 import CityGuess from "@/components/CityGuess";
 import AppRoot from "@/components/AppRoot";
+import ThemeSync from "@/components/ThemeSync";
+import { themeBootScript } from "@/lib/theme";
 import { IMAGE_PROXY_ORIGIN } from "@/lib/imageUrl";
 import { SITE_URL } from "@/lib/site";
 
@@ -27,8 +30,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e1015",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f9fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#10172b" },
+  ],
+  colorScheme: "light dark",
 };
 
 // Vercel Web Analytics and Speed Insights: cookieless page views and real
@@ -41,7 +47,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" data-theme="day" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript() }} />
+      </head>
       <body>
         {IMAGE_PROXY_ORIGIN && <link rel="preconnect" href={IMAGE_PROXY_ORIGIN} />}
         <RouteSignal />
@@ -50,6 +59,7 @@ export default function RootLayout({
         <SocialRoot />
         <CityGuess />
         <AppRoot />
+        <ThemeSync />
         <CursorLayer />
         {ON_VERCEL && (
           <>
