@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 API = "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/que-faire-a-paris-/records"
 PAGE = 100
-MAX_ROWS = 3000
+MAX_ROWS = 9900  # the API serves at most 10,000 rows per query
 ATTRIBUTION = "Que faire à Paris, Ville de Paris (ODbL)"
 
 TAGS: List[Tuple[str, EventCategory]] = [
