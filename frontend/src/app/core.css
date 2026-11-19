@@ -779,6 +779,25 @@ p {
   object-fit: cover;
 }
 
+/* Narrower desktops and tablets: the clock and door numbers give way first */
+@media (max-width: 1100px) {
+  .topnav-clock,
+  .topnav-n {
+    display: none;
+  }
+  .topnav-inner {
+    gap: var(--s-3);
+  }
+  .topnav-links {
+    margin-left: 0;
+  }
+  .topnav-city {
+    border-right: 0;
+    padding-right: 0;
+    margin-right: 0;
+  }
+}
+
 /* Phone tab bar: the same band, at the bottom */
 .tabbar {
   display: none;
@@ -2459,8 +2478,11 @@ p {
   .tt-aside {
     order: 2;
   }
+}
+
+@media (max-width: 767px) {
   .tt-board [role="tabpanel"] {
-    min-height: 23rem;
+    min-height: 18rem;
   }
 }
 
