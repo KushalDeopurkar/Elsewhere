@@ -15,6 +15,8 @@ export interface Leg {
   km: number;
   /** Minutes added by current traffic (traffic source only). */
   delayMinutes?: number;
+  /** Worked out from the drive rather than routed separately (two-wheelers). */
+  estimated?: boolean;
 }
 
 export interface TravelResult {
@@ -107,9 +109,12 @@ export interface GeoHit {
   lng: number;
 }
 
-/** Address search limited to India, biased toward the given point. */
+const inIndia = (p?: LatLng) => !p || (p.lat > 5 && p.lat < 38 && p.lng > 67 && p.lng < 98);
+
+/** Address search biased toward the given point (and kept to India for Indian cities). */
 export async function geocode(q: string, near?: LatLng): Promise<GeoHit[]> {
-  const qs = new URLSearchParams({ q, limit: "6", lang: "en", bbox: "68.1,6.5,97.5,35.7" });
+  const qs = new URLSearchParams({ q, limit: "6", lang: "en" });
+  if (inIndia(near)) qs.set("bbox", "68.1,6.5,97.5,35.7");
   if (near) {
     qs.set("lat", String(near.lat));
     qs.set("lon", String(near.lng));

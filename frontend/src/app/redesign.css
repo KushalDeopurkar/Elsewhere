@@ -5255,3 +5255,4 @@ a.board-link:focus-visible .board-thumb {
 @keyframes city-note-in { from { opacity: 0; transform: translate(-50%, 10px); } }
 @media (max-width: 899px) { .city-note { bottom: calc(5rem + env(safe-area-inset-bottom)); } }
 @media (prefers-reduced-motion: reduce) { .city-note { animation: none; } }
+.travel-est { color: var(--text-low); }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { twoWheelerFromCar } from "@/lib/travelModel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,27 @@ interface Leg {
   minutes: number;
   km: number;
   delayMinutes: number;
+  /** Worked out from the drive, not routed on its own (see twoWheelerFromCar). */
+  estimated?: boolean;
 }
+
+/** Replace a two-wheeler leg that just repeats the drive. */
+function fixTwoWheeler(legs: Leg[], carSeconds: number | null, freeFlowSeconds: number | null): Leg[] {
+  const car = legs.find((l) => l.mode === "car");
+  const bike = legs.find((l) => l.mode === "bike");
+  if (!car || carSeconds == null || freeFlowSeconds == null) return legs;
+  const same = !bike || Math.abs(bike.minutes - car.minutes) <= 1;
+  if (!same) return legs;
+  const est: Leg = {
+    mode: "bike",
+    minutes: Math.max(1, Math.round(twoWheelerFromCar(carSeconds, freeFlowSeconds) / 60)),
+    km: car.km,
+    delayMinutes: Math.round(Math.max(0, carSeconds - freeFlowSeconds) * 0.4 / 60),
+    estimated: true,
+  };
+  return [...legs.filter((l) => l.mode !== "bike"), est].sort((a, b) => ORDER.indexOf(a.mode) - ORDER.indexOf(b.mode));
+}
+const ORDER: Mode[] = ["car", "bike", "transit", "foot"];
 
 interface TravelBody {
   source: "google" | "tomtom";
@@ -74,6 +95,7 @@ async function googleRoute(key: string, a: LL, b: LL, mode: Mode, opts: { depart
   const free = secs(r.staticDuration);
   return {
     seconds: duration,
+    freeSeconds: Number.isFinite(free) ? free : duration,
     leg: {
       mode,
       minutes: Math.max(1, Math.round(duration / 60)),
@@ -114,7 +136,8 @@ async function viaGoogle(key: string, a: LL, b: LL, arriveMs: number | null, now
       }
     }
   }
-  return { source: "google", legs: ok.map((o) => o.leg), line: car?.line ?? [], leaveBy, computedAt: new Date(now).toISOString() };
+  const legs = fixTwoWheeler(ok.map((o) => o.leg), car?.seconds ?? null, car?.freeSeconds ?? null);
+  return { source: "google", legs, line: car?.line ?? [], leaveBy, computedAt: new Date(now).toISOString() };
 }
 
 // ---- TomTom -------------------------------------------------------------
@@ -133,8 +156,7 @@ function point(raw: string | null): { lat: number; lng: number } | null {
   if (!m) return null;
   const lat = Number(m[1]);
   const lng = Number(m[2]);
-  // India and its neighbourhood only: keeps the free quota for this app's use.
-  if (lat < 5 || lat > 38 || lng < 67 || lng > 98) return null;
+  if (lat < -60 || lat > 75 || lng < -180 || lng > 180) return null;
   return { lat, lng };
 }
 
@@ -175,7 +197,7 @@ async function viaTomTom(key: string, from: string, to: string, arriveAt: string
     arriveAt ? route(key, from, to, "car", { arriveAt }, false) : Promise.resolve(null),
   ]);
   const [car, bike, foot, arrive] = jobs;
-  const legs = (
+  const rawLegs = (
     [
       ["car", car],
       ["bike", bike],
@@ -193,6 +215,12 @@ async function viaTomTom(key: string, from: string, to: string, arriveAt: string
       } as Leg,
     ];
   });
+  const carSum = car.status === "fulfilled" ? car.value.summary : null;
+  const legs = fixTwoWheeler(
+    rawLegs,
+    carSum?.travelTimeInSeconds ?? null,
+    carSum ? (carSum.noTrafficTravelTimeInSeconds ?? carSum.travelTimeInSeconds - (carSum.trafficDelayInSeconds ?? 0)) : null,
+  );
   if (!legs.length) {
     const reason = jobs.find((j) => j.status === "rejected") as PromiseRejectedResult | undefined;
     console.error("[travel] tomtom", (reason?.reason as Error)?.message?.replaceAll(key, "***"));
@@ -219,7 +247,11 @@ export async function GET(req: Request) {
   const sp = new URL(req.url).searchParams;
   const a = point(sp.get("from"));
   const b = point(sp.get("to"));
-  if (!a || !b) return NextResponse.json({ error: "Send from=lat,lng and to=lat,lng inside India." }, { status: 400 });
+  if (!a || !b) return NextResponse.json({ error: "Send from=lat,lng and to=lat,lng." }, { status: 400 });
+  // Both ends in the same city area (the site's use); keeps the paid quota for real trips.
+  if (Math.abs(a.lat - b.lat) > 2 || Math.abs(a.lng - b.lng) > 2.5) {
+    return NextResponse.json({ error: "Too far apart for a travel estimate." }, { status: 400 });
+  }
   const from = `${a.lat.toFixed(5)},${a.lng.toFixed(5)}`;
   const to = `${b.lat.toFixed(5)},${b.lng.toFixed(5)}`;
 

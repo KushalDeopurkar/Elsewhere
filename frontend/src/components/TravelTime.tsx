@@ -1,5 +1,6 @@
 "use client";
 
+import { eventZone } from "@/lib/formatDate";
 import { useEffect, useState } from "react";
 import {
   Car,
@@ -23,7 +24,7 @@ import { travelTimes, geocode, formatDuration, directionsUrl, GeoHit, LatLng, Mo
 import { isCityCentroid } from "@/lib/cities";
 import { useCity } from "@/lib/cityPref";
 
-// "bike" is a bicycle on the free router and a two-wheeler on TomTom.
+// "bike" is a bicycle on the free router and a two-wheeler on Google / TomTom.
 const modeInfo = (mode: Mode, source: TravelResult["source"]) =>
   mode === "car"
     ? { label: "Drive", Icon: Car }
@@ -35,14 +36,15 @@ const modeInfo = (mode: Mode, source: TravelResult["source"]) =>
         ? { label: "Transit", Icon: Train }
         : { label: "Walk", Icon: PersonSimpleWalk };
 
-const clock = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true });
-const dayFmt = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric", month: "short" });
-const istDay = (ms: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(ms);
+// Times read in the event city's own zone.
+const clock = (zone: string) => new Intl.DateTimeFormat("en-IN", { timeZone: zone, hour: "numeric", minute: "2-digit", hour12: true });
+const dayFmt = (zone: string) => new Intl.DateTimeFormat("en-IN", { timeZone: zone, weekday: "short", day: "numeric", month: "short" });
+const localDay = (ms: number, zone: string) => new Intl.DateTimeFormat("en-CA", { timeZone: zone }).format(ms);
 /** "5:02 pm" today, "Sat 8 Nov, 5:02 pm" on another day. */
-function when(iso: string, ref: number): string {
+function when(iso: string, ref: number, zone: string): string {
   const ms = Date.parse(iso);
-  const t = clock.format(ms).toLowerCase();
-  return istDay(ms) === istDay(ref) ? t : `${dayFmt.format(ms)}, ${t}`;
+  const t = clock(zone).format(ms).toLowerCase();
+  return localDay(ms, zone) === localDay(ref, zone) ? t : `${dayFmt(zone).format(ms)}, ${t}`;
 }
 const LABELS = ["Home", "Work", "Other"] as const;
 const labelIcon = (label: string) => (label === "Home" ? House : label === "Work" ? Briefcase : MapPin);
@@ -57,6 +59,7 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
   const places = usePlaces();
   const originId = useOriginId();
   const city = useCity();
+  const zone = eventZone(event);
 
   const [here, setHere] = useState<LatLng | null>(null);
   const [locating, setLocating] = useState(false);
@@ -249,7 +252,10 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
                 <li key={l.mode}>
                   <Icon size={18} weight="duotone" />
                   <span className="travel-time">{formatDuration(l.minutes)}</span>
-                  <span className="travel-mode">{name} · {l.km} km</span>
+                  <span className="travel-mode">
+                    {name} · {l.km} km
+                    {l.estimated ? <span className="travel-est" title="Worked out from the drive: two-wheelers lose less time to traffic"> · estimate</span> : null}
+                  </span>
                   {l.delayMinutes ? <span className="travel-delay">+{l.delayMinutes} min traffic</span> : null}
                 </li>
               );
@@ -259,8 +265,8 @@ export default function TravelTime({ event, onRoute }: { event: Event; onRoute?:
             <p className="travel-leave">
               <Clock size={15} weight="bold" />
               <span>
-                Leave by <strong>{when(current.data.leaveBy.departAt, mountedAt)}</strong> to arrive for the{" "}
-                {when(event.start_time, mountedAt)} start ({formatDuration(current.data.leaveBy.minutes)} drive in usual traffic then).
+                Leave by <strong>{when(current.data.leaveBy.departAt, mountedAt, zone)}</strong> to arrive for the{" "}
+                {when(event.start_time, mountedAt, zone)} start ({formatDuration(current.data.leaveBy.minutes)} drive in usual traffic then).
               </span>
             </p>
           )}

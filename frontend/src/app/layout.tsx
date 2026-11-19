@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description:
     "Hackathons, workshops, matches, exhibitions and meetups across every category, gathered from across the web and mapped.",
   openGraph: { siteName: "Elsewhere", type: "website" },
+  // Google Search Console ownership check (the "HTML tag" method): set
+  // GOOGLE_SITE_VERIFICATION in Vercel to the content="…" value Google shows.
+  verification: process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : undefined,
 };
 
 export const viewport: Viewport = {
