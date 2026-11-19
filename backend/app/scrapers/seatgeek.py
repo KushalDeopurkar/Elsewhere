@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 API = "https://api.seatgeek.com/2/events"
 PER_PAGE = 100
-MAX_PAGES = 5
+MAX_PAGES = 10  # up to 1,000 events per city
 
 SPORTS = {
     "sports", "nba", "nfl", "mlb", "nhl", "mls", "ncaa_football", "ncaa_basketball", "minor_league_baseball",

@@ -185,3 +185,19 @@ def test_dedupe_prefers_ticketmaster():
     ])
     assert sorted(e.source for e in kept) == ["seatgeek", "seatgeek", "ticketmaster"]
     assert norm_title("The Killers: Live at MSG 2026") == "killers msg"
+
+
+@pytest.mark.asyncio
+async def test_eventfinda_pages_by_count_and_skips_countries_without_account(httpx_mock, monkeypatch):
+    monkeypatch.setattr("app.scrapers.world.asyncio.sleep", _no_sleep)
+    for k in ("EVENTFINDA_AU_USERNAME", "EVENTFINDA_AU_PASSWORD", "EVENTFINDA_SG_USERNAME", "EVENTFINDA_SG_PASSWORD"):
+        monkeypatch.delenv(k, raising=False)
+    row = lambda i: {"id": i, "name": f"E{i}", "datetime_start": "2026-11-21 17:00:00", "point": {"lat": -36.9, "lng": 174.8}}
+    # 19 usable rows on a full first page still means "keep going": the API says 25 in total.
+    page1 = [row(i) for i in range(19)] + [{"id": 99, "name": "", "datetime_start": "x"}]
+    httpx_mock.add_response(json={"@attributes": {"count": 25}, "events": page1})
+    httpx_mock.add_response(json={"@attributes": {"count": 25}, "events": [row(i) for i in range(19, 24)]})
+    got = await eventfinda.EventfindaScraper(username="u", password="p").scrape(city="Auckland")
+    assert len(got) == 24 and len(httpx_mock.get_requests()) == 2
+    # Sydney has no Australian account set: no request at all.
+    assert await eventfinda.EventfindaScraper(username="u", password="p").scrape(city="Sydney") == []

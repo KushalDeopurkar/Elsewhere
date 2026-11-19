@@ -22,7 +22,10 @@ Paris works straight away with no key.
 2. **SeatGeek**: sign in at https://seatgeek.com/account/develop, create an app, copy the
    **Client ID**.
 3. **Eventfinda**: register at https://www.eventfinda.co.nz/api/v2/index. You get a username
-   and password for HTTP Basic auth. Standard access trims descriptions to about 220
+   and password for HTTP Basic auth. That account only works for New Zealand. For Australia
+   register again at https://www.eventfinda.com.au/api/v2/index and add
+   `EVENTFINDA_AU_USERNAME` / `EVENTFINDA_AU_PASSWORD`; for Singapore, https://www.eventfinda.sg
+   with `EVENTFINDA_SG_USERNAME` / `EVENTFINDA_SG_PASSWORD`. Cities without an account are skipped. Standard access trims descriptions to about 220
    characters; ask them for full access when you want the rest.
 
 ## 2. Add them to GitHub

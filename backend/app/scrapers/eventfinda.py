@@ -3,7 +3,11 @@ Eventfinda API v2: arts, community, festival and family events in New
 Zealand, Australia and Singapore. Commercial use is allowed.
 
 Sign up at eventfinda.co.nz/api/v2/index for a username and password
-(EVENTFINDA_USERNAME / EVENTFINDA_PASSWORD; HTTP Basic). Standard access
+(EVENTFINDA_USERNAME / EVENTFINDA_PASSWORD; HTTP Basic). An account works on
+one country's site only: the Australian (eventfinda.com.au) and Singapore
+(eventfinda.sg) sites need their own, set as EVENTFINDA_AU_USERNAME /
+EVENTFINDA_AU_PASSWORD and EVENTFINDA_SG_USERNAME / EVENTFINDA_SG_PASSWORD.
+Without them those cities are skipped. Standard access
 trims descriptions to about 220 characters; full access (on request) adds
 the rest. Events link back to their Eventfinda page.
 """
@@ -24,7 +28,7 @@ logger = logging.getLogger(__name__)
 HOSTS = {"NZ": "api.eventfinda.co.nz", "AU": "api.eventfinda.com.au", "SG": "api.eventfinda.sg"}
 CURRENCY = {"NZ": "NZD", "AU": "AUD", "SG": "SGD"}
 ROWS = 20  # the API's page size limit
-MAX_PAGES = 10
+MAX_PAGES = 25  # up to 500 events per city
 
 CATEGORY_WORDS = [
     ("concert", EventCategory.MUSIC), ("gig", EventCategory.MUSIC), ("music", EventCategory.MUSIC),
@@ -116,17 +120,32 @@ class EventfindaScraper(BaseScraper):
         self.password = password or os.environ.get("EVENTFINDA_PASSWORD", "")
         self.radius_km = radius_km
 
+    def _creds(self, country: str):
+        """Per-country account if set (EVENTFINDA_AU_USERNAME...), else the NZ one for NZ only."""
+        u = os.environ.get(f"EVENTFINDA_{country}_USERNAME", "")
+        p = os.environ.get(f"EVENTFINDA_{country}_PASSWORD", "")
+        if u and p:
+            return u, p
+        if country == "NZ" and self.username and self.password:
+            return self.username, self.password
+        return None
+
     async def scrape(self, city: Optional[str] = None, **kwargs) -> List[EventCreate]:
-        if not (self.username and self.password):
+        if not any(self._creds(c) for c in HOSTS):
             self._log("EVENTFINDA_USERNAME / EVENTFINDA_PASSWORD not set; skipping")
             return []
         out: Dict[str, EventCreate] = {}
-        async with new_client(auth=(self.username, self.password)) as client:
-            for c in cities_for("eventfinda", city):
-                host = HOSTS.get(c.country)
-                if not host:
-                    continue
-                got = 0
+        refused: set = set()
+        for c in cities_for("eventfinda", city):
+            host = HOSTS.get(c.country)
+            creds = self._creds(c.country)
+            if not host or not creds:
+                self._log(f"{c.name}: no Eventfinda {c.country} account set; skipping")
+                continue
+            if host in refused:
+                continue
+            got = 0
+            async with new_client(auth=creds) as client:
                 for page in range(MAX_PAGES):
                     data = await get_json(
                         client,
@@ -140,7 +159,11 @@ class EventfindaScraper(BaseScraper):
                         },
                         pause=0.5,
                     )
-                    if not data:
+                    if data is None:
+                        if page == 0:
+                            # Usually wrong credentials for this country's site.
+                            refused.add(host)
+                            self._log(f"{host} refused the request; check the {c.country} account")
                         break
                     events = data.get("events") or []
                     for ev in events:
@@ -148,7 +171,13 @@ class EventfindaScraper(BaseScraper):
                         if e:
                             out.setdefault(e.source_id, e)
                             got += 1
-                    if len(events) < ROWS:
+                    # Page by the total the API reports; fall back to a short page.
+                    total = (data.get("@attributes") or {}).get("count")
+                    try:
+                        total = int(total) if total is not None else None
+                    except (TypeError, ValueError):
+                        total = None
+                    if not events or (total is not None and (page + 1) * ROWS >= total) or (total is None and len(events) < ROWS):
                         break
-                self._log(f"{c.name}: {got} events")
+            self._log(f"{c.name}: {got} events")
         return list(out.values())

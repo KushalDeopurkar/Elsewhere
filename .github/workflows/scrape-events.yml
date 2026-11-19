@@ -64,6 +64,10 @@ jobs:
           SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
           EVENTFINDA_USERNAME: ${{ secrets.EVENTFINDA_USERNAME }}
           EVENTFINDA_PASSWORD: ${{ secrets.EVENTFINDA_PASSWORD }}
+          EVENTFINDA_AU_USERNAME: ${{ secrets.EVENTFINDA_AU_USERNAME }}
+          EVENTFINDA_AU_PASSWORD: ${{ secrets.EVENTFINDA_AU_PASSWORD }}
+          EVENTFINDA_SG_USERNAME: ${{ secrets.EVENTFINDA_SG_USERNAME }}
+          EVENTFINDA_SG_PASSWORD: ${{ secrets.EVENTFINDA_SG_PASSWORD }}
         run: |
           cd backend
           SOURCE="${{ github.event.inputs.source || 'all' }}"
