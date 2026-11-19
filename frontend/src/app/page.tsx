@@ -116,22 +116,19 @@ export default function Home() {
                 like a timetable. Soonest first.
               </p>
               <HeroSearch />
-              {!pool.loading && all.length > 0 && (
-                <dl className="home-facts">
+              {(pool.loading || all.length > 0) && (
+                <dl className="home-facts" aria-busy={pool.loading}>
                   <div>
                     <dt>Upcoming</dt>
-                    <dd>
-                      {all.length}
-                      {all.length >= 100 ? "+" : ""}
-                    </dd>
+                    <dd>{pool.loading ? "–" : `${all.length}${all.length >= 100 ? "+" : ""}`}</dd>
                   </div>
                   <div>
                     <dt>Free entry</dt>
-                    <dd>{freeCount}</dd>
+                    <dd>{pool.loading ? "–" : freeCount}</dd>
                   </div>
                   <div>
                     <dt>Next 3 hours</dt>
-                    <dd>{soon.length}</dd>
+                    <dd>{pool.loading ? "–" : soon.length}</dd>
                   </div>
                 </dl>
               )}

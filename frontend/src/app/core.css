@@ -2458,12 +2458,6 @@ p {
   border: 1px solid var(--rule-strong);
 }
 
-@media (max-width: 1023px) {
-  .tt-aside {
-    order: 2;
-  }
-}
-
 @media (max-width: 767px) {
   .tt-mast {
     grid-template-columns: 1fr;

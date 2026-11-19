@@ -60,6 +60,7 @@
 }
 
 .ws-ring {
+  position: relative;
   display: grid;
   gap: var(--s-2);
   width: 168px;
