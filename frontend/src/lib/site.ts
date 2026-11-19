@@ -4,3 +4,9 @@ export const OPERATOR = process.env.NEXT_PUBLIC_OPERATOR_NAME || "Kushal Deopurk
 /** Shown on the legal pages; NEXT_PUBLIC_CONTACT_EMAIL overrides it. */
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "kushal.deopurkar@gmail.com";
 export const LEGAL_UPDATED = "19 November 2026";
+
+/** The public site address, for canonical links, the sitemap and share images. */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://elsewhere-in.vercel.app")
+).replace(/\/$/, "");

@@ -9,11 +9,14 @@ import RouteSignal from "@/components/RouteSignal";
 import CursorLayer from "@/components/CursorLayer";
 import SocialRoot from "@/components/SocialRoot";
 import CityGuess from "@/components/CityGuess";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Elsewhere - discover what is happening",
   description:
     "Hackathons, workshops, matches, exhibitions and meetups across every category, gathered from across the web and mapped.",
+  openGraph: { siteName: "Elsewhere", type: "website" },
 };
 
 export const viewport: Viewport = {

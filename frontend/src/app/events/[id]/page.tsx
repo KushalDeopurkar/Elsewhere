@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { eventJsonLd, jsonLdHtml } from "@/lib/eventSchema";
 import type { Metadata } from "next";
 import { CalendarBlank, MapPin, Ticket, ArrowSquareOut, Clock, Globe } from "@phosphor-icons/react/ssr";
 import SiteFooter from "@/components/SiteFooter";
@@ -29,9 +30,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const event = await getEvent(id);
   if (!event) return { title: "Event not found - Elsewhere" };
+  const when = formatFull(event.start_time, eventZone(event));
+  const place = [event.location_name, event.city].filter(Boolean).join(", ");
   return {
     title: `${event.title} - Elsewhere`,
-    description: event.description?.slice(0, 160) ?? undefined,
+    description: (event.description?.slice(0, 160) || [when, place].filter(Boolean).join(" · ")) ?? undefined,
+    alternates: { canonical: `/events/${event.id}` },
+    // Bundled sample listings (shown when the API is down) aren't real events.
+    robots: event.source === "sample" ? { index: false } : undefined,
     // The share image comes from ./opengraph-image.tsx.
     twitter: { card: "summary_large_image" },
   };
@@ -84,6 +90,10 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
+      {event.source !== "sample" && <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(eventJsonLd(event, about, d.organizer ?? null)) }}
+      />}
       <article
         className="detail"
         data-ev={event.id}

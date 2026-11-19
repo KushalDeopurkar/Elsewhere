@@ -16,7 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const cat = categoryBySlug((await params).slug);
   return cat
-    ? { title: `${cat.label} events - Elsewhere`, description: cat.blurb }
+    ? { title: `${cat.label} events - Elsewhere`, description: cat.blurb, alternates: { canonical: `/categories/${cat.slug}` } }
     : { title: "Category not found - Elsewhere" };
 }
 

@@ -11,10 +11,19 @@ export default function KineticWord({ words, every = 2600 }: { words: string[]; 
   const reduce = useReducedMotion() ?? false;
   const [i, setI] = useState(0);
 
+  // Hold the first word a while: the headline is the page's main paint, and
+  // swapping its letters straight away delays when the page counts as loaded.
   useEffect(() => {
     if (reduce) return;
-    const id = window.setInterval(() => setI((n) => (n + 1) % words.length), every);
-    return () => window.clearInterval(id);
+    let id = 0;
+    const start = window.setTimeout(() => {
+      setI((n) => (n + 1) % words.length);
+      id = window.setInterval(() => setI((n) => (n + 1) % words.length), every);
+    }, Math.max(every, 5000));
+    return () => {
+      window.clearTimeout(start);
+      window.clearInterval(id);
+    };
   }, [reduce, words.length, every]);
 
   const word = words[reduce ? 0 : i];

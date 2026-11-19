@@ -119,7 +119,8 @@ export default function DepartureBoard({
         <span>Status</span>
       </div>
 
-      <ol className="board-rows" role="tabpanel" aria-label={`${tabLabel}: ${rows.length} events`}>
+      <div role="tabpanel" aria-label={`${tabLabel}: ${rows.length} events`}>
+      <ol className="board-rows">
         {slots.map((r, i) =>
           r ? (
             <li key={`${tab}-${r.event.id}`} className="board-row" data-vt-card style={{ "--cat": getCategoryColor(r.event.category).color } as React.CSSProperties}>
@@ -165,6 +166,7 @@ export default function DepartureBoard({
           ),
         )}
       </ol>
+      </div>
 
       {!loading && now > 0 && rows.length === 0 && (
         <div className="board-none">

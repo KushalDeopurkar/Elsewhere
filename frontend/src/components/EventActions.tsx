@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarPlus, ShareNetwork, Check, WhatsappLogo } from "@phosphor-icons/react/ssr";
 import { whatsappUrl, eventShareText } from "@/lib/share";
 import { googleCalendarLink } from "@/lib/plan";
@@ -62,10 +62,30 @@ export function EventActions({ event }: { event: Event }) {
 
 /** Single-pin map of the venue. */
 export function EventLocationMap({ event }: { event: Event }) {
+  // The map library is large: load it only when the map is about to scroll
+  // into view, not with the page.
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    if (typeof IntersectionObserver === "undefined") {
+      const t = window.setTimeout(() => setNear(true), 0);
+      return () => window.clearTimeout(t);
+    }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setNear(true);
+        io.disconnect();
+      }
+    }, { rootMargin: "300px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
   if (event.lat == null || event.lng == null) return null;
   return (
-    <div className="detail-map">
-      <PlanMap stops={[{ event, why: "", travel: null }]} />
+    <div className="detail-map" ref={ref}>
+      {near ? <PlanMap stops={[{ event, why: "", travel: null }]} /> : <div className="detail-map-skel" />}
     </div>
   );
 }

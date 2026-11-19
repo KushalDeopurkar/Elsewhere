@@ -309,7 +309,8 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
       <div className="xlayout">
         <aside className="xside" aria-label="Filters">{filters}</aside>
 
-        <section className="xmain" aria-live="polite">
+        <section className="xmain" aria-live="polite" aria-labelledby="xresults-h">
+          <h2 id="xresults-h" className="sr-only">Results</h2>
           <div className="xbar">
             <p className="xcount">
               {loading ? "Searching…" : `${results.length}${pool.events.length >= 100 && results.length >= 100 ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
