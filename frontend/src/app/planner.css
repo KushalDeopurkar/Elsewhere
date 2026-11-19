@@ -1,0 +1,724 @@
+/* Plan my day: plain-words intent, the planner form, its results and the animated route.
+   Tokens only (tokens.css); shared primitives live in core.css. */
+
+/* ==========================================================================
+   Intent discovery
+   ========================================================================== */
+.intent-bar {
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  border: 1px solid var(--rule);
+}
+
+.intent-bar .sample-note {
+  display: inline-flex;
+}
+
+.intent-read {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.intent-plain {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.intent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.intent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.7rem;
+  border-radius: var(--r-pill);
+  background: var(--signal-wash);
+  border: 1px solid color-mix(in oklch, var(--signal) 35%, transparent);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.intent-chip-kind {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--signal-text);
+}
+
+.intent-chip button {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklch, var(--signal) 22%, transparent);
+  color: var(--fg);
+  transition: background-color var(--t-hover) var(--ease);
+}
+
+.intent-chip button:hover {
+  background: var(--signal);
+  color: var(--on-signal);
+}
+
+.intent-note {
+  margin-top: 0.7rem;
+  font-size: 0.75rem;
+  color: var(--fg-3);
+}
+
+.reason-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reason {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  border: 1px solid var(--rule-soft);
+  color: var(--fg-2);
+}
+
+.prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+}
+
+.prompt {
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--r-pill);
+  border: 1px dashed var(--rule);
+  background: transparent;
+  color: var(--fg-3);
+  font-size: 0.8125rem;
+  text-align: left;
+  transition: color var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+}
+
+.prompt:hover {
+  color: var(--fg);
+  border-color: var(--signal-text);
+}
+
+/* ==========================================================================
+   AI day planner
+   ========================================================================== */
+.planner {
+  display: grid;
+  gap: 1.25rem;
+  scroll-margin-top: 5rem;
+}
+
+.planner-head h2 {
+  margin-top: 0.35rem;
+}
+
+.planner-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--r-pill);
+  background: var(--signal-wash);
+  color: var(--signal-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.planner-form {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 52rem;
+}
+
+.planner-input {
+  gap: 0.5rem;
+}
+
+.planner-mic {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+
+.planner-mic.is-live {
+  background: var(--crit);
+  color: var(--fg);
+  box-shadow: 0 0 0 6px color-mix(in oklch, var(--crit) 20%, transparent);
+}
+
+.planner-hint {
+  color: var(--fg-3);
+  font-size: 0.875rem;
+}
+
+.planner-steps {
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  border: 1px solid var(--rule-soft);
+  max-width: 28rem;
+}
+
+.planner-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--fg-3);
+  font-size: 0.9375rem;
+}
+
+.planner-steps li.done {
+  color: var(--fg-2);
+}
+
+.planner-steps li.active {
+  color: var(--fg);
+}
+
+.planner-steps .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--rule-strong);
+}
+
+.planner-steps li.active .dot {
+  border-color: var(--signal-text);
+  border-top-color: transparent;
+  animation: planner-spin 0.8s linear infinite;
+}
+
+@keyframes planner-spin {
+  to { transform: rotate(360deg); }
+}
+
+.planner-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--crit);
+}
+
+.plan {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  border: 1px solid var(--rule);
+}
+
+.plan-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+.plan-meta h3 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.plan-meta p {
+  color: var(--fg-2);
+  margin-top: 0.3rem;
+  max-width: 60ch;
+}
+
+.plan-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.plan-facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  color: var(--fg-2);
+  font-size: 0.8125rem;
+}
+
+.plan-facts .plan-engine.ai {
+  background: var(--signal-wash);
+  color: var(--signal-text);
+}
+
+.plan-note {
+  color: var(--fg-2);
+  font-size: 0.9375rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--r-control);
+  background: var(--bg-3);
+}
+
+.plan-body {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .plan-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: start;
+  }
+}
+
+.plan-timeline {
+  list-style: none;
+  display: grid;
+  gap: 0;
+}
+
+.plan-leg {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: 0.95rem;
+  padding: 0.55rem 0 0.55rem 1.4rem;
+  border-left: 2px dashed var(--rule-strong);
+  color: var(--fg-3);
+  font-size: 0.8125rem;
+}
+
+.plan-card {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border-radius: var(--r-control);
+  background: var(--bg-3);
+  border: 1px solid var(--rule-soft);
+}
+
+.plan-num {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  color: var(--on-signal);
+  font-weight: 700;
+}
+
+.plan-card-body {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.plan-time {
+  color: var(--stop-hue, var(--signal));
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.plan-title {
+  color: var(--fg);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.plan-title:hover {
+  color: var(--signal-text);
+}
+
+.plan-venue {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--fg-3);
+  font-size: 0.875rem;
+}
+
+.plan-why {
+  color: var(--fg-2);
+  font-size: 0.9375rem;
+}
+
+.plan-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.plan-price {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--r-pill);
+  background: var(--bg-4);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.plan-link {
+  color: var(--fg-3);
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.plan-link:hover {
+  color: var(--fg);
+}
+
+.plan-map {
+  position: relative;
+  width: 100%;
+  height: 22rem;
+  border-radius: var(--r-control);
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--rule-soft);
+}
+
+@media (min-width: 900px) {
+  .plan-map {
+    position: sticky;
+    top: 5.5rem;
+    height: 28rem;
+  }
+}
+
+.plan-pin {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  color: var(--on-signal);
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: 2px solid color-mix(in oklch, var(--bg) 80%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in oklch, var(--signal) 20%, transparent), var(--lift-2);
+}
+
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planner-steps li.active .dot {
+    animation: none;
+    border-top-color: var(--signal-text);
+  }
+}
+
+/* Grid items default to min-width: auto, which lets the input row widen the
+   whole planner past a phone screen. */
+.planner > *,
+.planner-form > *,
+.plan > *,
+.plan-body > * {
+  min-width: 0;
+}
+
+.planner-input .search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .planner-input .btn {
+    padding-inline: 1rem;
+  }
+}
+
+/* ==========================================================================
+   Plan my day
+   ========================================================================== */
+.planner-city {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--fg-3);
+}
+
+.planner-modes {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .planner-modes {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+}
+
+.planner-card {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: clamp(1.1rem, 3vw, 1.5rem);
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  border: 1px solid var(--rule-soft);
+}
+
+.planner-card .planner-form {
+  margin: 0;
+}
+
+.planner-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.planner-card-sub {
+  margin: -0.6rem 0 0;
+  font-size: 0.875rem;
+  color: var(--fg-3);
+}
+
+.bfield {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.brow {
+  display: grid;
+  gap: 0.9rem;
+}
+
+@media (min-width: 640px) {
+  .brow {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+}
+
+.binput {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--r-control);
+  border: 1px solid var(--rule);
+  background: var(--bg-3);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9375rem;
+  transition: border-color var(--t-hover) var(--ease);
+}
+
+.binput:focus {
+  outline: none;
+  border-color: var(--signal-text);
+}
+
+.binput::placeholder {
+  color: var(--fg-3);
+}
+
+.bpreview {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--r-control);
+  background: var(--bg-3);
+  font-size: 0.875rem;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.bpreview span {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--fg-3);
+}
+
+.builder .btn {
+  justify-self: start;
+}
+
+.planner {
+  padding-bottom: 1rem;
+}
+
+.planner .plan {
+  margin-top: 2rem;
+}
+
+.plan-thumb {
+  width: 4.5rem;
+  flex-shrink: 0;
+  align-self: flex-start;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.plan-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--signal-text);
+}
+
+.plan-view:hover {
+  color: var(--signal-text);
+}
+
+@media (max-width: 480px) {
+  .plan-thumb {
+    width: 3.5rem;
+  }
+}
+
+.saved-plans {
+  margin-top: 2rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.saved-plans ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saved-plans li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.35rem 0.35rem 0;
+  border-radius: var(--r-control);
+  background: var(--bg-2);
+  border: 1px solid var(--rule-soft);
+}
+
+.saved-plan-open {
+  flex: 1;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.5rem 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.saved-plan-title {
+  font-weight: 600;
+}
+
+.saved-plan-sub {
+  font-size: 0.8125rem;
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-plan-open:hover .saved-plan-title {
+  color: var(--signal-text);
+}
+
+/* ==========================================================================
+   Plan My Day: animated route and day scrubber (PlanMap animate)
+   ========================================================================== */
+.plan-map-wrap { display: grid; gap: 0.6rem; }
+@media (min-width: 900px) {
+  .plan-map-wrap { position: sticky; top: 5.5rem; }
+  .plan-map-wrap .plan-map { position: relative; top: auto; }
+}
+.plan-traveler {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--signal);
+  box-shadow: 0 0 0 8px color-mix(in oklch, var(--signal) 25%, transparent), 0 4px 14px rgb(0 0 0 / 0.5);
+}
+.plan-scrub {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--r-control);
+  background: var(--bg-2);
+  border: 1px solid var(--rule-soft);
+}
+.plan-scrub-play {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--signal);
+  color: var(--on-signal);
+}
+.plan-scrub-play:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.plan-scrub-track { flex: 1; min-width: 0; display: grid; gap: 0.25rem; }
+.plan-scrub-track input { width: 100%; accent-color: var(--signal-text); min-height: 24px; }
+.plan-scrub-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-scrub-label strong {
+  display: inline-grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  background: var(--signal);
+  color: var(--on-signal);
+  font-size: 0.75rem;
+}

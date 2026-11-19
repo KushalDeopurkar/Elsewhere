@@ -1,7 +1,8 @@
 /* ==========================================================================
-   Elsewhere core: base, type, shell, controls, nav, tickets, rails, sections.
-   Loaded after globals.css and redesign.css (which hold the page-specific
-   layers). Tokens only; see tokens.css and DESIGN.md.
+   Elsewhere core: base, type, shell, controls, nav, tickets, rails, sections
+   and the home timetable. Feature pages add their own sheets after this one
+   (events, explore, map, planner, social, passport, motion). Tokens only;
+   see tokens.css and DESIGN.md.
    ========================================================================== */
 
 /* ---- Base --------------------------------------------------------------- */

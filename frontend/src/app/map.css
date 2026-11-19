@@ -1,0 +1,1056 @@
+/* The map page: split view, pins, city lights, travel times, the timeline and the phone strip.
+   Tokens only (tokens.css); shared primitives live in core.css. */
+
+/* ==========================================================================
+   Map
+   ========================================================================== */
+.map-page {
+  position: relative;
+  height: calc(100svh - 68px);
+  overflow: hidden;
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.maplibregl-map {
+  font: inherit;
+  background: var(--bg);
+}
+
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.map-overlay > * {
+  pointer-events: auto;
+}
+
+.map-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklch, var(--bg) 80%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-2);
+  overflow: hidden;
+}
+
+.map-bar .rail {
+  margin: 0;
+  padding: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.map-count {
+  flex-shrink: 0;
+  padding-right: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--fg-2);
+}
+
+.map-count strong {
+  color: var(--signal-text);
+  font-weight: 700;
+}
+
+/* Marker. MapLibre positions .pin-anchor (it carries .maplibregl-marker and
+   an inline translate), so it must stay unstyled: no position, transform or
+   transition here, or pins drift off their coordinates as the map moves. */
+.pin-anchor {
+  z-index: 1;
+}
+
+.pin-anchor.is-active {
+  z-index: var(--z-raised);
+}
+
+/* A marigold pin with a soft halo so it reads against dark terrain. */
+.pin {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  color: var(--on-signal);
+  border: 2px solid color-mix(in oklch, var(--bg) 65%, transparent);
+  box-shadow:
+    0 0 0 6px color-mix(in oklch, var(--signal) 16%, transparent),
+    var(--lift-2);
+  cursor: pointer;
+  transition: transform var(--t-hover) var(--ease);
+}
+
+.pin:hover,
+.pin-anchor.is-active .pin {
+  transform: scale(1.18);
+}
+
+.map-compass svg {
+  transition: transform 120ms linear;
+}
+
+.pin-cat {
+  background: var(--pin-hue, var(--signal));
+  box-shadow:
+    0 0 0 6px var(--pin-halo, color-mix(in oklch, var(--signal) 16%, transparent)),
+    var(--lift-2);
+}
+
+/* Floating detail card for the selected pin, bottom-left on desktop. */
+.map-peek {
+  margin-top: auto;
+  width: min(22rem, 100%);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: color-mix(in oklch, var(--bg-2) 94%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-3);
+}
+
+.map-peek-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-3);
+}
+
+.map-peek-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.map-peek-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklch, var(--bg) 75%, transparent);
+  color: var(--fg);
+  border: 1px solid var(--rule);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.map-peek-body {
+  padding: 0.9rem 1rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.map-tools {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.map-tool {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-control);
+  background: color-mix(in oklch, var(--bg) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--rule);
+  color: var(--fg-2);
+  transition:
+    color var(--t-hover) var(--ease),
+    border-color var(--t-hover) var(--ease);
+}
+
+.map-tool:hover {
+  color: var(--signal-text);
+  border-color: var(--rule-strong);
+}
+
+.maplibregl-ctrl-attrib {
+  background: color-mix(in oklch, var(--bg) 75%, transparent) !important;
+  border-radius: var(--r-sm) 0 0 0;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--fg-3) !important;
+}
+
+.map-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--z-overlay);
+  text-align: center;
+  padding: 1.5rem;
+  max-width: 28rem;
+}
+
+/* ==========================================================================
+   Map split view
+   ========================================================================== */
+.map-split {
+  position: relative;
+  display: grid;
+  height: calc(100svh - var(--nav-h) - var(--tabbar-h));
+  min-height: 26rem;
+}
+
+.map-split .map-page {
+  height: 100%;
+  min-height: 0;
+}
+
+.map-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+  border-right: 1px solid var(--rule-soft);
+}
+
+.map-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.map-list-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--fg-2);
+}
+
+.map-list-title strong {
+  color: var(--fg);
+}
+
+.map-list-items {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.map-item {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem;
+  border-radius: var(--r-control);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-hover) var(--ease);
+}
+
+.map-item:hover {
+  background: var(--bg-2);
+}
+
+.map-item.is-active {
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--signal);
+}
+
+.map-item-thumb {
+  width: 4.25rem;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.map-item-body {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  align-content: center;
+}
+
+.map-item-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.map-item-meta {
+  font-size: 0.8125rem;
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-list-empty,
+.map-list-more {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+.map-switch {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  z-index: var(--z-modal);
+  display: inline-flex;
+  padding: 4px;
+  transform: translateX(-50%);
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  border: 1px solid var(--rule-strong);
+  box-shadow: var(--lift-3);
+}
+
+.map-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-pill);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fg-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.map-switch button[aria-pressed="true"] {
+  background: var(--signal);
+  color: var(--on-signal);
+}
+
+/* Mobile: one pane at a time */
+@media (max-width: 899px) {
+  .map-split > .map-list,
+  .map-split > .map-page {
+    grid-area: 1 / 1;
+  }
+  .map-split.is-map > .map-list {
+    visibility: hidden;
+  }
+  .map-split.is-list > .map-page {
+    visibility: hidden;
+  }
+  .map-split.is-list .map-list-items {
+    padding-bottom: 5rem;
+  }
+  .map-split .map-peek {
+    margin-bottom: 3.5rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .map-split {
+    grid-template-columns: 22rem minmax(0, 1fr);
+  }
+  .map-switch {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Travel time (map peek)
+   ========================================================================== */
+.map-split .map-peek {
+  max-height: calc(100% - 4.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.travel {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.travel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.travel-origins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.travel-origins .fchip {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  max-width: 11rem;
+}
+
+.travel-place {
+  position: relative;
+  display: inline-flex;
+}
+
+.travel-place .fchip {
+  padding-right: 1.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.travel-remove {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.travel-remove:hover {
+  opacity: 1;
+  background: oklch(0 0 0 / 0.2);
+}
+
+.travel-add {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.travel-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.travel-add-row .binput {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8125rem;
+  min-width: 0;
+}
+
+.travel-label {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.travel-add-row .icon-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.travel-hits {
+  display: grid;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  border-radius: var(--r-control);
+  background: var(--bg-3);
+  border: 1px solid var(--rule);
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.travel-hits button {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--r-sm);
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.travel-hits button:hover,
+.travel-hits button:focus-visible {
+  background: var(--bg-4);
+  color: var(--fg);
+}
+
+.travel-legs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.travel-legs li {
+  display: grid;
+  justify-items: start;
+  gap: 0.1rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--r-control);
+  background: var(--bg-3);
+  min-width: 0;
+}
+
+.travel-legs li svg {
+  color: var(--signal-text);
+}
+
+.travel-legs li:first-child {
+  background: var(--signal-wash);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 35%, transparent);
+}
+
+.travel-time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.travel-mode {
+  font-size: 0.6875rem;
+  color: var(--fg-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.travel-skel {
+  display: block;
+  width: 100%;
+  height: 2.6rem;
+  border-radius: var(--r-sm);
+  background: var(--bg-4);
+  background-image: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.05), transparent);
+  background-size: 200% 100%;
+  animation: skel-sheen 1.4s linear infinite;
+}
+
+.travel-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--fg-3);
+}
+
+.travel-note.is-error {
+  color: var(--crit);
+}
+
+.travel-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.travel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 600;
+  color: var(--signal-text);
+}
+
+.travel-link:hover {
+  color: var(--signal-text);
+}
+
+.origin-pin {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--here);
+  border: 3px solid var(--fg);
+  box-shadow: 0 0 0 6px color-mix(in oklch, var(--here) 30%, transparent), var(--lift-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .travel-skel {
+    animation: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .map-split .map-peek-media,
+  .map-split .map-peek-media .eimg {
+    aspect-ratio: 3 / 1 !important;
+  }
+}
+
+.travel-delay {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--signal-text);
+}
+
+.travel-leave {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-control);
+  background: var(--bg-3);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+
+.travel-leave svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--signal-text);
+}
+
+.travel-leave strong {
+  color: var(--fg);
+}
+
+.travel-legs:has(li:nth-child(4)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* ---- Plan calendar ----------------------------------------------------- */
+.plan-cal {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  border: 1px solid var(--rule);
+  animation: fade-in 200ms var(--ease);
+}
+
+.plan-cal-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.plan-cal-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.plan-cal-sub {
+  margin: 0.2rem 0 0;
+  max-width: 52ch;
+  font-size: 0.8125rem;
+  color: var(--fg-3);
+}
+
+.plan-cal-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-cal-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.plan-cal-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--signal-wash);
+  color: var(--signal-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.plan-cal-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+}
+
+.plan-cal-add {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+.plan-cal-add.is-done {
+  color: var(--signal-text);
+  border-color: color-mix(in oklch, var(--signal) 50%, transparent);
+}
+
+/* Home hero link into the swipe deck */
+.hero-swipe {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  color: var(--fg-2);
+  font-size: 0.875rem;
+  transition: color var(--t-hover) var(--ease);
+}
+.hero-swipe strong { color: var(--signal-text); }
+.hero-swipe:hover { color: var(--fg); }
+
+/* ==========================================================================
+   Map time scrubber
+   ========================================================================== */
+.tl-open {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  color: var(--on-signal);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: transform var(--t-tap) var(--ease), background-color var(--t-hover) var(--ease);
+}
+.tl-open:hover { background: var(--signal-hi); transform: translateY(-1px); }
+.tl {
+  width: min(100%, 34rem);
+  padding: 0.75rem 0.9rem 0.55rem;
+  border-radius: var(--r-card);
+  background: color-mix(in oklch, var(--bg) 88%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--rule-soft);
+  box-shadow: 0 16px 40px -18px oklch(0 0 0 / 0.7);
+}
+.tl-head { display: flex; align-items: center; gap: 0.7rem; }
+.tl-play {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--signal);
+  color: var(--on-signal);
+  transition: transform var(--t-tap) var(--ease);
+}
+.tl-play:active { transform: scale(0.9); }
+.tl-label { flex: 1; display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.tl-label strong { color: var(--fg); font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tl-label span { color: var(--fg-3); font-size: 0.75rem; }
+.tl-label em { font-style: normal; color: var(--live); font-weight: 600; }
+.tl-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  color: var(--fg-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.tl-close:hover { color: var(--fg); }
+.tl-track { position: relative; height: 2.6rem; margin-top: 0.6rem; }
+.tl-bars { position: absolute; inset: 0 0 0.4rem; display: flex; align-items: flex-end; gap: 1px; }
+.tl-bars span {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  background: var(--bg-4);
+  transition: background-color var(--t-hover) var(--ease);
+}
+.tl-bars span.is-past { background: color-mix(in oklch, var(--signal) 45%, transparent); }
+.tl-bars span.is-now { background: var(--signal); }
+.tl-track input[type="range"] {
+  position: absolute;
+  inset: auto 0 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+.tl-track input[type="range"]::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.tl-track input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--fg);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--bg) 80%, transparent);
+}
+.tl-track input[type="range"]::-moz-range-thumb {
+  width: 4px;
+  height: 2.6rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--fg);
+}
+.tl-track input[type="range"]:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 4px; }
+.tl-days { position: relative; height: 1rem; margin-top: 0.2rem; }
+.tl-days span { position: absolute; color: var(--fg-3); font-size: 0.6875rem; white-space: nowrap; }
+
+/* Pins pop in as the timeline moves; live ones pulse. */
+.pin { animation: pin-pop 260ms var(--ease); }
+@keyframes pin-pop { from { transform: scale(0); opacity: 0; } }
+.pin-anchor.is-live .pin::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--live);
+  animation: pin-pulse 1.6s ease-out infinite;
+}
+@keyframes pin-pulse { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pin { animation: none; }
+  .pin-anchor.is-live .pin::after { animation: none; opacity: 1; }
+}
+.tl-skip { margin-left: 0.4rem; color: var(--signal-text); font-weight: 600; font-size: 0.75rem; }
+.tl-skip:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Thumbnail pins: event image inside a category-coloured ring. */
+.pin.pin-thumb {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  overflow: visible;
+  background: var(--bg-2);
+  border: 2.5px solid var(--pin-hue, var(--signal));
+  box-shadow:
+    0 0 0 4px var(--pin-halo, color-mix(in oklch, var(--signal) 16%, transparent)),
+    0 6px 16px -4px oklch(0 0 0 / 0.6);
+}
+.pin.pin-thumb { position: relative; }
+/* Pinned to the ring's box: in the pin's flex layout a tall poster would
+   otherwise size the image to its own height and spill out of the circle. */
+.pin.pin-thumb img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.pin-anchor.is-active .pin.pin-thumb {
+  transform: scale(1.35);
+  box-shadow:
+    0 0 0 4px var(--pin-hue, var(--signal)),
+    0 10px 24px -6px oklch(0 0 0 / 0.7);
+}
+.pin-anchor.is-live .pin.pin-thumb::after { inset: -8px; }
+
+/* ==========================================================================
+   Map: city lights over the real map (lib/cityLightsLayer.ts)
+   ========================================================================== */
+/* Lights mode: the photo pins float above their ground ripples on a thin
+   lit tether. The anchor stays where MapLibre puts it (on the venue); only
+   the pin is lifted, via the independent translate property. */
+.map-canvas.is-lights .pin { translate: 0 -38px; scale: 0.78; }
+.map-canvas.is-lights .pin-anchor::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - 0.75px);
+  bottom: 50%;
+  width: 1.5px;
+  height: 38px;
+  background: var(--pin-hue, var(--signal));
+  opacity: 0.6;
+  pointer-events: none;
+}
+.map-canvas.is-lights .pin-anchor.is-active::before { opacity: 0.9; }
+.map-fly {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.2vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  text-shadow: 0 4px 30px rgb(0 0 0 / 0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+.map-fly.is-on { animation: fly-label 2.2s ease both; }
+.map-dim {
+  position: absolute;
+  bottom: 1rem;
+  right: 4.5rem;
+  z-index: calc(var(--z-overlay) + 1);
+  display: flex;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklch, var(--bg) 90%, transparent);
+  border: 1px solid var(--rule);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+}
+.map-dim button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border-radius: var(--r-pill);
+  color: var(--fg-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.map-dim button[aria-pressed="true"] { background: var(--signal); color: var(--on-signal); }
+.map-dim button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* ==========================================================================
+   Map: phone card strip (components/MapStrip.tsx)
+   ========================================================================== */
+.map-strip { display: none; }
+
+@media (max-width: 899px) {
+  .map-strip {
+    display: flex;
+    gap: 0.6rem;
+    margin: auto -1rem 3.4rem; /* sits above the Map / List switch */
+    padding: 0.25rem calc((100% - min(82vw, 21rem)) / 2 + 1rem);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    list-style: none;
+  }
+  .map-strip::-webkit-scrollbar { display: none; }
+  /* The strip replaces the single-event peek on phones. */
+  .map-split .map-peek { display: none; }
+  .map-overlay:has(.map-strip) { padding-bottom: 0; }
+}
+
+.map-strip-card {
+  position: relative;
+  flex: 0 0 min(82vw, 21rem);
+  scroll-snap-align: center;
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--r-card);
+  background: color-mix(in oklch, var(--bg-2) 94%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--rule-strong);
+  box-shadow: var(--lift-3);
+  opacity: 0.72;
+  transform: scale(0.96);
+  transition: transform var(--t-hover) var(--ease), opacity var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+}
+.map-strip-card.is-on {
+  opacity: 1;
+  transform: none;
+  border-color: color-mix(in oklab, var(--cat-hue) 70%, var(--rule-strong));
+}
+.map-strip-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem;
+  min-height: 5.25rem;
+  text-align: left;
+  color: inherit;
+  border-radius: var(--r-card) 0 0 var(--r-card);
+  cursor: pointer;
+}
+.map-strip-thumb {
+  flex: 0 0 4rem;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.map-strip-body { display: grid; gap: 0.15rem; min-width: 0; }
+.map-strip-title {
+  font-weight: 650;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.map-strip-meta {
+  font-size: 0.8rem;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-strip-open {
+  flex: 0 0 2.9rem;
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--rule);
+  color: var(--fg-2);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+}
+.map-strip-card.is-on .map-strip-open { color: var(--cat-hue); }
+.map-strip-main:focus-visible,
+.map-strip-open:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: -2px;
+}
