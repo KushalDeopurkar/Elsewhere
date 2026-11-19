@@ -1853,14 +1853,10 @@ p {
   }
 }
 
+/* Starts visible: the word only settles into place, it never fades in. */
 @keyframes tt-word {
   from {
-    transform: translateY(0.18em);
-    clip-path: inset(0 0 100% 0);
-  }
-  to {
-    transform: none;
-    clip-path: inset(0 0 0 0);
+    transform: translateY(0.06em);
   }
 }
 
