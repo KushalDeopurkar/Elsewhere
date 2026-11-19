@@ -49,6 +49,10 @@
   --board-fg-2: oklch(0.76 0.025 255);
   --board-rule: oklch(0.955 0.012 90 / 0.14);
   --lamp: oklch(0.84 0.16 80);
+  /* Overlays behind dialogs and over posters */
+  --scrim: oklch(0.12 0.03 263);
+  /* "You are here" on the map */
+  --here: oklch(0.7 0.15 250);
 
   /* Shape. Paper is cut square; the only round things are dots and faces. */
   --r-card: 2px;

@@ -113,7 +113,7 @@ export default function RecapView() {
         <div className="rc-slide is-on">
           <p className="rc-kicker">Your {recap.month} in Elsewhere</p>
           <h1 className="rc-big">Nothing to recap yet</h1>
-          <p className="rc-line">Save, swipe or mark events Going this month and your recap builds itself.</p>
+          <p className="rc-line">Save events or mark them Going this month, and your recap builds itself.</p>
           <div className="rc-actions">
             <Link href="/explore" className="btn btn-primary">Explore events</Link>
             <Link href="/" className="btn btn-ghost">Back home</Link>

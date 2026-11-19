@@ -521,3 +521,48 @@
   letter-spacing: 0.06em;
   color: var(--fg-3);
 }
+
+/* ==========================================================================
+   Secondary pages share the timetable's section heads and squared surfaces
+   ========================================================================== */
+.pp-h2,
+.st-danger-h,
+.alert-sub {
+  display: block;
+  padding-top: var(--s-3);
+  margin-bottom: var(--s-4);
+  border-top: 2px solid var(--fg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 80%;
+  font-size: var(--t-xl);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.pp-stats p,
+.pp-badge,
+.pp-cities li {
+  border-radius: var(--r-card);
+}
+
+.pp-stats p {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+}
+
+.pp-stats strong {
+  font-family: var(--font-display);
+  font-size: var(--t-lg);
+  font-stretch: 70%;
+}
+
+/* Passport stamps keep their ink rings: a passport is the one place a round stamp belongs */
+.pp-stamp {
+  border-radius: var(--r-card);
+}
+
+.pp-stamp.is-got {
+  border-style: solid;
+}

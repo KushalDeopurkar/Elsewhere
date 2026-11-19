@@ -544,7 +544,7 @@
 
 .travel-legs li:first-child {
   background: var(--signal-wash);
-  box-shadow: inset 0 0 0 1px oklch(0.71 0.19 33 / 0.35);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 35%, transparent);
 }
 
 .travel-time {
@@ -611,9 +611,9 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: oklch(0.7 0.15 250);
+  background: var(--here);
   border: 3px solid var(--fg);
-  box-shadow: 0 0 0 6px oklch(0.7 0.15 250 / 0.3), var(--lift-2);
+  box-shadow: 0 0 0 6px color-mix(in oklch, var(--here) 30%, transparent), var(--lift-2);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -649,7 +649,7 @@
 .travel-delay {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: oklch(0.78 0.15 50);
+  color: var(--signal-text);
 }
 
 .travel-leave {
@@ -681,7 +681,7 @@
 
 /* ---- WhatsApp share + plan calendar ------------------------------------ */
 .btn-wa svg {
-  color: oklch(0.72 0.17 150);
+  color: var(--live);
 }
 
 .sec-kicker .live-dot {
@@ -766,7 +766,7 @@
 
 .plan-cal-add.is-done {
   color: var(--signal-text);
-  border-color: oklch(0.71 0.19 33 / 0.5);
+  border-color: color-mix(in oklch, var(--signal) 50%, transparent);
 }
 
 /* Home hero link into the swipe deck */
@@ -804,7 +804,7 @@
   width: min(100%, 34rem);
   padding: 0.75rem 0.9rem 0.55rem;
   border-radius: var(--r-card);
-  background: oklch(0.168 0.012 265 / 0.88);
+  background: color-mix(in oklch, var(--bg) 88%, transparent);
   backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--rule-soft);
   box-shadow: 0 16px 40px -18px oklch(0 0 0 / 0.7);
@@ -846,7 +846,7 @@
   background: var(--bg-4);
   transition: background-color var(--t-hover) var(--ease);
 }
-.tl-bars span.is-past { background: rgb(255 107 87 / 0.45); }
+.tl-bars span.is-past { background: color-mix(in oklch, var(--signal) 45%, transparent); }
 .tl-bars span.is-now { background: var(--signal); }
 .tl-track input[type="range"] {
   position: absolute;
@@ -865,7 +865,7 @@
   height: 100%;
   border-radius: 2px;
   background: var(--fg);
-  box-shadow: 0 0 0 3px oklch(0.168 0.012 265 / 0.8);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--bg) 80%, transparent);
 }
 .tl-track input[type="range"]::-moz-range-thumb {
   width: 4px;
@@ -907,7 +907,7 @@
   background: var(--bg-2);
   border: 2.5px solid var(--pin-hue, var(--signal));
   box-shadow:
-    0 0 0 4px var(--pin-halo, oklch(0.71 0.19 33 / 0.16)),
+    0 0 0 4px var(--pin-halo, color-mix(in oklch, var(--signal) 16%, transparent)),
     0 6px 16px -4px oklch(0 0 0 / 0.6);
 }
 .pin.pin-thumb { position: relative; }
@@ -992,7 +992,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   border-radius: 50%;
   background: #fff;
   border: 4px solid var(--signal);
-  box-shadow: 0 0 0 8px rgb(255 107 87 / 0.25), 0 4px 14px rgb(0 0 0 / 0.5);
+  box-shadow: 0 0 0 8px color-mix(in oklch, var(--signal) 25%, transparent), 0 4px 14px rgb(0 0 0 / 0.5);
 }
 .plan-scrub {
   display: flex;
@@ -1052,7 +1052,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   color: var(--fg);
   box-shadow: var(--lift-3);
 }
-.sharecard::backdrop { background: rgb(5 6 8 / 0.7); }
+.sharecard::backdrop { background: color-mix(in oklch, var(--scrim) 70%, transparent); }
 .sharecard[open] { animation: stage-in 320ms var(--ease) both; }
 .sharecard-body { display: grid; gap: 0.9rem; padding: 1rem 1.1rem 1.1rem; }
 .sharecard-head { display: flex; align-items: center; justify-content: space-between; }
@@ -1315,7 +1315,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .ptoast strong { display: block; font-size: 0.875rem; color: var(--fg); }
 .ptoast small { display: block; font-size: 0.8125rem; color: var(--fg-2); }
 .ptoast-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--signal); color: var(--on-signal); animation: ptoast-stamp 520ms 120ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.ptoast.is-badge .ptoast-icon { background: var(--fg); color: #140d33; }
+.ptoast.is-badge .ptoast-icon { background: var(--fg); color: var(--bg); }
 @keyframes ptoast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
 @keyframes ptoast-stamp { from { transform: scale(1.8) rotate(-18deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
@@ -1393,7 +1393,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   color: var(--fg);
   box-shadow: var(--lift-3);
 }
-.signin::backdrop { background: rgb(5 6 8 / 0.72); }
+.signin::backdrop { background: color-mix(in oklch, var(--scrim) 72%, transparent); }
 .signin[open] { animation: stage-in 320ms var(--ease) both; }
 .signin-body { position: relative; display: grid; gap: 0.9rem; padding: 1.5rem 1.25rem 1.25rem; }
 .signin-x { position: absolute; top: 0.6rem; right: 0.6rem; }
@@ -1423,7 +1423,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   border-color: transparent;
 }
 .signin-row .btn { justify-content: center; min-height: 46px; }
-.signin-sent { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0; padding: 0.8rem; border-radius: var(--r-control); background: rgb(61 220 151 / 0.1); color: var(--fg); font-size: 0.9rem; }
+.signin-sent { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0; padding: 0.8rem; border-radius: var(--r-control); background: color-mix(in oklch, var(--live) 10%, transparent); color: var(--fg); font-size: 0.9rem; }
 .signin-sent svg { color: var(--live); flex-shrink: 0; }
 .signin-err, .esocial-err, .st-err { margin: 0; color: var(--crit); font-size: 0.875rem; }
 .signin-fine { margin: 0; color: var(--fg-3); font-size: 0.8125rem; }
@@ -1454,7 +1454,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .esocial-btn:active { transform: scale(0.97); }
 .esocial-btn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 .esocial-btn.is-on { background: var(--signal); border-color: var(--signal-text); color: var(--on-signal); }
-.esocial-btn.is-alt.is-on { background: var(--fg); border-color: var(--fg); color: #140d33; }
+.esocial-btn.is-alt.is-on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 .esocial-who { display: flex; align-items: center; gap: 0.6rem; }
 .esocial-who p { margin: 0; color: var(--fg-2); font-size: 0.9rem; }
 .esocial-faces { display: inline-flex; }
@@ -1697,7 +1697,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   gap: 0.9rem;
   padding: 1rem 1.1rem;
   border-radius: var(--r-card);
-  background: linear-gradient(120deg, var(--signal-wash), rgb(169 155 255 / 0.1));
+  background: var(--signal-wash);
   border: 1px solid var(--rule);
   transition: border-color var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
 }
@@ -1773,7 +1773,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   display: flex;
   padding: 3px;
   border-radius: var(--r-pill);
-  background: rgb(14 16 21 / 0.9);
+  background: color-mix(in oklch, var(--bg) 90%, transparent);
   border: 1px solid var(--rule);
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
 }
@@ -1821,7 +1821,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   display: flex;
   align-items: stretch;
   border-radius: var(--r-card);
-  background: rgb(23 26 33 / 0.94);
+  background: color-mix(in oklch, var(--bg-2) 94%, transparent);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid var(--rule-strong);
@@ -1967,7 +1967,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: rgb(14 16 21 / 0.85);
+  background: color-mix(in oklch, var(--bg) 85%, transparent);
   color: var(--fg);
   font-weight: 700;
 }
@@ -2026,8 +2026,8 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   gap: 0.5rem;
   padding: 1.25rem;
   border-radius: var(--r-card);
-  background: linear-gradient(rgb(61 220 151 / 0.1), rgb(61 220 151 / 0.04)), var(--bg-2);
-  border: 1px solid rgb(61 220 151 / 0.5);
+  background: linear-gradient(color-mix(in oklch, var(--live) 10%, transparent), color-mix(in oklch, var(--live) 4%, transparent)), var(--bg-2);
+  border: 1px solid color-mix(in oklch, var(--live) 50%, transparent);
 }
 .poll-decided-kicker { color: var(--live); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .poll-decided-title { font-size: 1.5rem; line-height: 1.2; }
@@ -2067,7 +2067,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   max-width: 40rem;
   padding: 0.6rem;
   border-radius: var(--r-card);
-  background: rgb(23 26 33 / 0.96);
+  background: color-mix(in oklch, var(--bg-2) 96%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--rule-strong);
@@ -2127,7 +2127,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
 .st-danger { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule-soft); display: grid; gap: 0.75rem; justify-items: start; }
 .st-danger-h { font-size: 1rem; color: var(--fg); }
 .st-danger-link { color: var(--crit); min-height: 44px; }
-.st-danger-btn { background: var(--crit); color: #1a0208; }
+.st-danger-btn { background: var(--crit); color: var(--bg); }
 .st-danger-btn:hover { filter: brightness(1.08); }
 
 /* First-visit city note (components/CityGuess.tsx) */
@@ -2143,7 +2143,7 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   max-width: calc(100vw - 2rem);
   padding: 0.5rem 0.4rem 0.5rem 0.9rem;
   border-radius: 14px;
-  background: rgb(23 26 33 / 0.96);
+  background: color-mix(in oklch, var(--bg-2) 96%, transparent);
   border: 1px solid var(--rule-strong);
   box-shadow: var(--lift-3);
   color: var(--fg-2);
@@ -2169,9 +2169,9 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 520ms c
   padding: 0.85rem 1rem;
   border: 1px solid var(--rule);
   border-radius: var(--r-card);
-  background: rgb(23 26 33 / 0.6);
+  background: color-mix(in oklch, var(--bg-2) 60%, transparent);
 }
-.remind.is-on { border-color: rgb(255 107 87 / 0.35); background: var(--signal-wash); }
+.remind.is-on { border-color: color-mix(in oklch, var(--signal) 35%, transparent); background: var(--signal-wash); }
 .remind-icon {
   display: grid;
   place-items: center;
