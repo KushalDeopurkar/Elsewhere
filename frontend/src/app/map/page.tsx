@@ -117,7 +117,7 @@ export default function MapPage() {
   const [deckSrc, setDeckSrc] = useState<Event[]>(events);
   if (!stripLocked && deckSrc !== events) setDeckSrc(events);
   const deck = useMemo(() => {
-    const sorted = [...deckSrc].sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time)).slice(0, 40);
+    const sorted = deckSrc.filter((e) => e.format !== "online").sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time)).slice(0, 40);
     return selected && !sorted.some((e) => e.id === selected.id) ? [selected, ...sorted] : sorted;
   }, [deckSrc, selected]);
   const glide = useCallback((event: Event) => {
@@ -208,30 +208,44 @@ export default function MapPage() {
           <ul className="map-list-items">
             {listed.map((e) => (
               <li key={e.id}>
-                <button
-                  type="button"
-                  className={`map-item${selected?.id === e.id ? " is-active" : ""}`}
-                  onPointerEnter={() => setHoverId(e.id)}
-                  onPointerLeave={() => setHoverId((h) => (h === e.id ? null : h))}
-                  onFocus={() => setHoverId(e.id)}
-                  onBlur={() => setHoverId((h) => (h === e.id ? null : h))}
-                  onClick={() => {
-                    pick(e);
-                    setMobileView("map");
-                  }}
-                >
-                  <span className="map-item-thumb">
-                    <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
-                  </span>
-                  <span className="map-item-body">
-                    <span className="map-item-title">{e.title}</span>
-                    <span className="map-item-meta">{whenOf(e)}</span>
-                    <span className="map-item-meta">
-                      {priceBadge(e)}
-                      {e.location_name ? ` · ${e.location_name}` : ""}
+                {e.format === "online" ? (
+                  // Online events have no place on the map; they open their page.
+                  <Link href={`/events/${e.id}`} className="map-item is-online">
+                    <span className="map-item-thumb">
+                      <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
                     </span>
-                  </span>
-                </button>
+                    <span className="map-item-body">
+                      <span className="map-item-title">{e.title}</span>
+                      <span className="map-item-meta">{whenOf(e)}</span>
+                      <span className="map-item-meta">{priceBadge(e)} · Online, no pin</span>
+                    </span>
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className={`map-item${selected?.id === e.id ? " is-active" : ""}`}
+                    onPointerEnter={() => setHoverId(e.id)}
+                    onPointerLeave={() => setHoverId((h) => (h === e.id ? null : h))}
+                    onFocus={() => setHoverId(e.id)}
+                    onBlur={() => setHoverId((h) => (h === e.id ? null : h))}
+                    onClick={() => {
+                      pick(e);
+                      setMobileView("map");
+                    }}
+                  >
+                    <span className="map-item-thumb">
+                      <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
+                    </span>
+                    <span className="map-item-body">
+                      <span className="map-item-title">{e.title}</span>
+                      <span className="map-item-meta">{whenOf(e)}</span>
+                      <span className="map-item-meta">
+                        {priceBadge(e)}
+                        {e.location_name ? ` · ${e.location_name}` : ""}
+                      </span>
+                    </span>
+                  </button>
+                )}
               </li>
             ))}
           </ul>

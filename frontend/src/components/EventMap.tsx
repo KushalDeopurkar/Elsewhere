@@ -332,10 +332,13 @@ export default function EventMap({
     const b = instance.getBounds();
     const padLat = (b.getNorth() - b.getSouth()) * 0.15;
     const padLng = (b.getEast() - b.getWest()) * 0.15;
+    // Online events have no place: a pin at the city's centre would be a
+    // made-up location. They stay in the list, marked online.
     const candidates = events.filter(
       (e) =>
         e.lat != null &&
         e.lng != null &&
+        e.format !== "online" &&
         (e.id === selectedId ||
           (e.lat >= b.getSouth() - padLat &&
             e.lat <= b.getNorth() + padLat &&

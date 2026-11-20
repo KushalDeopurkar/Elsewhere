@@ -1,6 +1,6 @@
 # Missile log: Elsewhere frontend
 
-status: stage=0 iteration=4 verdict=CONTINUE updated=2026-11-19T22:17:34.515Z
+status: stage=0 iteration=5 verdict=CONTINUE updated=2026-11-20T09:52:03.627Z
 mode: full (existing project, redesign)
 branch: missile/20261120
 url: none
@@ -25,19 +25,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
 ## Scoreboard
 
 <!-- scoreboard:start -->
-| dimension | baseline | it1 | it2 | it3 | it4 | target |
-|---|---|---|---|---|---|---|
-| first_impression | 6 | 7 | 8 | 8 | 9 | 9+ |
-| design_system | 4 | 7 | 7 | 8 | 8 | 9+ |
-| layout | 6 | 6 | 7 | 8 | 8 | 9+ |
-| motion | 5 | 6 | 7 | 8 | 8 | 9+ |
-| ux_completeness | 5 | 6 | 7 | 8 | 8 | 9+ |
-| accessibility | 6 | 8 | 7 | 8 | 9 | 9+ |
-| performance | 6 | 8 | 9 | 9 | 9 | 9+ |
-| code_health | 6 | 7 | 7 | 8 | 9 | 9+ |
-| story | 4 | 7 | 8 | 9 | 9 | 9+ |
-| shipped | 5 | 5 | 5 | 5 | 5 | 9+ |
-| **mean** | 5.3 | 6.7 | 7.2 | 7.9 | 8.2 | 9.5+ |
+| dimension | baseline | it1 | it2 | it3 | it4 | it5 | target |
+|---|---|---|---|---|---|---|---|
+| first_impression | 6 | 7 | 8 | 8 | 9 | 9 | 9+ |
+| design_system | 4 | 7 | 7 | 8 | 8 | 8 | 9+ |
+| layout | 6 | 6 | 7 | 8 | 8 | 8 | 9+ |
+| motion | 5 | 6 | 7 | 8 | 8 | 8 | 9+ |
+| ux_completeness | 5 | 6 | 7 | 8 | 8 | 7 | 9+ |
+| accessibility | 6 | 8 | 7 | 8 | 9 | 8 | 9+ |
+| performance | 6 | 8 | 9 | 9 | 9 | 9 | 9+ |
+| code_health | 6 | 7 | 7 | 8 | 9 | 8 | 9+ |
+| story | 4 | 7 | 8 | 9 | 9 | 8 | 9+ |
+| shipped | 5 | 5 | 5 | 5 | 5 | 5 | 9+ |
+| **mean** | 5.3 | 6.7 | 7.2 | 7.9 | 8.2 | 7.8 | 9.5+ |
 <!-- scoreboard:end -->
 
 ## Plan
@@ -119,6 +119,19 @@ Next.js 16.3 app router, React 19, Tailwind 4 (used only as the import; styling 
   - [S] design_system: Remove the planner prompt's inner border (box-in-a-box, asked in it3 and not applied), and give the /map and event tile-failure cards one stripe and fill with left-aligned body text. (src/app/planner.css, src/app/map.css, src/app/events.css)
   - [S] code_health: Capitalise each sentence in composeRequest (the planner preview reads '. starting' and '. keep'), and add tests for it and for FlapText settle. (src/components/DayPlanner.tsx, src/components/FlapText.tsx, src/lib/)
   - [S] story: Add docs/home-phone.png (the first viewport of home-390-night.png) to the README hero row. (README.md, docs/)
+
+### Iteration 5 · 2026-11-20T09:52:03.627Z
+- mean 7.8, min 5, verdict **CONTINUE**
+- url: http://localhost:3100
+- screens: /, /explore, /explore?q=I%20want%20to%20meet%20startup%20founders, /explore?q=free%20AI%20workshops%20this%20weekend, /explore?q=free%20AI%20workshops%20this%20weekend&widen=topic, /explore?cat=tech&price=free&when=week, /map, /events/d1a7f2c0-0001-4a10-9c21-5f3e9b0a1101, /categories/technology, /saved, /passport, /plan-my-day, /settings, /recap, /opengraph-image
+- next fixes:
+  - [S] ux_completeness: Make the AI read plurals and own up to empty interests. Accept an optional 's'/'es' suffix in findPhrase so 'free AI workshops this weekend' and 'meet startup founders' read Workshop and Founder. When a named interest has zero matches in the city, say so above the results and offer the nearest match elsewhere (Seed Stage: Founder Pitch Night, Bengaluru) as a refinement. Add tests for both. (src/lib/intent.ts, src/lib/intent.test.ts, src/components/ExploreView.tsx)
+  - [S] ux_completeness: Stop the map inventing a place and hiding pins. Skip pins for online events (Fine-Tuning sits at Mumbai's centre), list them as 'Online, no pin', and fit the first view to the events' bounds with padding for the desktop list panel and the phone label and card strip. Two of eight pins are under the panel at 1440, and South Mumbai is off-screen. (src/app/map/page.tsx, src/components/EventMap.tsx)
+  - [S] ux_completeness: Finish the home de-duplication asked in it4. Add the board's displayed rows to the shown set before picking Headliners (today all three are board rows), and filter the weekend reel against it. (src/app/page.tsx)
+  - [S] accessibility: Keep focus in place on Explore. After a filter chip is removed, focus the next chip, or 'Clear all', or the results heading. After 'Clear all', focus the results heading. Today focus falls to <body>. (src/components/ExploreView.tsx)
+  - [M] ux_completeness: Make the interpreted request controllable. Turn each 'Reading as' chip into a remove button (dropSignal plus a URL update), and show the applied when, free, format and interest in the filter rail instead of 'Any'. (src/components/ExploreView.tsx, src/components/FilterRail.tsx, src/lib/intent.ts)
+  - [S] motion: Keep ':' static in FlapText (it riffles letters such as '2OL79'), and cap the riffle so the board reads by 800 ms. Add the FlapText test. (src/components/FlapText.tsx)
+  - [S] story: Carry the 3.0 rename into the share media: redraw the site OG as 'WHAT'S ON IN YOUR CITY' with mixed kinds of event, update the event OG fallback, the manifest description and 'Tonight' shortcut, AccountsOff's 'Tonight's timetable' and PRODUCT.md. Also fix the orphaned category swatch on wrapped ticket labels. (src/app/opengraph-image.tsx, src/app/events/[id]/opengraph-image.tsx, src/app/manifest.ts, src/components/AccountsOff.tsx, src/components/EventCard.tsx, PRODUCT.md)
 
 <!-- iterations:end -->
 

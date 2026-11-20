@@ -2823,3 +2823,10 @@ p {
     content: none;
   }
 }
+
+/* The category's square stays with its name when the kicker wraps */
+.ecard-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

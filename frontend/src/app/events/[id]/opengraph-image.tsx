@@ -48,7 +48,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
   ]);
   const img = await poster(event?.image_url ?? null);
   const fonts = black && bold && text;
-  const title = event ? clip(event.title, 72) : "Everything on in your city, tonight";
+  const title = event ? clip(event.title, 72) : "Every kind of event in your city";
   const zone = event ? eventZone(event) : "Asia/Kolkata";
   const at = event ? new Date(event.start_time) : null;
   const part = (o: Intl.DateTimeFormatOptions) => (at ? new Intl.DateTimeFormat("en-GB", { timeZone: zone, ...o }).format(at) : "");

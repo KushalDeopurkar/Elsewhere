@@ -4,7 +4,7 @@ import { OG, OG_FONTS } from "@/lib/ogTheme";
 
 /** The site's own share card: the masthead on the night board, with a NOW line. */
 export const runtime = "nodejs";
-export const alt = "Elsewhere: everything on in your city tonight";
+export const alt = "Elsewhere: every kind of event in your city";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -15,9 +15,9 @@ const load = (u: URL) =>
 
 // Lines, not departures: a share image shouldn't print times nobody listed.
 const ROWS = [
-  ["#c792ea", "Live music", "Gigs, open mics, DJ nights"],
-  ["#6ec8ff", "Workshops", "Hackathons, classes, talks"],
-  ["#7ee0a1", "Matches", "Football, cricket, runs"],
+  ["#6ec8ff", "Learn and build", "Workshops, hackathons, talks"],
+  ["#f2b867", "Meet people", "Startup meetups, clubs, volunteering"],
+  ["#c792ea", "Go out", "Gigs, matches, exhibitions"],
 ];
 
 export default async function SiteOg() {
@@ -30,7 +30,7 @@ export default async function SiteOg() {
           ELSEWHERE
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: 28, fontFamily: "ArchivoBlack", fontSize: 132, lineHeight: 0.86 }}>
-          <span>TONIGHT</span>
+          <span>WHAT&apos;S ON</span>
           <span style={{ color: OG.boardFg2 }}>IN YOUR CITY</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 36 }}>

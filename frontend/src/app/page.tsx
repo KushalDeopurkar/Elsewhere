@@ -22,6 +22,7 @@ import { zoneHour } from "@/lib/sky";
 import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { pickStories } from "@/lib/stories";
+import { boardRows } from "@/lib/board";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import type { Event } from "@/lib/types";
 
@@ -75,10 +76,26 @@ export default function Home() {
   const stats = useCategoryStats(city.name);
 
   const all = useMemo(() => upcoming(pool.events), [pool.events]);
+  // What the board shows on its first page (today, carried into tomorrow on
+  // a thin day). The sections below start from what it doesn't.
+  const boardIds = useMemo(() => {
+    if (!clock) return new Set<string>();
+    const today = boardRows(all, "today", clock).slice(0, 7);
+    const later = today.length < 3 ? boardRows(all, "tomorrow", clock).slice(0, 5 - today.length) : [];
+    return new Set([...today, ...later].map((r) => r.event.id));
+  }, [all, clock]);
+  const offBoard = useMemo(() => all.filter((e) => !boardIds.has(e.id)), [all, boardIds]);
   const featured = useMemo(() => {
-    const week = showcase(all).filter((e) => inDateWindow(e, "week"));
-    return (week.length >= 3 ? week : showcase(all)).slice(0, 3);
-  }, [all]);
+    // Prefer headliners the board isn't already showing; fall back when the
+    // city is quiet enough that the board holds most of the week.
+    const pool = showcase(offBoard).length >= 3 ? offBoard : all;
+    const week = showcase(pool).filter((e) => inDateWindow(e, "week"));
+    return (week.length >= 3 ? week : showcase(pool)).slice(0, 3);
+  }, [all, offBoard]);
+  const reelPool = useMemo(() => {
+    const featuredIds = new Set(featured.map((e) => e.id));
+    return offBoard.filter((e) => !featuredIds.has(e.id));
+  }, [offBoard, featured]);
   const soon = useMemo(() => startingSoon(all).slice(0, 12), [all]);
   const soonBadges = new Map(soon.map((s) => [s.event.id, s.badge]));
 
@@ -86,7 +103,7 @@ export default function Home() {
   // one first (headliners, starting soon, the weekend, free), then the rest
   // of the week. A section with fewer than three left is dropped.
   const { thisWeek, free, weekend } = useMemo(() => {
-    const shown = new Set([...pickStories(all).events, ...featured, ...soon.map((s) => s.event)].map((e) => e.id));
+    const shown = new Set([...boardIds, ...[...pickStories(reelPool).events, ...featured, ...soon.map((s) => s.event)].map((e) => e.id)]);
     const take = (list: Event[]) => {
       const out = list.filter((e) => !shown.has(e.id)).slice(0, 14);
       if (out.length < 3) return [];
@@ -97,7 +114,7 @@ export default function Home() {
     const free = take(sortEvents(all.filter((e) => e.is_free), "soonest"));
     const thisWeek = take(sortEvents(all.filter((e) => inDateWindow(e, "week")), "soonest"));
     return { thisWeek, free, weekend };
-  }, [all, featured, soon]);
+  }, [all, featured, soon, boardIds, reelPool]);
   // "Handpicked" is based only on what this person saved: their categories.
   const picks = useMemo(() => {
     if (saved.length === 0) return [];
@@ -156,8 +173,8 @@ export default function Home() {
                     <dd>{pool.loading ? "–" : freeCount}</dd>
                   </div>
                   <div>
-                    <dt>Next 3 hours</dt>
-                    <dd>{pool.loading ? "–" : soon.length}</dd>
+                    <dt>Kinds of event</dt>
+                    <dd>{pool.loading ? "–" : new Set(all.map((e) => e.category)).size}</dd>
                   </div>
                 </dl>
               )}
@@ -229,7 +246,7 @@ export default function Home() {
           <Collections events={all} exclude={collectionExclude} />
         </section>
       )}
-      {!pool.loading && <WeekendStories events={all} city={city.name} />}
+      {!pool.loading && <WeekendStories events={reelPool} city={city.name} />}
       {weekend.length > 0 && (
         <section className="shell sec">
           <SectionHeader index={no()} kicker="Saturday and Sunday" title="This weekend" href="/explore?when=weekend" />

@@ -16,7 +16,7 @@ import { useCityEvents } from "@/hooks/useCityEvents";
 import { useCity, useRecentSearches, rememberSearch, clearRecentSearches } from "@/lib/cityPref";
 import { CATEGORIES, Event, EventCategory } from "@/lib/types";
 import { detectCity } from "@/lib/cities";
-import { matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
+import { dropSignal, matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
 import {
   DateFilter,
   FormatFilter,
@@ -102,6 +102,9 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const [draft, setDraft] = useState(q);
   const [drawer, setDrawer] = useState(false);
   const drawerPanel = useRef<HTMLDivElement>(null);
+  const resultsHeading = useRef<HTMLHeadingElement>(null);
+  // A removed chip takes its button with it; send focus somewhere that stays.
+  const focusResults = () => requestAnimationFrame(() => resultsHeading.current?.focus());
   const filtersBtn = useRef<HTMLButtonElement>(null);
 
   // The filters drawer is a modal: focus moves in, Escape closes it, focus
@@ -162,7 +165,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const submit = (text: string) => {
     const t = text.trim();
     if (t) rememberSearch(t);
-    setParams({ q: t || null, sort: null, widen: null });
+    setParams({ q: t || null, sort: null, widen: null, drop: null });
   };
 
   // Keyword/category pool from the existing search API.
@@ -197,8 +200,19 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
     () => widenParam.split(",").filter((w): w is Widen => w === "when" || w === "free" || w === "topic"),
     [widenParam],
   );
-  const asked = useMemo(() => (q ? parseIntent(q) : null), [q]);
+  // "drop" removes single signals the reader got wrong ("interest:music").
+  const dropParam = params.get("drop") ?? "";
+  const asked = useMemo(() => {
+    if (!q) return null;
+    let read = parseIntent(q);
+    for (const key of dropParam.split(",").filter(Boolean)) {
+      const sig = read.signals.find((x) => `${x.kind}:${x.value}` === key);
+      if (sig) read = dropSignal(read, sig);
+    }
+    return read;
+  }, [q, dropParam]);
   const intent = useMemo(() => (asked ? widenIntent(asked, widen) : null), [asked, widen]);
+  const exact = widen.length === 0 && !dropParam;
 
   const results = useMemo(() => {
     const base = upcoming(pool.events);
@@ -241,6 +255,16 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
     return list;
   }, [pool.events, meaning, q, intent, cat, when, price, format, withinKmValue, city.lat, city.lng, mood, sort]);
 
+  // Named interests with nothing to show: say so, rather than let closest
+  // matches from other categories pass for an answer.
+  const missing = useMemo(() => {
+    if (!intent || pool.loading || !semReady) return [];
+    const named = intent.signals.filter((x) => x.kind === "interest").map((x) => x.value as EventCategory);
+    return named
+      .filter((c) => !results.some((r) => r.event.category === c))
+      .map((c) => CATEGORIES.find((x) => x.value === c)?.label ?? c);
+  }, [intent, pool.loading, semReady, results]);
+
   // When the exact request is thin, offer to let go of one part at a time,
   // with how many more events each would bring in. Counts use the same
   // filters as the list, so a suggestion never promises what it can't show.
@@ -267,7 +291,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   }, [asked, intent, pool.loading, pool.events, results, when, price, format, withinKmValue, city.lat, city.lng]);
 
   // Show a page at a time; the count resets whenever the question changes.
-  const viewKey = `${q}|${widenParam}|${cat}|${when}|${price}|${format}|${within}|${mood}|${sort}|${city.name}`;
+  const viewKey = `${q}|${widenParam}|${dropParam}|${cat}|${when}|${price}|${format}|${within}|${mood}|${sort}|${city.name}`;
   const [shown, setShown] = useState({ key: viewKey, n: PAGE });
   const limit = shown.key === viewKey ? shown.n : PAGE;
   const visible = results.slice(0, limit);
@@ -308,6 +332,11 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
               </button>
             ))}
           </div>
+          {!cat && intent && intent.interests.length > 0 && (
+            <p className="fnote is-words">
+              From your words: {intent.interests.map((c) => CATEGORIES.find((x) => x.value === c)?.label ?? c).join(", ")}
+            </p>
+          )}
         </fieldset>
       )}
       <fieldset className="fgroup">
@@ -339,6 +368,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </button>
           ))}
         </div>
+              {when === "any" && intent && intent.when !== "any" && <p className="fnote is-words">From your words: {intent?.signals.find((x) => x.kind === "when")?.label}</p>}
       </fieldset>
       <fieldset className="fgroup">
         <legend>Price</legend>
@@ -349,6 +379,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </button>
           ))}
         </div>
+              {price === "any" && intent?.freeOnly && <p className="fnote is-words">From your words: Free</p>}
       </fieldset>
       <fieldset className="fgroup">
         <legend>Format</legend>
@@ -359,6 +390,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </button>
           ))}
         </div>
+              {format === "any" && intent?.format && <p className="fnote is-words">From your words: {intent?.format === "online" ? "Online" : "In person"}</p>}
       </fieldset>
       <fieldset className="fgroup">
         <legend>Distance</legend>
@@ -439,12 +471,36 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           <span className="xread-label">Reading “{q}” as</span>
           {intent.signals.length === 0 && <span className="xread-chip">meaning only</span>}
           {intent.signals.map((s) => (
-            <span key={`${s.kind}-${s.value}`} className="xread-chip"><b>{s.kind}</b> {s.label}</span>
+            <button
+              key={`${s.kind}-${s.value}`}
+              type="button"
+              className="xread-chip"
+              aria-label={`Stop reading ${s.label} as ${s.kind}`}
+              onClick={() => {
+                setParams({ drop: [...dropParam.split(",").filter(Boolean), `${s.kind}:${s.value}`].join(",") });
+                focusResults();
+              }}
+            >
+              <b>{s.kind}</b> {s.label}
+              <X size={11} weight="bold" aria-hidden="true" />
+            </button>
           ))}
-          {widen.length > 0 && (
-            <button type="button" className="xread-undo" onClick={() => setParams({ widen: null })}>
+          {!exact && (
+            <button
+              type="button"
+              className="xread-undo"
+              onClick={() => {
+                setParams({ widen: null, drop: null });
+                focusResults();
+              }}
+            >
               Back to exactly what you asked
             </button>
+          )}
+          {missing.length > 0 && (
+            <span className="xread-note is-miss">
+              Nothing in {missing.join(" or ")} near {city.name} right now, so these are the closest matches.
+            </span>
           )}
           {intent.unsupported.length > 0 && (
             <span className="xread-note">
@@ -458,7 +514,9 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         <aside className="xside" aria-label="Filters">{filters}</aside>
 
         <section className="xmain" aria-live="polite" aria-labelledby="xresults-h">
-          <h2 id="xresults-h" className="sr-only">Results</h2>
+          <h2 id="xresults-h" className="sr-only" tabIndex={-1} ref={resultsHeading}>
+            Results
+          </h2>
           <div className="xbar">
             <p className="xcount">
               {loading ? "Searching…" : `${results.length}${pool.events.length >= 100 && results.length >= 100 ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
@@ -482,13 +540,29 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           {active.length > 0 && (
             <div className="xactive" aria-label="Filters in use">
               {active.map((a) => (
-                <button key={a.key} type="button" className="xactive-chip" onClick={() => setParams(a.clear)} aria-label={`Remove filter: ${a.label}`}>
+                <button
+                  key={a.key}
+                  type="button"
+                  className="xactive-chip"
+                  onClick={() => {
+                    setParams(a.clear);
+                    focusResults();
+                  }}
+                  aria-label={`Remove filter: ${a.label}`}
+                >
                   {a.label}
                   <X size={12} weight="bold" aria-hidden="true" />
                 </button>
               ))}
               {active.length > 1 && (
-                <button type="button" className="xactive-clear" onClick={() => setParams(clearAll)}>
+                <button
+                  type="button"
+                  className="xactive-clear"
+                  onClick={() => {
+                    setParams(clearAll);
+                    focusResults();
+                  }}
+                >
                   Clear all
                 </button>
               )}
@@ -509,8 +583,8 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             <div className="xwiden" role="group" aria-label="Widen the search">
               <p className="xwiden-lead">
                 {results.length === 0
-                  ? `Nothing matches${widen.length ? "" : " exactly"}.`
-                  : `Only ${results.length} ${results.length === 1 ? "matches" : "match"}${widen.length ? "" : " exactly"}.`}{" "}
+                  ? `Nothing matches${exact ? " exactly" : ""}.`
+                  : `Only ${results.length} ${results.length === 1 ? "matches" : "match"}${exact ? " exactly" : ""}.`}{" "}
                 Let one part go:
               </p>
               <ul>

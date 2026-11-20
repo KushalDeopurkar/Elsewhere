@@ -2,8 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:₹$£€+";
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const DIGITS = "0123456789";
+
+/** What a tile riffles through: digits for a digit, letters for a letter; separators never move. */
+export function flapPool(ch: string): string {
+  if (/\d/.test(ch)) return DIGITS;
+  if (/[A-Z]/.test(ch)) return LETTERS;
+  return "";
+}
 
 /**
  * Split-flap tiles: one tile per character, padded to `length`. When the
@@ -52,9 +59,10 @@ export default function FlapText({
           el.classList.remove("is-flipping");
         } else {
           busy = true;
-          if (now >= t0 + i * 18 && target[i] !== " ") {
-            // Digits riffle through digits only, the way a clock board does.
-            const pool = /\d/.test(target[i]) ? DIGITS : CHARS;
+          const pool = flapPool(target[i]);
+          if (!pool) {
+            if (el.textContent !== target[i]) el.textContent = target[i];
+          } else if (now >= t0 + i * 18) {
             el.textContent = pool[Math.floor(Math.random() * pool.length)];
             el.classList.add("is-flipping");
           }

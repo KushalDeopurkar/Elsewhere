@@ -743,3 +743,35 @@
   text-underline-offset: 4px;
   min-height: 32px;
 }
+
+.fnote.is-words {
+  margin-top: var(--s-2);
+  padding-left: var(--s-2);
+  border-left: 3px solid var(--signal);
+  font-size: var(--t-xs);
+  color: var(--fg-2);
+}
+
+.xread-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  cursor: pointer;
+  transition: background-color var(--t-hover) var(--ease);
+}
+
+@media (hover: hover) {
+  .xread-chip:hover {
+    background: var(--signal);
+    color: var(--on-signal);
+  }
+}
+
+.xread-note.is-miss {
+  flex-basis: 100%;
+  padding-left: var(--s-2);
+  border-left: 3px solid var(--crit);
+  color: var(--fg-2);
+  font-size: var(--t-sm);
+}

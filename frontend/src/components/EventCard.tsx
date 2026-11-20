@@ -76,8 +76,10 @@ export default function EventCard({
         </div>
         <div className="ecard-text">
           <p className="ecard-kicker">
-            <span className="ecard-line" aria-hidden="true" />
-            {meta?.label ?? event.category}
+            <span className="ecard-cat">
+              <span className="ecard-line" aria-hidden="true" />
+              {meta?.label ?? event.category}
+            </span>
             {status && <span className="ecard-status">{status}</span>}
             {badge && <span className="ecard-badge">{badge}</span>}
             {!badge && tiers > 1 && <span className="ecard-tiers">{tiers} ticket types</span>}

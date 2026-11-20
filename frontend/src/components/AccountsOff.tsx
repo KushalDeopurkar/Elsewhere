@@ -15,7 +15,7 @@ export default function AccountsOff({ what }: { what: string }) {
         Your saved events
       </Link>
       <Link href="/" className="btn btn-ghost">
-        Tonight&apos;s timetable
+        What&apos;s on
       </Link>
     </EmptyState>
   );

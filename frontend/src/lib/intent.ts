@@ -5,14 +5,13 @@ import { detectCity } from "./cities";
 /**
  * Intent parsing for natural-language discovery.
  *
- * This is deterministic keyword and phrase matching, not a language model.
- * The backend offers Postgres full-text search over one category at a time
- * and nothing else: no embeddings, no semantic index, no LLM. Rather than
- * implying an intelligence the stack does not have, this decomposes a query
- * into the dimensions the data genuinely supports (interest, goal, date,
- * place, budget, format), runs real queries for each, and shows the user
- * exactly which signals it read. Every signal is removable, so a wrong guess
- * costs one click instead of a retyped query.
+ * Two halves. This file is the deterministic half: keyword and phrase
+ * matching that decomposes a request into the dimensions the data genuinely
+ * supports (interest, goal, date, place, budget, format) and shows exactly
+ * which signals it read. The other half is /api/semantic, which ranks events
+ * by embedding similarity to the words; Explore merges both and labels which
+ * one matched. Every signal is removable, so a wrong guess costs one click
+ * instead of a retyped query.
  *
  * Dimensions the schema cannot support yet are detected and reported as
  * unsupported rather than silently ignored: experience level and tags have no
@@ -120,7 +119,8 @@ const titleCase = (s: string) =>
 
 function findPhrase(haystack: string, needles: string[]): string | null {
   for (const n of needles) {
-    const re = new RegExp(`(^|[^a-z])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z]|$)`, "i");
+    // Plurals count: "workshops", "founders", "hackathons", "matches".
+    const re = new RegExp(`(^|[^a-z])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(e?s)?([^a-z]|$)`, "i");
     if (re.test(haystack)) return n;
   }
   return null;

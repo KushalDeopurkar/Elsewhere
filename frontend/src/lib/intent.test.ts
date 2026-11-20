@@ -42,3 +42,17 @@ describe("widenIntent", () => {
     expect(widenIntent(asked, [])).toBe(asked);
   });
 });
+
+describe("plurals", () => {
+  it("reads plural words as their interest", () => {
+    const w = parseIntent("free AI workshops this weekend");
+    expect(w.interests).toContain("education");
+    expect(w.interests).toContain("tech");
+    expect(parseIntent("I want to meet startup founders").interests).toContain("business");
+    expect(parseIntent("hackathons near me").interests).toContain("tech");
+    expect(parseIntent("football matches").interests).toContain("sports");
+  });
+  it("doesn't read a longer word as the shorter one", () => {
+    expect(parseIntent("workshopping my script").interests).not.toContain("education");
+  });
+});

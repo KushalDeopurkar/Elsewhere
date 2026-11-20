@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Elsewhere",
     short_name: "Elsewhere",
-    description: "What's on tonight, near you and around the world.",
+    description: "Every kind of event near you: workshops, talks, matches, gigs, meetups and more.",
     id: "/",
     start_url: "/?source=app",
     scope: "/",
@@ -19,7 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Tonight", url: "/?source=app" },
+      { name: "Discover", url: "/?source=app" },
       { name: "Map", url: "/map" },
       { name: "Saved", url: "/saved" },
     ],
