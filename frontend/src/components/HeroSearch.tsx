@@ -50,7 +50,7 @@ export default function HeroSearch() {
             className="hsearch-input"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="What do you feel like doing?"
+            placeholder="Ask in plain words"
             enterKeyHint="search"
             autoComplete="off"
           />

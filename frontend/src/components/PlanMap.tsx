@@ -134,7 +134,13 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
       }
     });
 
+    // The container can change size without the window changing (the
+    // layout settling, a sheet opening): keep the canvas filling it.
+    const sizer = new ResizeObserver(() => instance.resize());
+    if (instance.getContainer()) sizer.observe(instance.getContainer());
+
     return () => {
+      sizer.disconnect();
       // Removing the map also removes its markers' DOM.
       instance.remove();
       map.current = null;

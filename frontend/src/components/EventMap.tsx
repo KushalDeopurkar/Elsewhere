@@ -250,7 +250,13 @@ export default function EventMap({
     const pins = markers.current;
     const groups = clusterMarkers.current;
 
+    // The container can change size without the window changing (the
+    // layout settling, a sheet opening): keep the canvas filling it.
+    const sizer = new ResizeObserver(() => instance.resize());
+    if (instance.getContainer()) sizer.observe(instance.getContainer());
+
     return () => {
+      sizer.disconnect();
       clearTimeout(stall);
       pins.forEach((pin) => pin.remove());
       pins.clear();
