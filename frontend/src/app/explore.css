@@ -84,6 +84,38 @@
 }
 
 .xsuggest,
+/* "Showing results for paris · Search instead for pars" */
+.xspell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin: var(--s-3) 0 0;
+  font-size: var(--t-sm);
+  color: var(--fg-2);
+}
+.xspell strong {
+  color: var(--fg);
+  font-weight: 700;
+}
+.xspell-sep {
+  color: var(--fg-3);
+}
+.xspell-undo {
+  min-height: 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--signal-text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.xspell-undo:hover {
+  color: var(--fg);
+}
+
 .xread {
   display: flex;
   flex-wrap: wrap;

@@ -1,4 +1,5 @@
 import { CATEGORIES, Event, EventCategory, EventFormat } from "./types";
+import { fuzzyHas, wordsOf } from "./fuzzy";
 import { matchesWindow, eventZone } from "./formatDate";
 import { detectCity } from "./cities";
 
@@ -50,7 +51,7 @@ const INTEREST_WORDS: Record<EventCategory, string[]> = {
   tech: ["ai", "artificial intelligence", "machine learning", "ml", "hackathon", "hack", "coding", "code", "developer", "dev", "programming", "robotics", "tech", "technology", "software", "data", "open source", "engineer"],
   business: ["startup", "founder", "entrepreneur", "investor", "pitch", "networking", "network", "business", "career", "vc", "funding"],
   education: ["workshop", "course", "bootcamp", "lecture", "seminar", "class", "training", "webinar", "masterclass"],
-  arts: ["art", "exhibition", "gallery", "theatre", "theater", "poetry", "film", "cinema", "photography", "design", "museum", "literature", "book", "culture", "creative"],
+  arts: ["art", "comedy", "stand up", "standup", "stand-up", "open mic", "exhibition", "gallery", "theatre", "theater", "poetry", "film", "cinema", "photography", "design", "museum", "literature", "book", "culture", "creative"],
   sports: ["sport", "football", "cricket", "match", "marathon", "run", "running", "tournament", "fitness", "gym", "esports", "game day", "cycling"],
   music: ["music", "concert", "gig", "band", "festival", "live", "dj", "singer"],
   community: ["community", "meetup", "social", "volunteer", "volunteering", "charity", "board game", "club", "language exchange", "meet people", "friends"],
@@ -107,6 +108,16 @@ const IN_PERSON_WORDS = ["in person", "in-person", "nearby", "near me", "around 
 const UNSUPPORTED: [string, string[]][] = [
   ["experience level", ["beginner friendly", "beginner-friendly", "advanced", "intermediate", "student only", "for students"]],
   ["group size", ["solo", "with friends", "alone"]],
+];
+
+/** Every word and phrase the reader understands, for the spelling corrector (lib/spell.ts). */
+export const QUERY_PHRASES: string[] = [
+  ...Object.values(INTEREST_WORDS).flat(),
+  ...Object.values(GOAL_WORDS).flat(),
+  ...WHEN_WORDS.flatMap(([, w]) => w),
+  ...FREE_WORDS,
+  ...ONLINE_WORDS,
+  ...IN_PERSON_WORDS,
 ];
 
 const ACRONYMS: Record<string, string> = {
@@ -312,9 +323,11 @@ export function scoreEvent(event: Event, intent: Intent): Scored | null {
   }
 
   // Free-text overlap on whatever the signals did not already explain.
+  // Forgiving: a word start ("hack") or a small typo ("hackthon") counts.
   const words = intent.text.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3);
   const hay = `${event.title} ${event.description ?? ""}`.toLowerCase();
-  const hits = words.filter((w) => hay.includes(w));
+  const hayWords = words.length ? wordsOf(hay) : [];
+  const hits = words.filter((w) => hay.includes(w) || fuzzyHas(hayWords, w));
   if (hits.length) score += Math.min(hits.length, 3);
 
   if (score === 0) return null;

@@ -216,3 +216,12 @@ export function zoneOf(e: { lat?: number | null; lng?: number | null; country?: 
 export function isCityCentroid(lat: number, lng: number): boolean {
   return Object.values(CITIES).some((c) => Math.abs(c.lat - lat) < 0.002 && Math.abs(c.lng - lng) < 0.002);
 }
+
+/**
+ * Every city and neighbourhood name the search understands, lower case,
+ * busiest first (the location list's order, then other spellings and areas).
+ * The spelling corrector (lib/spell.ts) prefers earlier names on a tie.
+ */
+export const PLACE_NAMES: string[] = [
+  ...new Set([...CITY_LIST.map((c) => c.name.toLowerCase()), ...Object.keys(CITIES), ...Object.keys(ALIASES)]),
+];

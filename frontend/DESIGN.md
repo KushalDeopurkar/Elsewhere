@@ -72,3 +72,9 @@ Why not a third look: version 2's design system already passes contrast, keyboar
 - Phone cards over the map are solid, so pins never show through their text.
 - Clusters are a small stack of their own soonest two posters with the count on a badge in the main category's colour (a coloured disc when none has a picture), sitting flat on the map: the lights tether is for single pins only.
 - The display menu lifts the header above the map's filter bar while it is open.
+
+### Forgiving search
+- Typed words are spell-checked before the search reads them (`lib/spell.ts`, `lib/fuzzy.ts`): small typos ("pars", "mumbia", "workshp", "tomorow") and unfinished place names ("par") become what was meant. Real words are never changed: the reader's own words, the place list, a list of everyday words, and every word in the events on show count as real, and typos of event words ("comdey") are fixed too.
+- The first letter must match, so "june" never becomes Pune.
+- Explore says what it did ("Showing results for paris · Search instead for 'pars'"), and `?exact=1` searches the words exactly as typed, with "Did you mean paris?" offered back.
+- Matching event titles forgives typos and word starts too ("hack" finds hackathons).

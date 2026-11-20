@@ -16,6 +16,8 @@ import { useCityEvents } from "@/hooks/useCityEvents";
 import { useCity, useRecentSearches, rememberSearch, clearRecentSearches } from "@/lib/cityPref";
 import { CATEGORIES, Event, EventCategory } from "@/lib/types";
 import { detectCity } from "@/lib/cities";
+import { correctQuery } from "@/lib/spell";
+import { wordsOf } from "@/lib/fuzzy";
 import { dropSignal, matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
 import {
   DateFilter,
@@ -85,21 +87,27 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const homeCity = useCity();
   const recent = useRecentSearches();
 
-  const q = params.get("q") ?? "";
-  // A place named in the search ("paris on saturday") wins over the header
-  // city for this search only; the header choice stays as it was.
-  const named = useMemo(() => (q ? detectCity(q)?.city ?? null : null), [q]);
+  // What was typed, as typed. The search itself reads a spell-checked copy
+  // (q, below) unless the person asked for exactly their words (?exact=1).
+  const typed = params.get("q") ?? "";
+  const asTyped = params.get("exact") === "1";
+  // A place named in the search ("paris on saturday", or "pars", "par") wins
+  // over the header city for this search only; the header stays as it was.
+  const named = useMemo(
+    () => (typed ? detectCity(asTyped ? typed : correctQuery(typed).text)?.city ?? null : null),
+    [typed, asTyped],
+  );
   const city = named ?? homeCity;
   const cat = lockedCategory ?? (CATEGORIES.find((c) => c.value === params.get("cat"))?.value ?? null);
   const when = pick(params.get("when"), DATES.map((d) => d.value), "any");
   const price = pick(params.get("price"), PRICES.map((p) => p.value), "any");
-  const sort = pick(params.get("sort"), SORTS.map((s) => s.value), q ? "relevance" : "soonest");
+  const sort = pick(params.get("sort"), SORTS.map((s) => s.value), typed ? "relevance" : "soonest");
   const mood = pick<VibeId | "any">(params.get("mood"), ["any", ...VIBES.map((v) => v.id)], "any");
   const format = pick(params.get("format"), FORMATS.map((f) => f.value), "any");
   const within = pick(params.get("within"), DISTANCES.map((d) => d.value), "any");
   const withinKmValue = DISTANCES.find((d) => d.value === within)?.km ?? null;
 
-  const [draft, setDraft] = useState(q);
+  const [draft, setDraft] = useState(typed);
   const [drawer, setDrawer] = useState(false);
   const drawerPanel = useRef<HTMLDivElement>(null);
   const resultsHeading = useRef<HTMLHeadingElement>(null);
@@ -141,10 +149,10 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
 
   // Keep the box in step with back/forward navigation (React's documented
   // "adjust state when a prop changes" pattern).
-  const [seenQ, setSeenQ] = useState(q);
-  if (seenQ !== q) {
-    setSeenQ(q);
-    setDraft(q);
+  const [seenQ, setSeenQ] = useState(typed);
+  if (seenQ !== typed) {
+    setSeenQ(typed);
+    setDraft(typed);
   }
 
   useEffect(() => {
@@ -165,11 +173,25 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const submit = (text: string) => {
     const t = text.trim();
     if (t) rememberSearch(t);
-    setParams({ q: t || null, sort: null, widen: null, drop: null });
+    setParams({ q: t || null, sort: null, widen: null, drop: null, exact: null });
   };
 
   // Keyword/category pool from the existing search API.
   const pool = useCityEvents(city, { category: cat, limit: 100 });
+
+  // Spelling: fix typos and unfinished place names before the search reads
+  // the words. Words from the events on show count as real words, and their
+  // misspellings are fixed too ("comdey" finds the comedy nights).
+  const seenWords = useMemo(() => {
+    const out = new Set<string>();
+    for (const e of pool.events) for (const w of wordsOf(`${e.title} ${e.location_name ?? ""}`)) out.add(w);
+    return out;
+  }, [pool.events]);
+  const spelled = useMemo(
+    () => (typed && !asTyped ? correctQuery(typed, seenWords) : { text: typed, fixes: [] }),
+    [typed, asTyped, seenWords],
+  );
+  const q = spelled.text;
   // The keyword pool is fetched 100 at a time; a full page means there are more.
 
   // Meaning-based matches for a typed query.
@@ -464,6 +486,24 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
               <button key={s} type="button" className="chip-prompt" onClick={() => submit(s)}>{s}</button>
             ))}
         </div>
+      )}
+
+      {spelled.fixes.length > 0 && (
+        <p className="xspell" role="status">
+          Showing results for <strong>{q}</strong>
+          <span className="xspell-sep" aria-hidden="true">·</span>
+          <button type="button" className="xspell-undo" onClick={() => setParams({ exact: "1", widen: null, drop: null })}>
+            Search instead for “{typed}”
+          </button>
+        </p>
+      )}
+      {asTyped && typed && correctQuery(typed, seenWords).fixes.length > 0 && (
+        <p className="xspell" role="status">
+          Searching exactly “{typed}”.
+          <button type="button" className="xspell-undo" onClick={() => setParams({ exact: null })}>
+            Did you mean <strong>{correctQuery(typed, seenWords).text}</strong>?
+          </button>
+        </p>
       )}
 
       {q && intent && (
