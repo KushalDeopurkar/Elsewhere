@@ -71,7 +71,7 @@ export default function EventCard({
           preview={event}
           href={`/events/${event.id}`}
           className="ecard-media-link"
-          prefetch={false}
+         
           tabIndex={-1}
           aria-hidden="true"
         >
@@ -100,7 +100,7 @@ export default function EventCard({
             {!badge && tiers > 1 && <span className="ecard-tiers">{tiers} ticket types</span>}
           </p>
           <h3 className="ecard-title">
-            <TransitionLink kind="event" preview={event} href={`/events/${event.id}`} className="ecard-link" prefetch={false}>
+            <TransitionLink kind="event" preview={event} href={`/events/${event.id}`} className="ecard-link">
               {event.title}
             </TransitionLink>
           </h3>

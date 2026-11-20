@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
   },
+  experimental: {
+    // Keep pages the router has already fetched for a while, so going back
+    // to an event (or opening one that was warmed on hover) needs no new
+    // server round trip.
+    staleTimes: { dynamic: 60, static: 300 },
+  },
   // Pages folded into others when the site was simplified.
   async redirects() {
     return [

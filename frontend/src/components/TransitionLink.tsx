@@ -25,13 +25,13 @@ export default function TransitionLink({
     if (preview) rememberPreview(preview);
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (props.target && props.target !== "_self") return;
-    if (!canTransition()) return; // let Link navigate normally
+    // Event pages open with a plain navigation: their loading shell is
+    // prefetched, so it paints on the next frame. A view transition would
+    // freeze the old page on screen until the new one commits (the pause
+    // people noticed), so it is kept for page-to-page moves only.
+    if (kind === "event" || !canTransition()) return; // let Link navigate normally
     e.preventDefault();
-    const card = kind === "event" ? e.currentTarget.closest(".ecard, [data-vt-card]") : null;
-    transitionTo(href, () => router.push(href, { scroll: true }), {
-      kind,
-      shared: card ? [{ el: card.querySelector(".ecard-media .eimg, [data-vt-media]"), name: "ev-hero" }] : [],
-    });
+    transitionTo(href, () => router.push(href, { scroll: true }), { kind });
   };
 
   // Warm the route as soon as the pointer or focus arrives, so the click
@@ -50,9 +50,9 @@ export default function TransitionLink({
   return (
     <Link
       {...props}
-      // Event grids hold dozens of cards: warm on hover or focus instead of
-      // prefetching every card that scrolls into view.
-      prefetch={props.prefetch ?? (kind === "event" ? false : undefined)}
+      // Default prefetch: as a card scrolls into view Next fetches only the
+      // event page's loading shell (cheap, cached), so a click paints at once.
+      // Hover or focus then fetches the whole page (warm, below).
       onClick={handle}
       onPointerEnter={(e) => {
         props.onPointerEnter?.(e);

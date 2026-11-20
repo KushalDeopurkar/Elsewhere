@@ -136,7 +136,6 @@ export default function TodayNetwork({ events, now }: { events: Event[]; now: nu
             <Link
               key={s.event.id}
               href={`/events/${s.event.id}`}
-              prefetch={false}
               aria-label={`${s.event.title}, ${timeIn(s.event)}, ${label(l.cat)}`}
               onMouseEnter={() => setFocus(s.event)}
               onFocus={() => setFocus(s.event)}

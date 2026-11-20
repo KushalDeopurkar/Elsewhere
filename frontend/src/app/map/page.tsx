@@ -268,7 +268,7 @@ export default function MapPage() {
               <li key={e.id}>
                 {e.format === "online" ? (
                   // Online events have no place on the map; they open their page.
-                  <Link href={`/events/${e.id}`} prefetch={false} className="map-item is-online">
+                  <Link href={`/events/${e.id}`} className="map-item is-online">
                     <span className="map-item-thumb">
                       <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
                     </span>
