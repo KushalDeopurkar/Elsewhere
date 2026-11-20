@@ -60,7 +60,7 @@ export default function TicketList({
                 </a>
               ) : (
                 <span className="ticket-book is-disabled" aria-hidden="true">
-                  {t.available === false ? "Sold out" : out ? "Closed" : "—"}
+                  {t.available === false ? "Sold out" : out ? "Closed" : "On site"}
                 </span>
               )}
             </li>

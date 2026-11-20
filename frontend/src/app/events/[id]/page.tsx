@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { MapPin, ArrowSquareOut } from "@phosphor-icons/react/ssr";
 import SiteFooter from "@/components/SiteFooter";
 import SimilarEvents from "@/components/SimilarEvents";
+import VenueEvents from "@/components/VenueEvents";
 import EventImage from "@/components/EventImage";
 import CategoryIcon from "@/components/CategoryIcon";
 import { Breadcrumbs } from "@/components/Section";
@@ -296,7 +297,15 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         </div>
       </article>
 
-      {event.source !== "sample" && <SimilarEvents eventId={event.id} title={event.title} />}
+      {/* Streamed after the event itself, so they never hold up the page. */}
+      <Suspense fallback={null}>
+        <VenueEvents event={event} />
+      </Suspense>
+      {event.source !== "sample" && (
+        <Suspense fallback={null}>
+          <SimilarEvents eventId={event.id} title={event.title} />
+        </Suspense>
+      )}
       <SiteFooter />
     </>
   );

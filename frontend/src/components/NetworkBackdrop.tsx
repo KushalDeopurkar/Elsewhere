@@ -6,7 +6,9 @@
  * text always sits on plain background.
  *
  * Drawn once from a fixed seed: the same on the server and in the browser,
- * no layout cost, no animation.
+ * no layout cost. Trains run along each line (a short lit dash moving with
+ * stroke-dashoffset) and a station on each line pings now and then. Pure
+ * CSS, off for reduced motion, paused while the tab is hidden.
  */
 
 const W = 1600;
@@ -73,22 +75,16 @@ function network(): Line[] {
 
 const LINES = network();
 
+/** Per line: seconds for one trip, a head start, and which way it runs. */
+const TRAINS = LINES.map((_, i) => {
+  const r = rng(7 + i * 131);
+  return { dur: 26 + Math.round(r() * 22), delay: -Math.round(r() * 40), reverse: i % 3 === 1 };
+});
+
 export default function NetworkBackdrop() {
-  return (
-    <div className="netbg" aria-hidden="true">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" focusable="false">
-        {LINES.map((l, i) => (
-          <polyline
-            key={i}
-            points={l.points.map((p) => p.join(",")).join(" ")}
-            fill="none"
-            strokeWidth={7}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ stroke: `oklch(var(--cat-l) var(--cat-c) ${l.hue})` }}
-          />
-        ))}
-        {LINES.flatMap((l, i) =>
+  const STATIONS = (
+    <>
+      {LINES.flatMap((l, i) =>
           l.points.slice(1, -1).map((p, j) => (
             <circle
               key={`${i}-${j}`}
@@ -100,7 +96,67 @@ export default function NetworkBackdrop() {
             />
           )),
         )}
+    </>
+  );
+  return (
+    <>
+    <div className="netbg" aria-hidden="true">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" focusable="false">
+        <g className="netbg-static">
+        {LINES.map((l, i) => (
+          <polyline
+            key={i}
+            points={l.points.map((p) => p.join(",")).join(" ")}
+            fill="none"
+            strokeWidth={7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ stroke: `oklch(var(--cat-l) var(--cat-c) ${l.hue})` }}
+          />
+        ))}
+        {STATIONS}
+        </g>
       </svg>
     </div>
+    {/* Moving parts in their own layer: they may show a little more behind
+        the content than the still map does, so the motion reads. */}
+    <div className="netbg is-moving" aria-hidden="true">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" focusable="false">
+        <g className="netbg-trains">
+          {LINES.map((l, i) => {
+            const pts = l.points.map((p) => p.join(",")).join(" ");
+            const t = TRAINS[i];
+            const style = {
+              "--trip": `${t.dur}s`,
+              "--start": `${t.delay}s`,
+              animationDirection: t.reverse ? "reverse" : "normal",
+              stroke: `oklch(calc(var(--cat-l) + var(--train-shift, 0.12)) calc(var(--cat-c) + 0.04) ${l.hue})`,
+            } as React.CSSProperties;
+            return (
+              <g key={i}>
+                {/* A soft halo and a bright core, moving together. */}
+                <polyline className="netbg-train is-halo" points={pts} pathLength={1000} style={style} />
+                <polyline className="netbg-train" points={pts} pathLength={1000} style={style} />
+              </g>
+            );
+          })}
+        </g>
+        {LINES.map((l, i) => {
+          const p = l.points[1 + (i % Math.max(1, l.points.length - 2))];
+          if (!p) return null;
+          return (
+            <circle
+              key={`ping-${i}`}
+              className="netbg-ping"
+              cx={p[0]}
+              cy={p[1]}
+              r={7}
+              style={{ stroke: `oklch(var(--cat-l) var(--cat-c) ${l.hue})`, animationDelay: `${-i * 1.7}s`, transformOrigin: `${p[0]}px ${p[1]}px` }}
+            />
+          );
+        })}
+      </svg>
+    </div>
+    </>
   );
 }

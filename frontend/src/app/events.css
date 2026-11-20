@@ -493,7 +493,8 @@
   border-bottom: 1px solid var(--rule);
 }
 
-.ticket.is-out {
+.ticket.is-out .ticket-main,
+.ticket.is-out .ticket-price {
   opacity: 0.55;
 }
 
@@ -525,22 +526,73 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Book: a proper button, not an icon box. Outlined in the signal colour so
+   a row reads as bookable; fills on hover and press. Sold out and closed
+   rows get a quiet label in the same slot instead. */
 .ticket-book {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--rule-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 5.75rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--signal);
+  border-radius: var(--r-sm, 4px);
+  background: color-mix(in oklch, var(--signal) 10%, transparent);
+  color: var(--signal-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color var(--t-hover) var(--ease),
+    color var(--t-hover) var(--ease),
+    transform var(--t-hover) var(--ease);
 }
 
-.ticket-book:not(.is-disabled):hover {
+.ticket-book svg {
+  transition: transform var(--t-hover) var(--ease);
+}
+
+.ticket-book:not(.is-disabled):hover,
+.ticket-book:not(.is-disabled):focus-visible {
   background: var(--signal);
-  border-color: var(--signal);
   color: var(--on-signal);
 }
 
+.ticket-book:not(.is-disabled):hover svg {
+  transform: translate(2px, -2px);
+}
+
+.ticket-book:not(.is-disabled):active {
+  transform: translateY(1px);
+}
+
+.ticket-book:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
 .ticket-book.is-disabled {
-  opacity: 0.4;
+  border-color: var(--rule-strong);
+  background: transparent;
+  color: var(--fg-3);
+  cursor: default;
+}
+
+/* Narrow booking column: name on its own line, price and button beneath. */
+@media (max-width: 420px) {
+  .ticket {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--s-2);
+  }
+  .ticket-main {
+    grid-column: 1 / -1;
+  }
 }
 
 .tickets-note {
