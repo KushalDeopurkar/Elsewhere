@@ -3,14 +3,22 @@ from typing import Optional, List, Dict
 
 import html
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 
+from postgrest import APIError
+from postgrest.types import ReturnMethod
 from supabase import Client
 
 from app.models.event import EventCategory, EventCreate, EventSearchParams
 from app.scrapers.classify import is_junk_title
 
 logger = logging.getLogger(__name__)
+
+# Rows per write. Small enough to stay well inside the statement timeout;
+# a chunk that still times out is split in half until it fits (MIN_BATCH).
+UPSERT_BATCH = 200
+MIN_BATCH = 10
 
 
 _TEXT_FIELDS = ("title", "description", "location_name", "address")
@@ -38,6 +46,30 @@ class EventService:
     def __init__(self, client: Client):
         self.client = client
 
+    def _upsert_chunk(self, rows: List[dict]) -> int:
+        """Write one chunk; on a database timeout, split it and try the halves.
+
+        Each row fires the table's triggers (search text, geography), so a big
+        chunk can pass Postgres's statement timeout. Halving until it fits
+        keeps a run from failing outright; rows that still can't be written
+        on their own are logged and skipped, never the whole run.
+        """
+        try:
+            self.client.table("events").upsert(
+                rows, on_conflict="source,source_id", returning=ReturnMethod.minimal
+            ).execute()
+            return len(rows)
+        except APIError as e:
+            if getattr(e, "code", None) != "57014" and "timeout" not in str(e).lower():
+                raise
+            if len(rows) <= MIN_BATCH:
+                logger.error(f"Gave up on {len(rows)} rows after timeouts (first: {rows[0].get('source')}/{rows[0].get('source_id')})")
+                return 0
+            mid = len(rows) // 2
+            logger.warning(f"Timeout writing {len(rows)} rows; retrying as {mid} + {len(rows) - mid}")
+            time.sleep(1)
+            return self._upsert_chunk(rows[:mid]) + self._upsert_chunk(rows[mid:])
+
     def upsert_events(self, events: List[EventCreate]) -> int:
         """Insert or update events. Returns count of upserted rows."""
         events = [e for e in events if not is_junk_title(e.title)]
@@ -53,13 +85,8 @@ class EventService:
         # the event's own page (app/enrich/images.py) is kept.
         count = 0
         for batch in split_by_image(rows):
-            for i in range(0, len(batch), 500):
-                result = (
-                    self.client.table("events")
-                    .upsert(batch[i : i + 500], on_conflict="source,source_id")
-                    .execute()
-                )
-                count += len(result.data) if result.data else 0
+            for i in range(0, len(batch), UPSERT_BATCH):
+                count += self._upsert_chunk(batch[i : i + UPSERT_BATCH])
         logger.info(f"Upserted {count} events")
         return count
 
