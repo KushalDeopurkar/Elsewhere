@@ -4,7 +4,6 @@ import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WeekendStories from "@/components/WeekendStories";
-import { useSky } from "@/hooks/useSky";
 import HeroSearch from "@/components/HeroSearch";
 import Timetable from "@/components/Timetable";
 import EventCard from "@/components/EventCard";
@@ -18,7 +17,6 @@ import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
 import { useCity } from "@/lib/cityPref";
 import { cityZone } from "@/lib/cities";
 import { useNow } from "@/lib/clock";
-import { zoneHour } from "@/lib/sky";
 import { useSaved } from "@/lib/saved";
 import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { pickStories } from "@/lib/stories";
@@ -59,12 +57,7 @@ export default function Home() {
   const router = useRouter();
   const city = useCity();
   const saved = useSaved();
-  const sky = useSky();
-  // "Tonight" from dusk until midnight; after midnight the board is "Today",
-  // since what's listed is later the same day.
   const clock = useNow(60_000);
-  const lateEvening = clock > 0 && zoneHour(clock, cityZone(city)) >= 12;
-  const night = sky === "dusk" || (sky === "night" && lateEvening);
 
   // Old shared plan links were /?plan=…; the planner now has its own page.
   useEffect(() => {
@@ -152,7 +145,6 @@ export default function Home() {
           city={city.name}
           zone={cityZone(city)}
           loading={pool.loading}
-          night={night}
           lede={
             <>
               Workshops, hackathons, talks, matches, gigs, meetups, exhibitions and volunteering in {city.name}, gathered

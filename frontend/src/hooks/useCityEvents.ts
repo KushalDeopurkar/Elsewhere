@@ -20,9 +20,9 @@ interface Result {
  */
 export function useCityEvents(
   city: CityPoint,
-  opts: { category?: EventCategory | null; q?: string; limit?: number } = {},
+  opts: { category?: EventCategory | null; q?: string; limit?: number; from?: string; to?: string; skip?: boolean } = {},
 ) {
-  const key = `${city.name}|${opts.category ?? ""}|${opts.q ?? ""}|${opts.limit ?? 100}`;
+  const key = `${city.name}|${opts.category ?? ""}|${opts.q ?? ""}|${opts.limit ?? 100}|${opts.from ?? ""}|${opts.to ?? ""}|${opts.skip ? 1 : 0}`;
   const [result, setResult] = useState<Result | null>(null);
   const [nonce, setNonce] = useState(0);
   const latest = useRef(key);
@@ -30,6 +30,7 @@ export function useCityEvents(
   useEffect(() => {
     latest.current = key;
     let live = true;
+    if (opts.skip) return;
     searchEvents({
       lat: city.lat,
       lng: city.lng,
@@ -37,6 +38,8 @@ export function useCityEvents(
       limit: opts.limit ?? 100,
       category: opts.category ?? undefined,
       q: opts.q || undefined,
+      from: opts.from,
+      to: opts.to,
     })
       .then((r) => {
         if (live && latest.current === key) setResult({ key, events: r.events, isSample: r.isSample, error: null });
@@ -57,7 +60,7 @@ export function useCityEvents(
   useEffect(() => {
     attempt.current = 0;
   }, [key]);
-  const failed = result?.key === key && (result.isSample || Boolean(result.error));
+  const failed = !opts.skip && result?.key === key && (result.isSample || Boolean(result.error));
   useEffect(() => {
     if (!failed || attempt.current >= RETRY_DELAYS.length) return;
     const t = window.setTimeout(() => setNonce((n) => n + 1), RETRY_DELAYS[attempt.current]);
@@ -65,11 +68,12 @@ export function useCityEvents(
     return () => window.clearTimeout(t);
   }, [failed, result]);
 
-  const ready = result?.key === key;
+  // A skipped fetch is ready at once, with nothing in it.
+  const ready = opts.skip || result?.key === key;
   return {
-    events: ready ? result.events : [],
-    isSample: ready ? result.isSample : false,
-    error: ready ? result.error : null,
+    events: ready && result?.key === key ? result.events : [],
+    isSample: ready && result?.key === key ? result.isSample : false,
+    error: ready && result?.key === key ? result.error : null,
     loading: !ready,
     retry: () => setNonce((n) => n + 1),
   };

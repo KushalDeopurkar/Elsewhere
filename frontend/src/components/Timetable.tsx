@@ -33,7 +33,6 @@ export default function Timetable({
   city,
   zone = "Asia/Kolkata",
   loading,
-  night,
   aside,
   lede,
 }: {
@@ -41,8 +40,6 @@ export default function Timetable({
   city: string;
   zone?: string;
   loading: boolean;
-  /** After 18:00 in the city: "Tonight" instead of "Today". */
-  night: boolean;
   /** Intro and search, set beside the rows on wide screens. */
   aside?: React.ReactNode;
   /** One line under the masthead saying what the site covers. */
@@ -70,7 +67,7 @@ export default function Timetable({
     setPage(0);
   };
 
-  const todayWord = night ? "Tonight" : "Today";
+  const todayWord = "Today";
   const tabs: { key: BoardTab; label: string }[] = [
     { key: "today", label: todayWord },
     { key: "tomorrow", label: "Tomorrow" },
@@ -104,7 +101,13 @@ export default function Timetable({
           <span>{now ? dateFor(zone).format(new Date(now)) : " "}</span>
         </p>
         <h1 id="tt-title" className="tt-title">
-          <span className="tt-word">What&apos;s on</span> <span className="tt-in">in {city}</span>
+          <span className="tt-word">What&apos;s on</span> <span
+            className="tt-in"
+            // Long names ("Thiruvananthapuram") shrink to fit rather than break mid-word.
+            style={{ "--city-len": Math.max(6, ...`in ${city}`.split(/\s+/).map((w) => w.length)) } as React.CSSProperties}
+          >
+            in {city}
+          </span>
         </h1>
         {lede && <p className="tt-lede">{lede}</p>}
         <div className="tt-clock">

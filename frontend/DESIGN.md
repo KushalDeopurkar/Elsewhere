@@ -78,3 +78,13 @@ Why not a third look: version 2's design system already passes contrast, keyboar
 - The first letter must match, so "june" never becomes Pune.
 - Explore says what it did ("Showing results for paris · Search instead for 'pars'"), and `?exact=1` searches the words exactly as typed, with "Did you mean paris?" offered back.
 - Matching event titles forgives typos and word starts too ("hack" finds hackathons).
+
+### Search, finished (lib/intent.ts, lib/when.ts, lib/spell.ts)
+- A request is split into what the data can answer, each part a removable chip: **words to find**, **days** ("on 22nd", "22 nov", "22/11", "friday", "next friday", "this week", "next month", "in december", "22-25 dec", "christmas"), **time of day** ("after 7pm", "morning", "tonight"), **price** ("free", "cheap", "under ₹500", "between 500 and 1500"), **place**, **format**, and **broad categories** ("music", "tech", "arts").
+- Exact first: when there are words to find, a match must contain every one (in the title, venue or description; typos, plurals and a few other-language words like "atelier" or "exposition" forgiven; known phrases like "stand up" kept whole; quoted words must appear together). A few words count by category where listings rarely say them ("concert" finds music events). Anything that only shares the topic, or that the meaning search finds, sits under "Related to your search", never mixed in.
+- Specific words ("comedy", "workshop") must be found; only broad category words filter by category. Dates are the search city's calendar days; an event running across several days counts if it overlaps.
+- Fetching follows the request: the asked-for days go to the API (so a date weeks away isn't cut off at the next 100 events), and the words are searched on the server too.
+- The home board says "Today" at any hour. A long city name shrinks to fit the headline instead of breaking mid-word, and is cut with "…" in the phone header.
+
+### Pictures for cities outside India
+- iCal calendars (Luma), SeatGeek and football fixtures arrive without pictures. After each scrape, `run_scrapers.py --images-only` opens each upcoming event's own page and keeps the picture that page shares (event JSON-LD, og:image, Twitter card). A picture a site puts on many pages (its logo) is ignored, and nothing is invented. Scrapes no longer overwrite a picture with an empty value.

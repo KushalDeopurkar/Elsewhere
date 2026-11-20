@@ -15,10 +15,11 @@ import { CardSkeleton, EmptyState } from "./Section";
 import { useCityEvents } from "@/hooks/useCityEvents";
 import { useCity, useRecentSearches, rememberSearch, clearRecentSearches } from "@/lib/cityPref";
 import { CATEGORIES, Event, EventCategory } from "@/lib/types";
-import { detectCity } from "@/lib/cities";
+import { cityCountry, cityZone, detectCity } from "@/lib/cities";
+import { addDays, zonedTime } from "@/lib/when";
 import { correctQuery } from "@/lib/spell";
 import { wordsOf } from "@/lib/fuzzy";
-import { dropSignal, matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
+import { dropSignal, parseIntent, passesFilters, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
 import {
   DateFilter,
   FormatFilter,
@@ -176,17 +177,48 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
     setParams({ q: t || null, sort: null, widen: null, drop: null, exact: null });
   };
 
+  // How this city writes dates and what "cheap" means in its money.
+  const readOpts = useMemo(
+    () => ({ zone: cityZone(city), dayFirst: cityCountry(city) !== "US", cheap: cityCountry(city) === "IN" ? 500 : 25 }),
+    [city],
+  );
+  // A first read of the request decides what to fetch: the asked-for days
+  // (so a date weeks away isn't cut off by "the next 100 events") and the
+  // words to find (searched on the server too, beyond the loaded events).
+  const [openedAt] = useState(() => Date.now());
+  const early = useMemo(() => {
+    if (!typed) return null;
+    const read = parseIntent(asTyped ? typed : correctQuery(typed).text, readOpts);
+    const zone = readOpts.zone;
+    const from = read.range ? new Date(Math.max(openedAt - 6 * 3_600_000, zonedTime(addDays(read.range.from, -1), 0, zone))).toISOString() : undefined;
+    const to = read.range ? new Date(zonedTime(addDays(read.range.to, 1), 6, zone)).toISOString() : undefined;
+    return { from, to, words: read.terms.join(" ") };
+  }, [typed, asTyped, readOpts, openedAt]);
+
   // Keyword/category pool from the existing search API.
-  const pool = useCityEvents(city, { category: cat, limit: 100 });
+  const pool = useCityEvents(city, { category: cat, limit: 100, from: early?.from, to: early?.to });
+  // The same window searched for the words themselves (server full text).
+  const wordPool = useCityEvents(city, {
+    category: cat,
+    limit: 100,
+    q: early?.words || undefined,
+    from: early?.from,
+    to: early?.to,
+    skip: !early?.words,
+  });
+  const allEvents = useMemo(() => {
+    const seen = new Set<string>();
+    return [...pool.events, ...wordPool.events].filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)));
+  }, [pool.events, wordPool.events]);
 
   // Spelling: fix typos and unfinished place names before the search reads
   // the words. Words from the events on show count as real words, and their
   // misspellings are fixed too ("comdey" finds the comedy nights).
   const seenWords = useMemo(() => {
     const out = new Set<string>();
-    for (const e of pool.events) for (const w of wordsOf(`${e.title} ${e.location_name ?? ""}`)) out.add(w);
+    for (const e of allEvents) for (const w of wordsOf(`${e.title} ${e.location_name ?? ""}`)) out.add(w);
     return out;
-  }, [pool.events]);
+  }, [allEvents]);
   const spelled = useMemo(
     () => (typed && !asTyped ? correctQuery(typed, seenWords) : { text: typed, fixes: [] }),
     [typed, asTyped, seenWords],
@@ -219,47 +251,61 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   // widened search can be shared and the back button undoes it.
   const widenParam = params.get("widen") ?? "";
   const widen = useMemo(
-    () => widenParam.split(",").filter((w): w is Widen => w === "when" || w === "free" || w === "topic"),
+    () => widenParam.split(",").filter((w): w is Widen => w === "when" || w === "free" || w === "topic" || w === "words"),
     [widenParam],
   );
   // "drop" removes single signals the reader got wrong ("interest:music").
   const dropParam = params.get("drop") ?? "";
   const asked = useMemo(() => {
     if (!q) return null;
-    let read = parseIntent(q);
+    let read = parseIntent(q, readOpts);
     for (const key of dropParam.split(",").filter(Boolean)) {
       const sig = read.signals.find((x) => `${x.kind}:${x.value}` === key);
       if (sig) read = dropSignal(read, sig);
     }
     return read;
-  }, [q, dropParam]);
+  }, [q, dropParam, readOpts]);
   const intent = useMemo(() => (asked ? widenIntent(asked, widen) : null), [asked, widen]);
   const exact = widen.length === 0 && !dropParam;
 
+  // Exact matches first (every word found, every filter met), then events
+  // that only share the topic or are close in meaning, under their own
+  // heading. Without words to find, every event that meets the filters is
+  // a match.
   const results = useMemo(() => {
-    const base = upcoming(pool.events);
-    const meaningIds = new Set(meaning.map((e) => e.id));
-    let list: { event: Event; byMeaning: boolean; score: number; reasons: string[] }[];
+    const base = upcoming(allEvents);
+    let list: { event: Event; byMeaning: boolean; score: number; reasons: string[]; related: boolean }[];
     if (q && intent) {
       // Place is applied as a radius around the city; scraped city names vary.
       const scoring = { ...intent, city: null };
-      const keyword = base
-        .map((e) => ({ e, s: scoreEvent(e, scoring) }))
-        .filter((x) => x.s && !meaningIds.has(x.e.id))
-        .map((x) => ({ event: x.e, byMeaning: false, score: x.s!.score, reasons: x.s!.reasons }));
-      const semantic = upcoming(meaning)
-        .filter((e) => !cat || e.category === cat)
-        .filter((e) => matchesIntentWhen(e, intent) && (!intent.freeOnly || e.is_free))
-        .map((e, i) => ({
-          event: e,
-          byMeaning: true,
-          score: 100 - i,
-          // Say what matched in words, and that the rest was meaning.
-          reasons: [...(scoreEvent(e, scoring)?.reasons ?? []).filter((r) => !r.startsWith("Related")), "Close in meaning to your words"],
-        }));
-      list = [...semantic, ...keyword.sort((a, b) => b.score - a.score)];
+      const scored = base
+        .map((e) => scoreEvent(e, scoring))
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+      const byScore = (a: { score: number; event: Event }, b: { score: number; event: Event }) =>
+        b.score - a.score || Date.parse(a.event.start_time) - Date.parse(b.event.start_time);
+      const exactHits = scored.filter((x) => x.exact).sort(byScore);
+      const shown = new Set(exactHits.map((x) => x.event.id));
+      const partial = scored.filter((x) => !x.exact).sort(byScore);
+      partial.forEach((x) => shown.add(x.event.id));
+      const wordsAsked = intent.terms.length + intent.phrases.length > 0;
+      const semantic = wordsAsked
+        ? upcoming(meaning)
+            .filter((e) => !shown.has(e.id) && (!cat || e.category === cat) && passesFilters(e, scoring))
+            .map((e) => ({
+              event: e,
+              byMeaning: true,
+              score: 0,
+              related: true,
+              reasons: ["Close in meaning to your words", ...(scoreEvent(e, scoring)?.reasons ?? []).slice(0, 2)],
+            }))
+        : [];
+      list = [
+        ...exactHits.map((x) => ({ event: x.event, byMeaning: false, score: x.score, reasons: x.reasons, related: false })),
+        ...partial.map((x) => ({ event: x.event, byMeaning: false, score: x.score, reasons: x.reasons, related: true })),
+        ...semantic,
+      ];
     } else {
-      list = base.map((e) => ({ event: e, byMeaning: false, score: 0, reasons: [] }));
+      list = base.map((e) => ({ event: e, byMeaning: false, score: 0, reasons: [], related: false }));
     }
     list = list.filter(
       (x) =>
@@ -270,20 +316,22 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         (mood === "any" || vibeFit(x.event, [mood]) > 0),
     );
     if (sort !== "relevance") {
-      const order = sortEvents(list.map((x) => x.event), sort);
+      // Re-order within each part; exact matches stay above related ones.
       const byId = new Map(list.map((x) => [x.event.id, x]));
-      list = order.map((e) => byId.get(e.id)!);
+      const tier = (rel: boolean) => sortEvents(list.filter((x) => x.related === rel).map((x) => x.event), sort).map((e) => byId.get(e.id)!);
+      list = [...tier(false), ...tier(true)];
     }
     return list;
-  }, [pool.events, meaning, q, intent, cat, when, price, format, withinKmValue, city.lat, city.lng, mood, sort]);
+  }, [allEvents, meaning, q, intent, cat, when, price, format, withinKmValue, city.lat, city.lng, mood, sort]);
+  const matchCount = results.filter((r) => !r.related).length;
 
   // Named interests with nothing to show: say so, rather than let closest
   // matches from other categories pass for an answer.
   const missing = useMemo(() => {
     if (!intent || pool.loading || !semReady) return [];
-    const named = intent.signals.filter((x) => x.kind === "interest").map((x) => x.value as EventCategory);
+    const named = intent.signals.filter((x) => x.kind === "interest" && x.strict).map((x) => x.value as EventCategory);
     return named
-      .filter((c) => !results.some((r) => r.event.category === c))
+      .filter((c) => !results.some((r) => !r.related && r.event.category === c))
       .map((c) => CATEGORIES.find((x) => x.value === c)?.label ?? c);
   }, [intent, pool.loading, semReady, results]);
 
@@ -291,17 +339,17 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   // with how many more events each would bring in. Counts use the same
   // filters as the list, so a suggestion never promises what it can't show.
   const widenOptions = useMemo(() => {
-    if (!asked || !intent || pool.loading || results.length >= 4) return [];
-    const base = upcoming(pool.events);
-    const shownIds = new Set(results.map((r) => r.event.id));
-    const label: Record<Widen, string> = { when: "Any date", free: "Paid events too", topic: "Any kind of event" };
+    if (!asked || !intent || pool.loading || matchCount >= 4) return [];
+    const base = upcoming(allEvents);
+    const shownIds = new Set(results.filter((r) => !r.related).map((r) => r.event.id));
+    const label: Record<Widen, string> = { when: "Any date or time", free: "Any price", topic: "Any kind of event", words: "Some of the words" };
     return widenable(intent)
       .map((w) => {
         const wider = { ...widenIntent(intent, [w]), city: null };
         const extra = base.filter(
           (e) =>
             !shownIds.has(e.id) &&
-            scoreEvent(e, wider) &&
+            scoreEvent(e, wider)?.exact &&
             inDateWindow(e, when) &&
             inPrice(e, price) &&
             inFormat(e, format) &&
@@ -310,7 +358,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         return { w, label: label[w], extra };
       })
       .filter((o) => o.extra > 0);
-  }, [asked, intent, pool.loading, pool.events, results, when, price, format, withinKmValue, city.lat, city.lng]);
+  }, [asked, intent, pool.loading, allEvents, results, matchCount, when, price, format, withinKmValue, city.lat, city.lng]);
 
   // Show a page at a time; the count resets whenever the question changes.
   const viewKey = `${q}|${widenParam}|${dropParam}|${cat}|${when}|${price}|${format}|${within}|${mood}|${sort}|${city.name}`;
@@ -510,7 +558,8 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
         <div className="xread">
           <span className="xread-label">Reading “{q}” as</span>
           {intent.signals.length === 0 && <span className="xread-chip">meaning only</span>}
-          {intent.signals.map((s) => (
+          {/* Topics a word only hints at rank results quietly; the word itself is the chip. */}
+          {intent.signals.filter((s) => s.kind !== "interest" || s.strict).map((s) => (
             <button
               key={`${s.kind}-${s.value}`}
               type="button"
@@ -559,7 +608,11 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           </h2>
           <div className="xbar">
             <p className="xcount">
-              {loading ? "Searching…" : `${results.length}${pool.events.length >= 100 && results.length >= 100 ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
+              {loading
+                ? "Searching…"
+                : q
+                  ? `${matchCount} ${matchCount === 1 ? "match" : "matches"}`
+                  : `${results.length}${pool.events.length >= 100 && results.length >= 100 ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
               <span> near {city.name}</span>
             </p>
             <div className="xbar-end">
@@ -622,9 +675,9 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           {!loading && widenOptions.length > 0 && (
             <div className="xwiden" role="group" aria-label="Widen the search">
               <p className="xwiden-lead">
-                {results.length === 0
+                {matchCount === 0
                   ? `Nothing matches${exact ? " exactly" : ""}.`
-                  : `Only ${results.length} ${results.length === 1 ? "matches" : "match"}${exact ? " exactly" : ""}.`}{" "}
+                  : `Only ${matchCount} ${matchCount === 1 ? "matches" : "match"}${exact ? " exactly" : ""}.`}{" "}
                 Let one part go:
               </p>
               <ul>
@@ -666,11 +719,31 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </EmptyState>
           ) : (
             <>
-              <div className="xgrid">
-                {visible.map((r, i) => (
-                  <EventCard key={r.event.id} event={r.event} priority={i < 3} reasons={q ? r.reasons : undefined} />
-                ))}
-              </div>
+              {q && matchCount === 0 && (
+                <p className="xnone">
+                  Nothing matches “{intent?.signals.find((x) => x.kind === "words")?.label ?? q}” with everything you asked for. These are related.
+                </p>
+              )}
+              {visible.some((r) => !r.related) && (
+                <div className="xgrid">
+                  {visible.filter((r) => !r.related).map((r, i) => (
+                    <EventCard key={r.event.id} event={r.event} priority={i < 3} reasons={q ? r.reasons : undefined} />
+                  ))}
+                </div>
+              )}
+              {visible.some((r) => r.related) && (
+                <>
+                  <h3 className="xtier">
+                    Related to your search
+                    <span> Same topic or close in meaning, but not every word you typed</span>
+                  </h3>
+                  <div className="xgrid">
+                    {visible.filter((r) => r.related).map((r) => (
+                      <EventCard key={r.event.id} event={r.event} reasons={r.reasons} />
+                    ))}
+                  </div>
+                </>
+              )}
               {results.length > visible.length && (
                 <div className="xmore">
                   <p className="xmore-count">

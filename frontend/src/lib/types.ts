@@ -110,4 +110,7 @@ export interface SearchParams {
   radius_km?: number;
   limit?: number;
   offset?: number;
+  /** ISO instants: only events starting in this window. */
+  from?: string;
+  to?: string;
 }

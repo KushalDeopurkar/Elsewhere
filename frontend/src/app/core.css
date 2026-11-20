@@ -743,6 +743,29 @@ p {
   cursor: pointer;
 }
 
+/* A long city name ("Thiruvananthapuram") is cut with "…" rather than
+   pushing the header's buttons off a phone screen. */
+.loc {
+  min-width: 0;
+  max-width: 100%;
+}
+.loc-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topnav-end {
+  min-width: 0;
+}
+.topnav-city {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.topnav-end > :not(.topnav-city) {
+  flex: none;
+}
+
 .loc svg:first-child {
   color: var(--signal-text);
 }
@@ -2850,11 +2873,16 @@ p {
 
 .tt-title {
   font-size: clamp(3rem, 8.2vw, 8.25rem);
-  overflow-wrap: anywhere;
+  /* Words never break; the city line shrinks to fit its longest word. */
+  container-type: inline-size;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .tt-title .tt-in {
   display: block;
+  /* About 0.7em per letter at this weight and width, with a little room. */
+  font-size: min(1em, calc(100cqi / (var(--city-len, 8) * 0.72)));
 }
 
 .tt-mast .tt-clock {

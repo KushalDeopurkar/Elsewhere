@@ -1,5 +1,5 @@
 /**
- * The home "departures board": tonight's (or tomorrow's, or the weekend's)
+ * The home "departures board": today's (or tomorrow's, or the weekend's)
  * real events as board rows. Pure, so the rows and their status words are
  * testable. Status is only ever a fact we hold: on now, a countdown to a
  * real start time, or the price.
@@ -73,7 +73,7 @@ export function pages<T>(rows: T[], size: number): T[][] {
 
 /**
  * The count line above the board. When a thin night carries on into
- * tomorrow, both parts are counted: "1 tonight · 4 tomorrow".
+ * tomorrow, both parts are counted: "1 today · 4 tomorrow".
  */
 export function boardCount(shown: number, later: number, word: string): string {
   const main = later > 0 ? `${shown} ${word.toLowerCase()}` : `${shown} ${shown === 1 ? "departure" : "departures"}`;

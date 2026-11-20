@@ -10,6 +10,8 @@ function clean(e: Event): Event {
     title: decodeEntities(e.title),
     description: e.description ? decodeEntities(e.description) : e.description,
     location_name: e.location_name ? decodeEntities(e.location_name) : e.location_name,
+    // An empty picture means the event's page was checked and has none.
+    image_url: e.image_url || null,
   };
 }
 
@@ -24,7 +26,7 @@ export interface EventsResult {
 
 /** Filters that make an empty response meaningful rather than just an empty database. */
 function isFiltered(params: SearchParams): boolean {
-  return Boolean(params.q || params.category);
+  return Boolean(params.q || params.category || params.from || params.to);
 }
 
 function matchesLocally(event: Event, params: SearchParams): boolean {
@@ -68,6 +70,8 @@ export async function searchEvents(params: SearchParams): Promise<EventsResult> 
   if (params.radius_km) qs.set("radius_km", String(params.radius_km));
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.offset) qs.set("offset", String(params.offset));
+  if (params.from) qs.set("from_time", params.from);
+  if (params.to) qs.set("to_time", params.to);
 
   try {
     const res = await fetch(`${API_BASE}/events/search?${qs}`);
