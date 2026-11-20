@@ -1,14 +1,14 @@
 # Elsewhere: the frontend
 
-Everything happening in your city, set out like a timetable you can act on.
+Everything happening in your city, in every category, set out like a timetable you can act on. Ask for it in plain words.
 
 <p>
-  <img src="docs/home-day.png" alt="Elsewhere home by day: TONIGHT IN MUMBAI set large, a split-flap clock, and tonight's events as timetable rows with a yellow NOW line" width="49%" />
+  <img src="docs/home-day.png" alt="Elsewhere home by day: WHAT'S ON IN MUMBAI set large, the Ask Elsewhere search, and the next departures as timetable rows with a yellow NOW line" width="49%" />
   <img src="docs/home-night.png" alt="The same home page after 18:00, as a lit departure board in deep blue and amber" width="49%" />
 </p>
 
 <p>
-  <img src="docs/phone-day.png" alt="Elsewhere on a phone by day: the masthead, the split-flap clock and tonight's departures" width="24%" />
+  <img src="docs/phone-day.png" alt="Elsewhere on a phone by day: the masthead, the clock and Ask Elsewhere" width="24%" />
   <img src="docs/phone-night.png" alt="The same phone screen at night, on the lit departure board" width="24%" />
 </p>
 
@@ -17,8 +17,8 @@ Elsewhere gathers gigs, workshops, matches, meetups and free walks from ticketin
 ## What you can do
 
 - **Discover** (`/`): what's on in your city, in every category. Ask Elsewhere in plain words ("I want to meet startup founders", "free AI workshops this weekend"); beside it, the departures board of what's next with a live NOW line. Below: headliners, starting soon, every category as a line, collections by plan (learn something, meet people, get moving), the weekend, free entry.
-- **Explore** (`/explore`, `/categories/<slug>`): every listing with filters for category, mood, date, price, format (in person or online) and distance; removable chips for whatever is in force; 24 at a time. A plain-words request shows what it understood and, on each ticket, why the event matches.
-- **Map** (`/map`): the city at night. Busy areas cluster into numbered markers in their category colour; pointing at an event in the list lifts its pin; a timeline shows what is on at any hour; travel times and a phone card strip.
+- **Explore** (`/explore`, `/categories/<slug>`): every listing with filters for category, mood, date, price, format (in person or online) and distance; removable chips for whatever is in force; sort by best match, soonest, lowest price or nearest; 24 at a time. A plain-words request shows what it understood and, on each ticket, why the event matches; when the exact ask comes back thin, it offers to let one part go (any date, paid too, any kind of event) with how many events each adds.
+- **Map** (`/map`): the city at night. Busy areas cluster into numbered markers in their category colour; pointing at an event in the list lifts its pin, and pointing at a pin previews its title, time and price; a timeline shows what is on at any hour; travel times and a phone card strip.
 - **Keep it**: save events, get reminders, add to your calendar, plan a day around them (`/plan-my-day`), collect passport stamps, replay your month (`/recap`).
 - **Go with friends** (with an account): profiles, friends, who's going, lists and "who's free?" polls.
 
