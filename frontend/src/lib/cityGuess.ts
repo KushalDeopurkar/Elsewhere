@@ -33,3 +33,19 @@ const BY_ZONE: Record<string, string> = {
 export function cityFromZone(zone: string | undefined): string | null {
   return (zone && BY_ZONE[zone]) || null;
 }
+
+/** Picker cities closest to `from`, nearest first, `from` itself left out. */
+export function nearbyCities(from: CityPoint, n = 3, pool: CityPoint[] = CITY_LIST): CityPoint[] {
+  const km = (c: CityPoint) => {
+    const dLat = ((c.lat - from.lat) * Math.PI) / 180;
+    const dLng = ((c.lng - from.lng) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((from.lat * Math.PI) / 180) * Math.cos((c.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * 6371 * Math.asin(Math.sqrt(a));
+  };
+  return pool
+    .filter((c) => c.name !== from.name)
+    .map((c) => [c, km(c)] as const)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, n)
+    .map(([c]) => c);
+}

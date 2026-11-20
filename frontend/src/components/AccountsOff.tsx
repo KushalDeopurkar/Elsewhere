@@ -15,7 +15,7 @@ export default function AccountsOff({ what }: { what: string }) {
         Your saved events
       </Link>
       <Link href="/" className="btn btn-ghost">
-        What&apos;s on
+        Where to be
       </Link>
     </EmptyState>
   );

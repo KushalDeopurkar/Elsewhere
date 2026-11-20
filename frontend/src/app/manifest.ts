@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Elsewhere",
     short_name: "Elsewhere",
-    description: "Every kind of event near you: workshops, talks, matches, gigs, meetups and more.",
+    description: "Be elsewhere tonight: every kind of event in your city, from gigs and matches to workshops and meetups.",
     id: "/",
     start_url: "/?source=app",
     scope: "/",

@@ -10,6 +10,11 @@ const COLS = "id,title,description,category,start_time,end_time,location_name,ad
 /** Names that aren't a place you can go to, so "more here" means nothing. */
 const NOT_A_VENUE = /^(online|virtual|zoom|tba|tbd|to be announced|venue (tba|tbd|to be announced)|multiple venues|various venues|secret location|location (tba|on request))$/i;
 
+/** Three hours ago, so shows already under way still count. Outside the component on purpose. */
+function sinceIso(): string {
+  return new Date(Date.now() - 3 * 3_600_000).toISOString();
+}
+
 /**
  * "More at {venue}": every upcoming show listed at the same place, soonest
  * first, so one visit to a venue's page shows its whole calendar. Renders
@@ -22,7 +27,7 @@ export default async function VenueEvents({ event }: { event: Event }) {
 
   let rows: Event[] = [];
   try {
-    const since = new Date(Date.now() - 3 * 3_600_000).toISOString(); // include what's on now
+    const since = sinceIso();
     const city = event.city ? `&city=eq.${encodeURIComponent(event.city)}` : "";
     rows = await rest<Event[]>(
       `events?select=${COLS}&location_name=eq.${encodeURIComponent(venue)}${city}&start_time=gte.${since}&id=neq.${event.id}&order=start_time.asc&limit=40`,

@@ -2472,7 +2472,8 @@ p {
   top: 50%;
   width: 132px;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
+  object-fit: contain; /* whole poster, never cropped */
+  background: var(--bg-3);
   border: 2px solid var(--fg);
   opacity: 0;
   transform: translate(12px, -50%) rotate(-2deg);
@@ -3131,3 +3132,60 @@ p {
 .alerts-help { max-width: 46rem; }
 .alerts-steps { display: grid; gap: var(--s-3); margin: var(--s-6) 0; padding-left: 1.4rem; color: var(--fg-2); line-height: 1.5; }
 .alerts-steps b { color: var(--fg); }
+
+
+/* ---- "Nothing here? Try elsewhere" (TryElsewhere.tsx) -------------------- */
+.elsewhere-try {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  justify-items: inherit;
+}
+.elsewhere-try-lead {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--signal-text);
+}
+.elsewhere-try ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  justify-content: inherit;
+}
+.elsewhere-try-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg);
+  font-weight: 600;
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--t-hover) var(--ease), background-color var(--t-hover) var(--ease);
+}
+.elsewhere-try-btn:hover {
+  border-color: var(--signal);
+  background: color-mix(in oklch, var(--signal) 12%, transparent);
+}
+.elsewhere-try-btn:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.foot-tagline {
+  margin: 0 0 var(--s-2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--t-lg);
+  color: var(--signal-text);
+}

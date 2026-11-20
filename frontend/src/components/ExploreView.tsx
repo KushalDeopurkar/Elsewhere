@@ -33,6 +33,7 @@ import {
   upcoming,
 } from "@/lib/eventFilters";
 import { getCategoryColor } from "@/lib/categoryColors";
+import TryElsewhere from "./TryElsewhere";
 
 const DATES: { value: DateFilter; label: string }[] = [
   { value: "any", label: "Any time" },
@@ -739,6 +740,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
               <button type="button" className="btn btn-ghost" onClick={() => { setDraft(""); setParams({ q: null, ...clearAll }); }}>
                 Reset search and filters
               </button>
+              {!named && <TryElsewhere city={city} />}
             </EmptyState>
           ) : (
             <>

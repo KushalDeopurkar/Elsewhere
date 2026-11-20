@@ -24,6 +24,7 @@ import { boardRows } from "@/lib/board";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
 import { timedOf } from "@/lib/formatDate";
 import type { Event } from "@/lib/types";
+import TryElsewhere from "@/components/TryElsewhere";
 
 function RailOf({
   events,
@@ -153,8 +154,8 @@ export default function Home() {
           loading={pool.loading}
           lede={
             <>
-              Workshops, hackathons, talks, matches, gigs, meetups, exhibitions and volunteering in {city.name}, gathered
-              from across the web. Ask for what you want, or start with what&apos;s next.
+              Somewhere better to be tonight than your usual spot: workshops, gigs, matches, talks, meetups and
+              exhibitions across {city.name}, gathered from across the web. Ask for what you want, or take the next departure.
             </>
           }
           aside={
@@ -217,9 +218,10 @@ export default function Home() {
         ) : featured.length === 0 ? (
           <EmptyState
             title={`Nothing listed in ${city.name} yet`}
-            body="New listings arrive every six hours. Try another city from the header, or browse everything."
+            body="New listings arrive every six hours."
           >
             <Link href="/explore" className="btn btn-primary">Browse every listing</Link>
+            <TryElsewhere city={city} />
           </EmptyState>
         ) : (
           <div className="feature-grid">

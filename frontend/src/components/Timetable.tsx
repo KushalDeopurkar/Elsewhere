@@ -13,6 +13,8 @@ import { zoneLabel } from "@/lib/formatDate";
 import TodayNetwork from "./TodayNetwork";
 import FlapText from "./FlapText";
 import TransitionLink from "./TransitionLink";
+import TryElsewhere from "./TryElsewhere";
+import { cityByName } from "@/lib/cities";
 
 const PAGE = 7;
 const CYCLE_MS = 10_000;
@@ -47,6 +49,7 @@ export default function Timetable({
   lede?: React.ReactNode;
 }) {
   const now = useNow(15_000);
+  const cityPoint = cityByName(city);
   const [tab, setTab] = useState<BoardTab>("today");
   const [page, setPage] = useState(0);
   const [held, setHeld] = useState(false);
@@ -102,7 +105,7 @@ export default function Timetable({
           <span>{now ? dateFor(zone).format(new Date(now)) : " "}</span>
         </p>
         <h1 id="tt-title" className="tt-title">
-          <span className="tt-word">What&apos;s on</span> <span
+          <span className="tt-word">Where to be</span> <span
             className="tt-in"
             // Long names ("Thiruvananthapuram") shrink to fit rather than break mid-word.
             style={{ "--city-len": Math.max(6, ...`in ${city}`.split(/\s+/).map((w) => w.length)) } as React.CSSProperties}
@@ -173,6 +176,7 @@ export default function Timetable({
                 <button type="button" className="btn btn-ghost" onClick={() => choose(tab === "tomorrow" ? "weekend" : "tomorrow")}>
                   See {tab === "tomorrow" ? "the weekend" : "tomorrow"}
                 </button>
+                {cityPoint && <TryElsewhere city={cityPoint} lead="Or be elsewhere:" />}
               </div>
             ) : (
               <ol className="tt-rows">

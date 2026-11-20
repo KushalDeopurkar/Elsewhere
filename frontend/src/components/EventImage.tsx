@@ -11,11 +11,10 @@ import { sized } from "@/lib/imageUrl";
  *
  * - A fixed aspect-ratio frame with overflow hidden, so nothing stretches or
  *   spills, whatever size the source is.
- * - Photographs fill the frame (object-fit: cover).
- * - Posters, which scrapers return in every shape, are detected on load: if
- *   the picture is much taller than the frame, cropping it would cut off the
- *   title and date printed on it, so it is shown whole (contain) over a
- *   blurred copy of itself instead of letterbox bars.
+ * - The picture is always shown whole, never cropped (object-fit: contain):
+ *   event posters carry the title, date and line-up in their corners, and
+ *   sources send them in every shape. Any space the shape leaves is filled
+ *   by a blurred copy of the same picture, not bars.
  * - Missing or broken images fall back to a category-tinted tile with the
  *   category's icon, never an empty grey box.
  */
@@ -42,22 +41,9 @@ export default function EventImage({
   // Resized copy first; if the resizer can't fetch it, the original once.
   const [useOriginal, setUseOriginal] = useState(false);
   const url = useOriginal ? src : sized(src, width);
-  const [fit, setFit] = useState<"cover" | "contain">("cover");
-  const [w, h] = ratio.split("/").map((n) => Number(n.trim()));
-  const frame = w && h ? w / h : 4 / 3;
-
-  const measure = useCallback(
-    (img: HTMLImageElement) => {
-      if (!img.naturalWidth) {
-        setFailed(true);
-        return;
-      }
-      const shape = img.naturalWidth / img.naturalHeight;
-      // Much taller than the frame: almost certainly a poster with text on it.
-      setFit(shape < frame * 0.72 ? "contain" : "cover");
-    },
-    [frame],
-  );
+  const measure = useCallback((img: HTMLImageElement) => {
+    if (!img.naturalWidth) setFailed(true);
+  }, []);
 
   // Images can finish loading before hydration, when onLoad has no handler
   // yet; the callback ref catches those.
@@ -81,10 +67,10 @@ export default function EventImage({
         </div>
       ) : (
         <>
-          {fit === "contain" && <img className="eimg-backdrop" src={(useOriginal ? src : sized(src, 48))!} alt="" aria-hidden="true" />}
+          <img className="eimg-backdrop" src={(useOriginal ? src : sized(src, 48))!} alt="" aria-hidden="true" loading={priority ? "eager" : "lazy"} decoding="async" />
           <img
             ref={ref}
-            className={`eimg-img is-${fit}`}
+            className="eimg-img is-contain"
             src={url!}
             alt={alt}
             loading={priority ? "eager" : "lazy"}

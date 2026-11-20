@@ -132,10 +132,10 @@
   background: var(--bg-3);
 }
 
-.map-peek-media img {
+.map-peek-media > img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* whole poster, never cropped */
 }
 
 .map-peek-close {
