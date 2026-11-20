@@ -20,7 +20,7 @@ describe("world cities", () => {
     const now = new Date("2026-11-19T12:00:00Z");
     // 20:00 UTC on 19 Nov = 8 pm in London (GMT), 1:30 am next day in India.
     const ev = { start_time: "2026-11-19T20:00:00Z", country: "GB", lat: 51.5, lng: -0.12 };
-    expect(whenOf(ev, now)).toBe("Tonight, 8:00 pm");
+    expect(whenOf(ev, now)).toBe("Today, 8:00 pm");
     expect(formatWhen(ev.start_time, now)).toBe("Tomorrow, 1:30 am");
     // Local midnight is "time on listing" in the event's own zone.
     expect(hasTime("2026-11-20T00:00:00Z", "Europe/London")).toBe(false);

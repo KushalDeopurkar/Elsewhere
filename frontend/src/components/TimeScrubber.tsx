@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import TimeDial from "./TimeDial";
-import { Pause, Play, X, MoonStars } from "@phosphor-icons/react";
+import { Pause, Play, X } from "@phosphor-icons/react";
 import type { Event } from "@/lib/types";
 import { HOUR, WEEK_HOURS, busyness, momentLabel, zoneOffset } from "@/lib/timeline";
 
@@ -39,19 +39,17 @@ export default function TimeScrubber({
   setPlaying: Dispatch<SetStateAction<boolean>>;
   shown: number;
   live: number;
-  /** The city's time zone: "tonight" and the hour labels read in it. */
+  /** The city's time zone: "today" and the hour labels read in it. */
   zone?: string;
 }) {
-  // "Play tonight" runs slowly from the evening (or now, if it's already
-  // evening) until 3 am. The scrubber still reaches across the whole week.
+  // "Play today" runs slowly from now until 3 am, through everything still
+  // on today. The scrubber still reaches across the whole week.
   const [stopAt, setStopAt] = useState(WEEK_HOURS - 1);
   const startHod = Math.floor((start + zoneOffset(zone, start)) / HOUR) % 24;
   const hod = (startHod + hour) % 24;
-  const tonight = () => {
-    const begin = startHod >= 4 && startHod < 18 ? 18 - startHod : 0;
-    const begHod = (startHod + begin) % 24;
-    const end = begin + ((27 - begHod + 24) % 24);
-    return { begin, end: Math.min(WEEK_HOURS - 1, end) };
+  const restOfDay = () => {
+    const end = (27 - startHod + 24) % 24 || 24;
+    return { begin: 0, end: Math.min(WEEK_HOURS - 1, end) };
   };
   const bars = useMemo(() => busyness(events, start, BUCKET), [events, start]);
   const peak = Math.max(1, ...bars);
@@ -89,14 +87,14 @@ export default function TimeScrubber({
           type="button"
           className="tl-open"
           onClick={() => {
-            const t = tonight();
+            const t = restOfDay();
             setStopAt(t.end);
             setOn(true);
             setHour(t.begin);
             setPlaying(true);
           }}
         >
-          <MoonStars size={16} weight="bold" aria-hidden="true" /> Play tonight
+          <Play size={16} weight="fill" aria-hidden="true" /> Play today
         </button>
       </div>
     );

@@ -699,7 +699,7 @@ export function homePrompts(money: { symbol: string; cheap: number } = { symbol:
     "Something educational tomorrow",
     "Volunteering this Sunday",
     "A run or a match this weekend",
-    `Live music tonight under ${money.symbol}${money.cheap}`,
+    `Live music today under ${money.symbol}${money.cheap}`,
   ];
 }
 

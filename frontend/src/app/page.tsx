@@ -154,7 +154,7 @@ export default function Home() {
           loading={pool.loading}
           lede={
             <>
-              Somewhere better to be tonight than your usual spot: workshops, gigs, matches, talks, meetups and
+              Somewhere better to be than your usual spot: workshops, gigs, matches, talks, meetups and
               exhibitions across {city.name}, gathered from across the web. Ask for what you want, or take the next departure.
             </>
           }

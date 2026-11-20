@@ -154,6 +154,17 @@ jobs:
             python run_scrapers.py --load in
           fi
 
+      - name: Re-decide categories of saved events
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          cd backend
+          python run_scrapers.py --recategorize
+
       # Each upcoming event's own page: full description, ticket tiers
       # (GA, VIP, ...), duration, organiser. Needs migration 008.
       # District blocks cloud servers (its listing scrape returns 0 here too),

@@ -70,7 +70,7 @@ export function formatDatePlate(iso: string, zone?: string): { day: string; mont
   return { day: f("day", zone).format(d), month: f("month", zone).format(d) };
 }
 
-/** "Tonight, 9:00 pm" / "Tomorrow, 7:30 pm" / "Sat, 12 Apr" */
+/** "Today, 9:00 pm" / "Tomorrow, 7:30 pm" / "Sat, 12 Apr" */
 export function formatWhen(iso: string, now: Date = new Date(), zone?: string): string {
   const d = new Date(iso);
   const diff = daysApart(d, now, zone);
@@ -82,10 +82,7 @@ export function formatWhen(iso: string, now: Date = new Date(), zone?: string): 
   }
   const time = f("time", zone).format(d);
 
-  if (diff === 0) {
-    const hour = +f("hour", zone).format(d);
-    return `${hour >= 17 ? "Tonight" : "Today"}, ${time}`;
-  }
+  if (diff === 0) return `Today, ${time}`;
   if (diff === 1) return `Tomorrow, ${time}`;
   if (diff > 1 && diff < 7) return `${f("weekday", zone).format(d)}, ${time}`;
   return `${f("dateShort", zone).format(d)}, ${time}`;

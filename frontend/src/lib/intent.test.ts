@@ -192,7 +192,7 @@ describe("every suggested search finds something", () => {
   });
 
   it("follows the city's money", () => {
-    expect(homePrompts({ symbol: "£", cheap: 20 })[5]).toBe("Live music tonight under £20");
+    expect(homePrompts({ symbol: "£", cheap: 20 })[5]).toBe("Live music today under £20");
   });
 
   it("gibberish matches nothing, even widened", () => {

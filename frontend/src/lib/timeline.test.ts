@@ -52,7 +52,7 @@ describe("timelineStart", () => {
 describe("momentLabel", () => {
   it("reads naturally", () => {
     expect(momentLabel(timelineStart(NOW), NOW)).toBe("Now");
-    expect(momentLabel(Date.parse("2026-11-17T15:30:00Z"), NOW)).toBe("Tonight 9 pm");
+    expect(momentLabel(Date.parse("2026-11-17T15:30:00Z"), NOW)).toBe("Today 9 pm");
     expect(momentLabel(Date.parse("2026-11-18T05:30:00Z"), NOW)).toBe("Tomorrow 11 am");
     expect(momentLabel(Date.parse("2026-11-21T05:30:00Z"), NOW)).toBe("Sat 11 am");
   });

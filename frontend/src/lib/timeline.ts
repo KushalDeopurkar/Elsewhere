@@ -67,7 +67,7 @@ export function busyness(events: Event[], start: number, bucketHours = 3): numbe
   return buckets;
 }
 
-/** "Now", "Tonight 9 pm", "Sat 11 am": short label in local time. */
+/** "Now", "Today 9 pm", "Sat 11 am": short label in local time. */
 export function momentLabel(t: number, now: number, zone = "Asia/Kolkata"): string {
   if (t - timelineStart(now, zone) < HOUR) return "Now";
   const day = (x: number) => new Date(x).toLocaleDateString("en-CA", { timeZone: zone });
@@ -75,8 +75,7 @@ export function momentLabel(t: number, now: number, zone = "Asia/Kolkata"): stri
     .toLocaleTimeString("en-IN", { timeZone: zone, hour: "numeric", hour12: true })
     .replace(/\s/g, " ")
     .toLowerCase();
-  const hour = Number(new Date(t).toLocaleString("en-GB", { timeZone: zone, hour: "numeric", hourCycle: "h23" }));
-  if (day(t) === day(now)) return `${hour >= 17 ? "Tonight" : "Today"} ${time}`;
+  if (day(t) === day(now)) return `Today ${time}`;
   if (day(t) === day(now + 24 * HOUR)) return `Tomorrow ${time}`;
   const wd = new Date(t).toLocaleDateString("en-IN", { timeZone: zone, weekday: "short" });
   return `${wd} ${time}`;

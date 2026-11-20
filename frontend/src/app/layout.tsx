@@ -27,9 +27,9 @@ import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Elsewhere - somewhere better to be tonight",
+  title: "Elsewhere - somewhere better to be",
   description:
-    "Be elsewhere tonight. Gigs, workshops, matches, talks, meetups and exhibitions in your city, gathered from across the web and mapped.",
+    "Somewhere better to be. Workshops, matches, talks, gigs, meetups and exhibitions in your city, gathered from across the web and mapped.",
   openGraph: { siteName: "Elsewhere", type: "website" },
   applicationName: "Elsewhere",
   appleWebApp: { capable: true, title: "Elsewhere", statusBarStyle: "black" },

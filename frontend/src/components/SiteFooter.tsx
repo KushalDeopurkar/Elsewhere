@@ -40,7 +40,7 @@ export default function SiteFooter() {
             <BrandMark className="foot-mark" />
             Elsewhere
           </p>
-          <p className="foot-tagline">Somewhere better to be tonight.</p>
+          <p className="foot-tagline">Somewhere better to be.</p>
           <p className="foot-note">
             Listings gathered every six hours from public sources: ticketing sites, community calendars and city open data.
             Times are local to each city. Always check the organiser&apos;s page before you go.

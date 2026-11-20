@@ -37,7 +37,8 @@ from app.scrapers.eventfinda import EventfindaScraper
 from app.scrapers.paris_opendata import ParisOpenDataScraper
 from app.scrapers.ics_feeds import IcsFeedsScraper
 from app.scrapers.football import FootballScraper
-from app.models.event import EventCreate
+from app.models.event import EventCategory, EventCreate
+from app.services.categorize import categorize
 from app.services.dedupe import dedupe
 
 INDIA_SOURCES = ["allevents", "district", "meetup"]
@@ -74,6 +75,8 @@ async def main():
                         help="Max event pages to enrich per run")
     parser.add_argument("--images-only", action="store_true",
                         help="Skip scraping; find pictures on the pages of events that have none")
+    parser.add_argument("--recategorize", action="store_true",
+                        help="Re-decide the category of upcoming events already saved, then exit")
     parser.add_argument("--out", default=None,
                         help="Write scraped events to this JSON-lines file instead of saving them")
     parser.add_argument("--load", default=None,
@@ -97,6 +100,13 @@ async def main():
               f"{stats['generic']} site defaults ignored, {stats['failed']} not loaded, of {stats['picked']}")
         for host, outcomes in stats["by_host"].items():
             print(f"::notice::{host}: " + ", ".join(f"{k} x{v}" for k, v in sorted(outcomes.items())))
+        return
+
+    if args.recategorize:
+        from app.database import get_supabase_service
+        from app.services.recategorize import recategorize
+        stats = recategorize(get_supabase_service(), dry_run=args.dry_run)
+        print(f"::notice::Recategorized {stats['changed']} of {stats['seen']} upcoming events")
         return
 
     if args.enrich_only:
@@ -187,6 +197,11 @@ async def main():
         return
 
     before = len(all_events)
+    # One category per event, decided by the same rules for every source;
+    # the scraper's own label only counts as a hint.
+    for e in all_events:
+        e.category = EventCategory(categorize(e.title, e.description, getattr(e.category, "value", e.category), e.source))
+
     all_events = dedupe(all_events)
     if before != len(all_events):
         logger.info(f"Dropped {before - len(all_events)} duplicates listed by more than one source")
@@ -197,7 +212,7 @@ async def main():
         logger.info("DRY RUN — skipping database upsert")
         # Print a sample
         for event in all_events[:5]:
-            logger.info(f"  {event.source}: {event.title} @ {event.city} ({event.start_time})")
+            logger.info(f"  {event.source}: {event.title} [{event.category.value}] @ {event.city} ({event.start_time})")
         return
 
     # Upsert to Supabase
