@@ -64,7 +64,19 @@ export default function EventCard({
   return (
     <article className={`ecard ecard-${variant}`} style={style}>
       <div className="ecard-media">
-        <EventImage src={event.image_url} category={event.category} ratio={ratio} priority={priority} />
+        {/* The poster opens the event too. The title link is the one in the
+            tab order and the one screen readers hear; this is a mouse target. */}
+        <TransitionLink
+          kind="event"
+          preview={event}
+          href={`/events/${event.id}`}
+          className="ecard-media-link"
+          prefetch={false}
+          tabIndex={-1}
+          aria-hidden="true"
+        >
+          <EventImage src={event.image_url} category={event.category} ratio={ratio} priority={priority} />
+        </TransitionLink>
         {variant !== "compact" && (
           <span className={`ecard-price${event.is_free ? " is-free" : ""}`}>{price}</span>
         )}

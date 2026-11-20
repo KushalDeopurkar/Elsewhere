@@ -1425,8 +1425,15 @@ p {
   border-radius: var(--r-card) var(--r-card) 0 0;
 }
 
+.ecard-media-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+}
+
 /* The stamped price on the poster */
 .ecard-price {
+  pointer-events: none; /* clicks pass through to the poster link */
   position: absolute;
   left: 0;
   bottom: 0;

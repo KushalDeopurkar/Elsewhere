@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 import type { ComponentProps, MouseEvent } from "react";
 import { canTransition, transitionTo, type TransitionKind } from "@/lib/transitions";
 import { rememberPreview, type EventPreview } from "@/lib/eventPreview";
@@ -37,7 +38,10 @@ export default function TransitionLink({
   // has its code and data ready to paint.
   const warm = () => {
     try {
-      router.prefetch(href);
+      // Event pages: fetch the whole page, data included, so the click opens it
+      // at once. Other pages: the default (layout and loading state).
+      if (kind === "event") router.prefetch(href, { kind: "full" as PrefetchKind });
+      else router.prefetch(href);
     } catch {
       /* prefetch is best-effort */
     }

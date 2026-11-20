@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { clean, getEvent } from "@/lib/api";
 import { rest, rpc, supabaseConfigured } from "@/lib/supabaseServer";
 import type { Event } from "@/lib/types";
@@ -6,24 +7,30 @@ import type { Event } from "@/lib/types";
 /** Read the event straight from the database: the same RPC the API uses. */
 async function fromDatabase(id: string): Promise<Event | null> {
   const [rows, extra] = await Promise.all([
-    rpc<Event[]>("get_event_by_id", { p_id: id }, 8_000),
+    rpc<Event[]>("get_event_by_id", { p_id: id }, 6_000),
     rest<Partial<Event>[]>(`events?select=tickets,details,details_fetched_at&id=eq.${id}`).catch(() => []),
   ]);
   const row = rows?.[0];
   return row ? clean({ ...row, ...(extra[0] ?? {}) } as Event) : null;
 }
 
+// Kept for five minutes, like the API copy, so repeat views skip the database.
+const cachedFromDatabase = unstable_cache(fromDatabase, ["event-by-id"], { revalidate: 300 });
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
- * The event for its page. The API on Render can be asleep or restarting;
- * when it can't answer, read the database directly instead of failing the
- * page. Cached per request so metadata and page share one lookup.
+ * The event for its page. The database is one hop from the site, while the
+ * API on Render is two (and sometimes asleep), so read the database first
+ * and use the API only when the database can't answer. Shared per request
+ * by metadata, page and share image.
  */
 export const loadEvent = cache(async (id: string): Promise<Event | null> => {
+  if (!UUID.test(id) || !supabaseConfigured()) return getEvent(id);
   try {
-    return await getEvent(id);
+    return await cachedFromDatabase(id);
   } catch (e) {
-    if (!supabaseConfigured()) throw e;
-    console.warn(`[event ${id}] API unreachable, reading the database`, e instanceof Error ? e.message : e);
-    return fromDatabase(id);
+    console.warn(`[event ${id}] database read failed, asking the API`, e instanceof Error ? e.message : e);
+    return getEvent(id);
   }
 });
