@@ -11,6 +11,7 @@ import EventCard from "@/components/EventCard";
 import Rail from "@/components/Rail";
 import CategoryLines from "@/components/CategoryLines";
 import Collections from "@/components/Collections";
+import WhenNear from "@/components/WhenNear";
 import SiteFooter from "@/components/SiteFooter";
 import { SectionHeader, CardSkeleton, EmptyState } from "@/components/Section";
 import { useCityEvents, useCategoryStats } from "@/hooks/useCityEvents";
@@ -221,6 +222,7 @@ export default function Home() {
         <SectionHeader index={no()} kicker="Every category, one line each" title="Browse by line" href="/explore" linkLabel="Browse everything" />
         <CategoryLines cats={lines} stat={lineStat} city={city.name} />
       </section>
+      <WhenNear>
       {!pool.loading && all.length > 0 && (
         <section className="shell sec">
           <SectionHeader index={no()} kicker="Plans, not genres" title="Collections" href="/explore" linkLabel="Browse everything" />
@@ -272,6 +274,8 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      </WhenNear>
 
       <SiteFooter />
     </>
