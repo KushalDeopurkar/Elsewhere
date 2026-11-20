@@ -52,7 +52,9 @@ jobs:
       - id: pick
         run: |
           SOURCE="${{ github.event.inputs.source || 'all' }}"
-          INDIA='"allevents","district","meetup"'
+          # District blocks GitHub's servers; it runs on the Mac twice a day
+          # (com.elsewhere.district.plist). Pick it by name to try it here.
+          INDIA='"allevents","meetup"'
           GLOBAL='"ticketmaster","seatgeek","eventfinda","paris","ics","football"'
           case "$SOURCE" in
             all)    LIST="[$INDIA,$GLOBAL]" ;;
