@@ -7,6 +7,7 @@ import { preconnect } from "react-dom";
 import { STYLE_URL } from "@/lib/mapTheme";
 import { X, WarningCircle, ArrowRight, ListBullets, MapTrifold } from "@phosphor-icons/react/ssr";
 import { useCapable3D } from "@/hooks/useCapable3D";
+import { useTheme } from "@/components/ThemeSync";
 import EventImage from "@/components/EventImage";
 import TravelTime, { RouteLine } from "@/components/TravelTime";
 import LocationSelector from "@/components/LocationSelector";
@@ -140,7 +141,9 @@ export default function MapPage() {
   // They animate every frame, so they start with the first drag, scroll or
   // zoom: the page itself loads and settles without them.
   const [awake, setAwake] = useState(false);
-  const lightsOn = can3d && awake;
+  // The lights are a night effect; on the day map the pins stand on their own.
+  const night = useTheme() !== "day";
+  const lightsOn = can3d && awake && night;
   const wake = useCallback(() => setAwake(true), []);
   // Woken by a gesture: switch on once the finger lifts and the map has
   // coasted, so the tilt-in never fights a drag in progress.
@@ -195,7 +198,7 @@ export default function MapPage() {
     .slice(0, 60);
 
   return (
-    <div className={`map-split is-${mobileView}`} data-theme="night">
+    <div className={`map-split is-${mobileView}`}>
       <aside className="map-list" aria-label="Events in view">
         <div className="map-list-head">
           <p className="map-list-title">

@@ -8,7 +8,7 @@ Every city is a timetable and every event is a departure: a start time, a destin
 ## Two designed themes, chosen by the sun
 - **Day (06:00 to 18:00 in the chosen city):** printed timetable. Cool white paper `--bg`, blue-black ink `--fg`, signal yellow `--signal` as a band, a fill and a line, never as text on paper (`--signal-text` is its readable ochre).
 - **Night (18:00 to 06:00):** the lit departure board. Deep blue `--bg`, warm white type, amber `--signal`.
-- `<html data-theme>` is set before paint by `themeBootScript()`; `ThemeSync` keeps it current; Settings can pin Day or Night. Any subtree can opt into the board with `data-theme="night"` (the map does).
+- `<html data-theme>` is set before paint by `themeBootScript()`; `ThemeSync` keeps it current; Settings and the header's display switch can pin Day, Night or Vivid. Every page follows the choice, the header, tab bar and map included (the map has its own day, night and vivid basemap palettes in `mapTheme.ts`; city lights run at night only). The monthly recap stays a night slideshow by design. Any subtree can still opt into the board with `data-theme="night"`.
 - Category hues are data, not brand: one hue each, lightness set per theme (`--cat-l`).
 
 ## Vivid: the third look, chosen by the person
@@ -70,3 +70,5 @@ Why not a third look: version 2's design system already passes contrast, keyboar
 - Controls: zoom, a compass only once the map is turned, and "Show every event". The two rotate buttons went (right-drag still turns the map); three near-identical arrows read as one.
 - The category row fades only on the side with more, scrolls with a mouse wheel, and has arrow buttons on pointer screens.
 - Phone cards over the map are solid, so pins never show through their text.
+- Clusters are a small stack of their own soonest two posters with the count on a badge in the main category's colour (a coloured disc when none has a picture), sitting flat on the map: the lights tether is for single pins only.
+- The display menu lifts the header above the map's filter bar while it is open.

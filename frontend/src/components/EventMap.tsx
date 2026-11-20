@@ -385,12 +385,46 @@ export default function EventMap({
       c.items.forEach((e) => tally.set(e.category, (tally.get(e.category) ?? 0) + 1));
       const top = [...tally.entries()].sort((x, y) => y[1] - x[1])[0][0] as Event["category"];
       const anchor = document.createElement("div");
-      anchor.className = "pin-anchor";
+      anchor.className = "pin-anchor is-cluster";
       const el = document.createElement("button");
       el.type = "button";
       el.className = "pin-cluster";
       el.style.setProperty("--pin-hue", getCategoryColorFixed(top).color);
-      el.textContent = String(c.items.length);
+      // A small stack of the cluster's own posters (the soonest two that have
+      // one) with the count on a badge; a disc in the main category's colour
+      // when none of them has a picture.
+      const faces = [...c.items]
+        .filter((e) => e.image_url)
+        .sort((a, z) => a.start_time.localeCompare(z.start_time))
+        .slice(0, 2);
+      const stack = document.createElement("span");
+      stack.className = `pc-stack${faces.length ? "" : " is-plain"}`;
+      stack.setAttribute("aria-hidden", "true");
+      faces.forEach((e) => {
+        const face = document.createElement("span");
+        face.className = "pc-face";
+        face.style.setProperty("--pin-hue", getCategoryColorFixed(e.category).color);
+        const img = document.createElement("img");
+        img.src = sized(e.image_url!, 64) ?? e.image_url!;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.draggable = false;
+        // A poster that won't load drops out; with none left the cluster
+        // falls back to the plain coloured disc rather than empty circles.
+        img.addEventListener("error", () => {
+          face.remove();
+          if (!stack.querySelector(".pc-face")) stack.classList.add("is-plain");
+        });
+        face.appendChild(img);
+        stack.appendChild(face);
+      });
+      const count = document.createElement("span");
+      count.className = "pc-count";
+      count.textContent = String(c.items.length);
+      count.setAttribute("aria-hidden", "true");
+      el.append(stack, count);
       el.setAttribute("aria-label", `${c.items.length} events here. Zoom in`);
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();

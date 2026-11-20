@@ -61,10 +61,28 @@ const VIVID: typeof BOARD = {
   boundary: "#59408a",
 };
 
-/** The palette in force, read from <html data-palette> each time the map is painted. */
+/** Day: the printed timetable's paper, white streets, signal-yellow highways. */
+const DAY: typeof BOARD = {
+  base: "#e9edf3",
+  land: "#f1f3f7",
+  water: "#c7d7ea",
+  park: "#d9e7da",
+  roadMinor: "#ffffff",
+  roadMajor: "#ffffff",
+  roadTrunk: "#f2d36b",
+  buildingLow: "#dfe3ea",
+  buildingHigh: "#c4cad6",
+  label: "#2f3850",
+  labelHalo: "#ffffff",
+  boundary: "#a9b2c3",
+};
+
+/** The palette in force, read from <html data-theme / data-palette> each time the map is painted. */
 let C = BOARD;
 const pickPalette = () => {
-  C = typeof document !== "undefined" && document.documentElement.dataset.palette === "vivid" ? VIVID : BOARD;
+  if (typeof document === "undefined") return;
+  const root = document.documentElement.dataset;
+  C = root.palette === "vivid" ? VIVID : root.theme === "day" ? DAY : BOARD;
 };
 
 const has = (id: string, ...needles: string[]) =>
@@ -101,7 +119,7 @@ function lineColorFor(id: string): string {
   return C.roadMinor;
 }
 
-/** Repaint a light basemap to the app's dark palette, in place. */
+/** Repaint the published light basemap in the current theme's palette, in place. */
 export function applyDarkTheme(map: MapLibreMap): void {
   pickPalette();
   const style = map.getStyle();
@@ -136,7 +154,7 @@ export function applyDarkTheme(map: MapLibreMap): void {
         paint(map, id, "fill-extrusion-opacity", 0);
         break;
       case "raster":
-        paint(map, id, "raster-brightness-max", 0.35);
+        paint(map, id, "raster-brightness-max", C === DAY ? 1 : 0.35);
         paint(map, id, "raster-saturation", -0.6);
         break;
       default:
@@ -224,10 +242,10 @@ function buildingColour(): unknown {
   ];
 }
 
-/** Repaint a loaded map when the palette changes (Night to Vivid and back). */
+/** Repaint a loaded map when the theme or palette changes (Day, Night, Vivid). */
 export function onPaletteChange(run: () => void): () => void {
   if (typeof MutationObserver === "undefined") return () => {};
   const mo = new MutationObserver(run);
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-palette"] });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-palette", "data-theme"] });
   return () => mo.disconnect();
 }

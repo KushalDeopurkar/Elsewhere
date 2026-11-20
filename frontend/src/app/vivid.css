@@ -63,7 +63,8 @@
   }
 
   /* Map pins and clusters glow in their category colour */
-  & .pin-cluster {
-    box-shadow: 0 0 16px color-mix(in oklch, var(--pin-hue, var(--signal)) 60%, transparent);
+  & .pc-face,
+  & .pc-stack.is-plain::before {
+    box-shadow: 0 0 14px color-mix(in oklch, var(--pin-hue, var(--signal)) 60%, transparent);
   }
 }

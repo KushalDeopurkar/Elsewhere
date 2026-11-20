@@ -516,6 +516,23 @@ p {
   border-bottom: 1px solid var(--board-rule);
 }
 
+/* The header and tab bar take the page's theme: paper by day, the board at
+   night, violet in Vivid. They are drawn with the board tokens, so by day
+   those point at the paper ones (and the amber lamp at its readable ochre). */
+:root:not([data-theme="night"]) :is(.topnav, .tabbar) {
+  --board: var(--bg);
+  --board-2: var(--bg-2);
+  --board-fg: var(--fg);
+  --board-fg-2: var(--fg-2);
+  --board-rule: var(--rule);
+  --lamp: var(--signal-text);
+}
+
+/* The display menu opens over everything on the page, map filters included. */
+.topnav:has(.theme-pop) {
+  z-index: var(--z-modal);
+}
+
 .topnav-inner {
   height: 100%;
   display: flex;

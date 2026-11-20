@@ -902,7 +902,7 @@
    lit tether. The anchor stays where MapLibre puts it (on the venue); only
    the pin is lifted, via the independent translate property. */
 .map-canvas.is-lights .pin { translate: 0 -38px; scale: 0.78; }
-.map-canvas.is-lights .pin-anchor::before {
+.map-canvas.is-lights .pin-anchor:not(.is-cluster)::before {
   content: "";
   position: absolute;
   left: calc(50% - 0.75px);
@@ -988,17 +988,15 @@
   display: flex;
   align-items: stretch;
   border-radius: var(--r-card);
-  /* Solid, so pins behind never show through the text. Cards off-centre are
-     dimmed with a filter rather than opacity for the same reason. */
+  /* Solid, so pins behind never show through the text. Off-centre cards sit
+     a little smaller; the centred one gets its category-coloured border. */
   background: var(--bg-2);
   border: 1px solid var(--rule-strong);
   box-shadow: var(--lift-3);
-  filter: brightness(0.72) saturate(0.7);
   transform: scale(0.96);
-  transition: transform var(--t-hover) var(--ease), filter var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+  transition: transform var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
 }
 .map-strip-card.is-on {
-  filter: none;
   transform: none;
   border-color: color-mix(in oklab, var(--cat-hue) 70%, var(--rule-strong));
 }
@@ -1107,30 +1105,84 @@
   border-radius: var(--r-round);
 }
 
-/* A numbered cluster: how many events share this spot at this zoom */
+/* A cluster: a little stack of its own posters with the count on a badge.
+   It sits flat on the map (no lights tether). */
 .pin-cluster {
-  display: grid;
-  place-items: center;
-  min-width: 40px;
-  height: 40px;
-  padding: 0 10px;
-  border-radius: var(--r-round);
-  background: var(--board);
-  color: var(--board-fg);
-  border: 3px solid var(--pin-hue, var(--lamp));
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-stretch: 75%;
-  font-size: 1.05rem;
-  font-variant-numeric: tabular-nums;
-  box-shadow: 0 0 0 6px color-mix(in oklch, var(--pin-hue, var(--lamp)) 22%, transparent), var(--lift-3);
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 50px;
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
   transition: transform var(--t-hover) var(--ease);
 }
-
+.pc-stack {
+  position: absolute;
+  inset: 0;
+}
+.pc-face {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-round);
+  overflow: hidden;
+  background: color-mix(in oklch, var(--pin-hue, var(--lamp)) 35%, var(--board-2));
+  border: 2.5px solid var(--pin-hue, var(--lamp));
+  box-shadow: var(--lift-3);
+}
+.pc-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* The soonest poster in front, the next one peeking out behind it */
+.pc-face:first-child { left: 0; bottom: 0; z-index: 2; }
+.pc-face:nth-child(2) { left: 10px; bottom: 8px; z-index: 1; filter: brightness(0.8); }
+.pc-stack:has(.pc-face:only-child) .pc-face { left: 4px; bottom: 4px; }
+.pc-stack.is-plain::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-round);
+  background: radial-gradient(circle, var(--pin-hue, var(--lamp)) 0 5px, color-mix(in oklch, var(--pin-hue, var(--lamp)) 28%, var(--board)) 6px);
+  border: 2.5px solid var(--pin-hue, var(--lamp));
+  box-shadow: var(--lift-3);
+}
+.pc-count {
+  position: absolute;
+  z-index: 3;
+  right: -6px;
+  top: -6px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-round);
+  background: var(--pin-hue, var(--lamp));
+  color: oklch(0.18 0.04 263);
+  border: 2px solid var(--board);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 80%;
+  font-size: 0.8rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 .pin-cluster:hover,
 .pin-cluster:focus-visible {
-  transform: scale(1.12);
+  transform: scale(1.1);
+}
+.pin-cluster:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 4px;
+  border-radius: var(--r-round);
 }
 
 .pin-anchor.is-hover {
