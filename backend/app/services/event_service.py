@@ -25,6 +25,14 @@ def _unescape_row(row: Dict) -> Dict:
     return row
 
 
+def split_by_image(rows: List[Dict]) -> List[List[Dict]]:
+    """Rows with a picture as they are; rows without one minus the image_url
+    key (a bulk upsert needs the same keys in every row of a request)."""
+    with_img = [r for r in rows if r.get("image_url")]
+    without = [{k: v for k, v in r.items() if k != "image_url"} for r in rows if not r.get("image_url")]
+    return [b for b in (with_img, without) if b]
+
+
 class EventService:
     def __init__(self, client: Client):
         self.client = client
@@ -38,15 +46,18 @@ class EventService:
         rows = list({(r["source"], r["source_id"]): r for r in (_unescape_row(e.to_db_row()) for e in events)}.values())
 
         # Global sources bring thousands of rows a run: send them in chunks
-        # so no single request is too large.
+        # so no single request is too large. Rows whose source sent no
+        # picture are sent without the column, so a picture found later on
+        # the event's own page (app/enrich/images.py) is kept.
         count = 0
-        for i in range(0, len(rows), 500):
-            result = (
-                self.client.table("events")
-                .upsert(rows[i : i + 500], on_conflict="source,source_id")
-                .execute()
-            )
-            count += len(result.data) if result.data else 0
+        for batch in split_by_image(rows):
+            for i in range(0, len(batch), 500):
+                result = (
+                    self.client.table("events")
+                    .upsert(batch[i : i + 500], on_conflict="source,source_id")
+                    .execute()
+                )
+                count += len(result.data) if result.data else 0
         logger.info(f"Upserted {count} events")
         return count
 

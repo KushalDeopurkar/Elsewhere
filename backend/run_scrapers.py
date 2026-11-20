@@ -9,6 +9,7 @@ Usage:
     python run_scrapers.py --city mumbai       # only scrape Mumbai
     python run_scrapers.py --dry-run           # scrape but don't upsert
     python run_scrapers.py --enrich-only       # fetch descriptions + ticket tiers
+    python run_scrapers.py --images-only       # pictures for events whose source sends none
 
 Environment variables required:
     SUPABASE_URL
@@ -69,9 +70,26 @@ async def main():
                         help="Skip scraping; fetch event pages for descriptions and ticket tiers")
     parser.add_argument("--limit", type=int, default=150,
                         help="Max event pages to enrich per run")
+    parser.add_argument("--images-only", action="store_true",
+                        help="Skip scraping; find pictures on the pages of events that have none")
     parser.add_argument("--retry-failed", action="store_true",
                         help="Enrich: also retry events tried before that got no details")
     args = parser.parse_args()
+
+    if args.images_only:
+        if not os.environ.get("SUPABASE_URL") or not os.environ.get("SUPABASE_KEY"):
+            logger.error("SUPABASE_URL and SUPABASE_KEY environment variables required")
+            sys.exit(1)
+        from app.database import get_supabase_service
+        from app.enrich.images import find_images
+
+        stats = await find_images(get_supabase_service(), limit=args.limit)
+        logger.info(f"Images: {stats}")
+        print(f"::notice::Pictures: {stats['found']} found, {stats['none']} pages without one, "
+              f"{stats['generic']} site defaults ignored, {stats['failed']} not loaded, of {stats['picked']}")
+        for host, outcomes in stats["by_host"].items():
+            print(f"::notice::{host}: " + ", ".join(f"{k} x{v}" for k, v in sorted(outcomes.items())))
+        return
 
     if args.enrich_only:
         if not os.environ.get("SUPABASE_URL") or not os.environ.get("SUPABASE_KEY"):

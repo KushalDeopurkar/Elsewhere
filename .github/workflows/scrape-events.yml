@@ -105,6 +105,19 @@ jobs:
           python run_scrapers.py --enrich-only --source allevents --limit 120
           python run_scrapers.py --enrich-only --source meetup --limit 60
 
+      # Pictures for events whose source sends none (iCal calendars such as
+      # Luma, SeatGeek, football): the picture each event's own page shares.
+      - name: Find event pictures
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          cd backend
+          python run_scrapers.py --images-only --limit 600
+
       # New and edited events get embeddings (meaning-based search, "More like
       # this", the planner), then Telegram alerts go out for what is new.
       # Both endpoints are idempotent, so a retry or an extra run is harmless.
