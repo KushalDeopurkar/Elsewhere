@@ -16,7 +16,7 @@ import { useCityEvents } from "@/hooks/useCityEvents";
 import { useCity, useRecentSearches, rememberSearch, clearRecentSearches } from "@/lib/cityPref";
 import { CATEGORIES, Event, EventCategory } from "@/lib/types";
 import { detectCity } from "@/lib/cities";
-import { matchesIntentWhen, parseIntent, scoreEvent } from "@/lib/intent";
+import { matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
 import {
   DateFilter,
   FormatFilter,
@@ -162,7 +162,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const submit = (text: string) => {
     const t = text.trim();
     if (t) rememberSearch(t);
-    setParams({ q: t || null, sort: null });
+    setParams({ q: t || null, sort: null, widen: null });
   };
 
   // Keyword/category pool from the existing search API.
@@ -189,7 +189,16 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
     [q, semantic, semKey],
   );
 
-  const intent = useMemo(() => (q ? parseIntent(q) : null), [q]);
+  // "widen" lets go of parts of the request (any date, paid too, any
+  // category) when the exact ask comes back thin. It lives in the URL so a
+  // widened search can be shared and the back button undoes it.
+  const widenParam = params.get("widen") ?? "";
+  const widen = useMemo(
+    () => widenParam.split(",").filter((w): w is Widen => w === "when" || w === "free" || w === "topic"),
+    [widenParam],
+  );
+  const asked = useMemo(() => (q ? parseIntent(q) : null), [q]);
+  const intent = useMemo(() => (asked ? widenIntent(asked, widen) : null), [asked, widen]);
 
   const results = useMemo(() => {
     const base = upcoming(pool.events);
@@ -232,8 +241,33 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
     return list;
   }, [pool.events, meaning, q, intent, cat, when, price, format, withinKmValue, city.lat, city.lng, mood, sort]);
 
+  // When the exact request is thin, offer to let go of one part at a time,
+  // with how many more events each would bring in. Counts use the same
+  // filters as the list, so a suggestion never promises what it can't show.
+  const widenOptions = useMemo(() => {
+    if (!asked || !intent || pool.loading || results.length >= 4) return [];
+    const base = upcoming(pool.events);
+    const shownIds = new Set(results.map((r) => r.event.id));
+    const label: Record<Widen, string> = { when: "Any date", free: "Paid events too", topic: "Any kind of event" };
+    return widenable(intent)
+      .map((w) => {
+        const wider = { ...widenIntent(intent, [w]), city: null };
+        const extra = base.filter(
+          (e) =>
+            !shownIds.has(e.id) &&
+            scoreEvent(e, wider) &&
+            inDateWindow(e, when) &&
+            inPrice(e, price) &&
+            inFormat(e, format) &&
+            withinKm(e, withinKmValue, city.lat, city.lng),
+        ).length;
+        return { w, label: label[w], extra };
+      })
+      .filter((o) => o.extra > 0);
+  }, [asked, intent, pool.loading, pool.events, results, when, price, format, withinKmValue, city.lat, city.lng]);
+
   // Show a page at a time; the count resets whenever the question changes.
-  const viewKey = `${q}|${cat}|${when}|${price}|${format}|${within}|${mood}|${sort}|${city.name}`;
+  const viewKey = `${q}|${widenParam}|${cat}|${when}|${price}|${format}|${within}|${mood}|${sort}|${city.name}`;
   const [shown, setShown] = useState({ key: viewKey, n: PAGE });
   const limit = shown.key === viewKey ? shown.n : PAGE;
   const visible = results.slice(0, limit);
@@ -407,6 +441,11 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           {intent.signals.map((s) => (
             <span key={`${s.kind}-${s.value}`} className="xread-chip"><b>{s.kind}</b> {s.label}</span>
           ))}
+          {widen.length > 0 && (
+            <button type="button" className="xread-undo" onClick={() => setParams({ widen: null })}>
+              Back to exactly what you asked
+            </button>
+          )}
           {intent.unsupported.length > 0 && (
             <span className="xread-note">
               Listings don&apos;t say {intent.unsupported.join(" or ")}, so that part is matched by meaning only.
@@ -464,6 +503,29 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
 
           {pool.isSample && !loading && (
             <p className="notice">Live data is unreachable right now, so these are sample events.</p>
+          )}
+
+          {!loading && widenOptions.length > 0 && (
+            <div className="xwiden" role="group" aria-label="Widen the search">
+              <p className="xwiden-lead">
+                {results.length === 0 ? "Nothing matches exactly." : `Only ${results.length} ${results.length === 1 ? "matches" : "match"} exactly.`}{" "}
+                Let one part go:
+              </p>
+              <ul>
+                {widenOptions.map((o) => (
+                  <li key={o.w}>
+                    <button
+                      type="button"
+                      className="xwiden-btn"
+                      onClick={() => setParams({ widen: [...widen, o.w].join(",") })}
+                    >
+                      {o.label}
+                      <span className="xwiden-n">+{o.extra}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {loading ? (

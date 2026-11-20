@@ -370,3 +370,44 @@ export const EXAMPLE_PROMPTS = [
   "Something outdoors I can do with my family",
   "Online machine learning conferences",
 ];
+
+
+/** Parts of a request that can be let go of to widen a thin result. */
+export type Widen = "when" | "free" | "topic";
+
+/**
+ * The request with the named parts let go: any date, paid too, or any
+ * category. The signals shown to the person drop the same parts, so the
+ * "Reading as" line always matches what is being searched.
+ */
+export function widenIntent(intent: Intent, widen: Widen[]): Intent {
+  if (widen.length === 0) return intent;
+  const drop = new Set<string>();
+  const next: Intent = { ...intent };
+  if (widen.includes("when")) {
+    next.when = "any";
+    next.day = null;
+    drop.add("when");
+  }
+  if (widen.includes("free")) {
+    next.freeOnly = false;
+    drop.add("budget");
+  }
+  if (widen.includes("topic")) {
+    next.interests = [];
+    next.goals = [];
+    drop.add("interest");
+    drop.add("goal");
+  }
+  next.signals = intent.signals.filter((s) => !drop.has(s.kind));
+  return next;
+}
+
+/** Which parts of this request could be widened at all. */
+export function widenable(intent: Intent): Widen[] {
+  const out: Widen[] = [];
+  if (intent.when !== "any") out.push("when");
+  if (intent.freeOnly) out.push("free");
+  if (intent.interests.length || intent.goals.length) out.push("topic");
+  return out;
+}

@@ -679,3 +679,67 @@
   color: var(--crit);
   letter-spacing: 0.06em;
 }
+
+/* Thin results: let one part of the request go, with what it would add */
+.xwiden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-left: 4px solid var(--signal);
+  background: var(--bg-2);
+}
+
+.xwiden-lead {
+  font-size: var(--t-sm);
+  color: var(--fg-2);
+}
+
+.xwiden ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.xwiden-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 36px;
+  padding: 0.3rem 0.7rem;
+  border: 1.5px solid var(--fg);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  transition: background-color var(--t-hover) var(--ease), color var(--t-hover) var(--ease);
+}
+
+.xwiden-n {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-3);
+}
+
+@media (hover: hover) {
+  .xwiden-btn:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .xwiden-btn:hover .xwiden-n {
+    color: var(--bg);
+  }
+}
+
+.xread-undo {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--signal);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  min-height: 32px;
+}

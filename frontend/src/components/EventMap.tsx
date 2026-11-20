@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LngLat, LngLatBounds, MapLibreMap, Marker, setWorkerUrl, GeoJSONSource } from "maplibre-gl";
 import type { RouteLine } from "@/components/TravelTime";
 import { Event } from "@/lib/types";
+import { whenOf } from "@/lib/formatDate";
+import { priceBadge } from "@/lib/money";
 import { getCategoryColorFixed } from "@/lib/categoryColors";
 import {
   STYLE_URL,
@@ -443,6 +445,17 @@ export default function EventMap({
         cb.current.onSelect(event);
       });
       anchor.appendChild(el);
+      // Hover and keyboard focus preview: what, when, and the price, before
+      // committing to a click. Text only, built with textContent (no HTML).
+      const tip = document.createElement("span");
+      tip.className = "pin-tip";
+      tip.setAttribute("aria-hidden", "true");
+      const tipTitle = document.createElement("strong");
+      tipTitle.textContent = event.title;
+      const tipMeta = document.createElement("span");
+      tipMeta.textContent = `${whenOf(event)} · ${priceBadge(event)}`;
+      tip.append(tipTitle, tipMeta);
+      anchor.appendChild(tip);
 
       markers.current.set(
         event.id,
