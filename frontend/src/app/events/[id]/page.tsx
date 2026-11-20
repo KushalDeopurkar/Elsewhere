@@ -28,13 +28,9 @@ import EventActionBar from "@/components/EventActionBar";
 import BookingWhen from "@/components/BookingWhen";
 import { listingStatus } from "@/lib/eventFilters";
 
-// Rendered on the server and cached: repeat views are served from the cache
-// and refreshed in the background every five minutes.
-export const revalidate = 300;
-// No pages at build time; each event page is built on first view, then cached.
-export function generateStaticParams(): { id: string }[] {
-  return [];
-}
+// Rendered on each request (similar events and live counts read fresh data,
+// which a static page can't do). The event itself comes from a 5-minute
+// data cache in getEvent, so repeat views stay quick.
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
