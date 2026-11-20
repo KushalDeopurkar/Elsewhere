@@ -508,7 +508,9 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
           {!loading && widenOptions.length > 0 && (
             <div className="xwiden" role="group" aria-label="Widen the search">
               <p className="xwiden-lead">
-                {results.length === 0 ? "Nothing matches exactly." : `Only ${results.length} ${results.length === 1 ? "matches" : "match"} exactly.`}{" "}
+                {results.length === 0
+                  ? `Nothing matches${widen.length ? "" : " exactly"}.`
+                  : `Only ${results.length} ${results.length === 1 ? "matches" : "match"}${widen.length ? "" : " exactly"}.`}{" "}
                 Let one part go:
               </p>
               <ul>
