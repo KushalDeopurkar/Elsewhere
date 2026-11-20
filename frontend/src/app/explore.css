@@ -393,13 +393,34 @@
 /* Saved items reuse the grid */
 .saved-item {
   position: relative;
+  display: grid;
+  gap: var(--s-2);
+  align-content: start;
 }
 
+/* Remove sits under the card as a real button, never over its picture. */
 .saved-remove {
-  position: absolute;
-  top: var(--s-2);
-  left: var(--s-2);
-  z-index: 3;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-control);
+  background: var(--bg-2);
+  color: var(--fg-2);
+  font: 600 var(--t-sm) / 1 var(--font-body);
+  cursor: pointer;
+  transition: color var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+}
+.saved-remove:hover {
+  color: var(--crit);
+  border-color: var(--crit);
+}
+.saved-remove:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 2px;
 }
 
 /* Category page header: the category is a line on the map */

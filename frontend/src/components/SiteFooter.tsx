@@ -17,7 +17,7 @@ const GROUPS = [
       { href: "/saved", label: "Saved" },
       { href: "/passport", label: "Passport" },
       { href: "/recap", label: "Monthly recap" },
-      { href: "/alert", label: "Alerts" },
+      { href: "/alerts", label: "Alerts" },
     ],
   },
   {

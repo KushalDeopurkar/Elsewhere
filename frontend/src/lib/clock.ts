@@ -50,7 +50,9 @@ export function useNow(stepMs = 15_000): number {
   return useSyncExternalStore(
     sub,
     () => {
-      if (!snaps.has(stepMs)) snaps.set(stepMs, tick(stepMs));
+      // With no timer running the cached value may be minutes old (the page
+      // was left and came back): read the clock afresh so the first paint is right.
+      if (!snaps.has(stepMs) || !timers.has(stepMs)) snaps.set(stepMs, tick(stepMs));
       return snaps.get(stepMs)!;
     },
     () => 0,

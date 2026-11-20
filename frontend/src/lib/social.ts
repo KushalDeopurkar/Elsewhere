@@ -188,7 +188,13 @@ export async function getList(id: string): Promise<{ list: List; owner: Profile 
 export async function createList(title: string, visibility: Visibility = "friends", description?: string): Promise<List> {
   const me = currentUserId();
   if (!me) throw new Error("Sign in first.");
-  return must(await need().from("lists").insert({ owner: me, title: title.trim().slice(0, 60), visibility, description: description?.trim() || null }).select("*").single()) as List;
+  const clean = title.trim().replace(/\s+/g, " ").slice(0, 60);
+  // One list per name (case-insensitive), so "Weekend" and "weekend" can't both exist.
+  const mine = must(await need().from("lists").select("title").eq("owner", me)) as { title: string }[];
+  if (mine.some((l) => l.title.trim().toLowerCase() === clean.toLowerCase())) {
+    throw new Error(`You already have a list called "${clean}".`);
+  }
+  return must(await need().from("lists").insert({ owner: me, title: clean, visibility, description: description?.trim() || null }).select("*").single()) as List;
 }
 
 export async function updateList(id: string, patch: Partial<Pick<List, "title" | "description" | "visibility">>): Promise<void> {

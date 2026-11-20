@@ -1,0 +1,35 @@
+name: Keep the API warm
+
+# Render's free tier puts the API to sleep after 15 idle minutes, and the
+# first request after that fails or takes many seconds. A tiny search every
+# 10 minutes keeps the server and its database connection awake.
+#
+# Set the repository variable BACKEND_URL (Settings > Secrets and variables >
+# Actions > Variables), e.g. https://your-api.onrender.com. Without it this
+# job does nothing. Scheduled runs only happen on the default branch.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping the API
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::notice::Set the BACKEND_URL repository variable to keep the API warm."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BACKEND_URL/api/events/search?limit=1&lat=19.076&lng=72.878&radius_km=40")
+            echo "Attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::The API did not answer 200 after three tries."

@@ -6,6 +6,7 @@
  * throws on failure; callers decide how to degrade (usually to keyword search).
  */
 
+import { normTitle } from "./tidy";
 import { Event } from "./types";
 import { invokeFunction, rpc } from "./supabaseServer";
 
@@ -130,15 +131,20 @@ export async function matchEvents(opts: {
   return rows.map(toEvent);
 }
 
+/** Words that don't tell two listings apart ("presents", "tour", the year). */
+const LISTING_FILLER = new Set("a an the and of in at on for with by presents present live tour concert show edition ft feat featuring vs x india".split(" "));
+
 function titleTokens(title: string): Set<string> {
-  return new Set(title.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 1));
+  // normTitle reads "ÆDEN" as "aeden", drops emoji and accents.
+  return new Set(normTitle(title).split(" ").filter((t) => t.length > 1 && !LISTING_FILLER.has(t) && !/^\d{4}$/.test(t)));
 }
 
+/** The same listing: one title holds all of the other's words, or most are shared. */
 function sameListing(a: Set<string>, b: Set<string>): boolean {
   if (a.size === 0 || b.size === 0) return false;
   let shared = 0;
   for (const t of a) if (b.has(t)) shared++;
-  return shared / (a.size + b.size - shared) >= 0.75;
+  return shared === Math.min(a.size, b.size) || shared / (a.size + b.size - shared) >= 0.6;
 }
 
 /**
@@ -161,7 +167,10 @@ export function dedupeListings<T extends { title: string }>(events: T[], exclude
 export async function similarEvents(eventId: string, count = 6, sourceTitle?: string): Promise<SemanticEvent[]> {
   // Over-fetch: duplicates of the source and of each other are removed below.
   const rows = await rpc<Row[]>("similar_events", { p_event_id: eventId, match_count: count * 3 });
-  return dedupeListings(rows.map(toEvent), sourceTitle ? [sourceTitle] : []).slice(0, count);
+  return dedupeListings(
+    rows.map(toEvent).filter((e) => e.id !== eventId),
+    sourceTitle ? [sourceTitle] : [],
+  ).slice(0, count);
 }
 
 /**

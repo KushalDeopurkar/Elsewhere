@@ -59,7 +59,7 @@ function withTiers<T extends Priced>(event: T): T {
 export function priceBadge(input: Priced): string {
   const event = withTiers(input);
   if (event.is_free) return "Free";
-  if (event.price_min == null) return "Tickets";
+  if (event.price_min == null) return "Check price";
   const base = formatPrice(event.price_min, event);
   return event.price_max != null && event.price_max > event.price_min
     ? `${base}+`
@@ -70,7 +70,7 @@ export function priceBadge(input: Priced): string {
 export function priceLine(input: Priced): string {
   const event = withTiers(input);
   if (event.is_free) return "Free entry";
-  if (event.price_min == null) return "See listing";
+  if (event.price_min == null) return "Check price";
   if (event.price_max != null && event.price_max > event.price_min) {
     return `${formatPrice(event.price_min, event)} to ${formatPrice(event.price_max, event)}`;
   }
@@ -90,4 +90,33 @@ export function realTiers<T extends { name: string }>(tickets: T[] | null | unde
     const n = norm(x.name);
     return n && n !== t && !(n.length >= 8 && (t.includes(n) || n.includes(t)));
   });
+}
+
+/** "Cheap" in a country's money, and its symbol: ₹500 in India, about 20 elsewhere. */
+export function cheapIn(country: string | null | undefined): { symbol: string; cheap: number } {
+  const currency = currencyOf({ country });
+  const symbol = formatter(currency).formatToParts(0).find((p) => p.type === "currency")?.value ?? "";
+  const cheap = currency === "INR" ? 500 : currency === "JPY" ? 3000 : ["SEK", "NOK", "DKK", "MXN"].includes(currency) ? 200 : 20;
+  return { symbol, cheap };
+}
+
+export type TicketState = "sold_out" | "closed" | "on_sale" | "unknown";
+
+/**
+ * What the listing says about getting in, honestly: sold out (every tier
+ * marked sold out, or the title says so), closed (every tier's sales have
+ * ended), on sale (a tier is marked available), or unknown (nothing said).
+ */
+export function ticketState(
+  e: { title: string; is_free?: boolean; tickets?: { available?: boolean | null; sales_end?: string | null }[] | null },
+  now = Date.now(),
+): TicketState {
+  if (/\bsold[\s-]?out\b/i.test(e.title)) return "sold_out";
+  const tiers = e.tickets ?? [];
+  if (!tiers.length) return "unknown";
+  if (tiers.every((t) => t.available === false)) return "sold_out";
+  const open = tiers.filter((t) => t.available !== false);
+  if (open.length && open.every((t) => t.sales_end && Date.parse(t.sales_end) < now)) return "closed";
+  if (open.some((t) => t.available === true)) return "on_sale";
+  return "unknown";
 }

@@ -16,6 +16,23 @@ import { eventsByIds } from "./social";
 
 let installed = false;
 let pushTimer = 0;
+// The passport last written to the account, kept across page loads so a
+// reload doesn't send the same passport again.
+const PUSHED_KEY = "elsewhere:passport-pushed";
+let lastPushed = "";
+try {
+  if (typeof window !== "undefined") lastPushed = window.localStorage.getItem(PUSHED_KEY) ?? "";
+} catch {
+  /* storage blocked */
+}
+const markPushed = (json: string) => {
+  lastPushed = json;
+  try {
+    window.localStorage.setItem(PUSHED_KEY, json);
+  } catch {
+    /* storage blocked */
+  }
+};
 
 export function installSync(): void {
   if (installed || typeof window === "undefined") return;
@@ -32,11 +49,22 @@ export function installSync(): void {
   });
 
   setPassportSink((p: Passport) => {
+    // Only write when something changed: page loads re-save the same passport.
+    const me0 = currentUserId();
+    const json = `${me0}:${JSON.stringify(p)}`;
+    if (!me0 || json === lastPushed) return;
     window.clearTimeout(pushTimer);
     pushTimer = window.setTimeout(() => {
       const sb = supabase();
       const me = currentUserId();
-      if (sb && me) void sb.from("passports").upsert({ user_id: me, data: p }, { onConflict: "user_id" }).then(() => undefined);
+      if (!sb || !me) return;
+      markPushed(json);
+      void sb
+        .from("passports")
+        .upsert({ user_id: me, data: p }, { onConflict: "user_id" })
+        .then(({ error }) => {
+          if (error) markPushed("");
+        });
     }, 1500);
   });
 
@@ -64,7 +92,9 @@ export function installSync(): void {
 
       // Passport: merge both ways.
       const pp = await sb.from("passports").select("data").eq("user_id", uid).maybeSingle();
-      const merged = mergePassports(readPassport(), (pp.data?.data ?? null) as Partial<Passport> | null);
+      const remote = (pp.data?.data ?? null) as Partial<Passport> | null;
+      const merged = mergePassports(readPassport(), remote);
+      if (remote && JSON.stringify(merged) === JSON.stringify(remote)) markPushed(`${uid}:${JSON.stringify(merged)}`);
       writePassport(merged);
     } catch {
       /* offline or not migrated yet: keep the device copy */

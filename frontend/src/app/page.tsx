@@ -22,6 +22,7 @@ import { CATEGORY_PAGES } from "@/lib/categoryPages";
 import { pickStories } from "@/lib/stories";
 import { boardRows } from "@/lib/board";
 import { inDateWindow, sortEvents, upcoming, showcase, startingSoon } from "@/lib/eventFilters";
+import { timedOf } from "@/lib/formatDate";
 import type { Event } from "@/lib/types";
 
 function RailOf({
@@ -83,7 +84,12 @@ export default function Home() {
     // city is quiet enough that the board holds most of the week.
     const pool = showcase(offBoard).length >= 3 ? offBoard : all;
     const week = showcase(pool).filter((e) => inDateWindow(e, "week"));
-    return (week.length >= 3 ? week : showcase(pool)).slice(0, 3);
+    const picked = (week.length >= 3 ? week : showcase(pool)).slice(0, 3);
+    if (picked.length) return picked;
+    // A city whose sources send no pictures yet still has headliners: timed
+    // events this week, drawn with their category's artwork.
+    const timed = sortEvents(pool.filter((e) => timedOf(e) && inDateWindow(e, "week")), "soonest");
+    return (timed.length ? timed : sortEvents(pool, "soonest")).slice(0, 3);
   }, [all, offBoard]);
   const reelPool = useMemo(() => {
     const featuredIds = new Set(featured.map((e) => e.id));
@@ -129,7 +135,7 @@ export default function Home() {
   );
   const lines = CATEGORY_PAGES.filter((c) => c.value !== "other");
   const lineStat = (v: string) => {
-    const s = stats?.find((x) => x.value === v);
+    const s = stats?.data.find((x) => x.value === v);
     return s ? { count: s.count ?? null, capped: s.capped } : null;
   };
   const freeCount = all.filter((e) => e.is_free).length;
@@ -154,11 +160,19 @@ export default function Home() {
           aside={
             <>
               <HeroSearch />
-              {(pool.loading || all.length > 0) && (
+              {(pool.loading || all.length > 0 || (stats?.total ?? 0) > 0) && (
                 <dl className="home-facts" aria-busy={pool.loading}>
                   <div>
                     <dt>Upcoming</dt>
-                    <dd>{pool.loading ? "–" : `${all.length}${all.length >= 100 ? "+" : ""}`}</dd>
+                    {/* One number for the city everywhere: the counts endpoint's total
+                        (events starting from now within 40 km), else what is loaded. */}
+                    <dd>
+                      {stats?.total != null
+                        ? stats.total
+                        : pool.loading
+                          ? "–"
+                          : `${all.length}${pool.more ? "+" : ""}`}
+                    </dd>
                   </div>
                   <div>
                     <dt>Free entry</dt>

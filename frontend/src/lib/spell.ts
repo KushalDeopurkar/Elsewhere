@@ -70,6 +70,10 @@ function closest(typed: string, candidates: string[]): string | null {
 /** What one unknown word most likely meant, or null to leave it alone. */
 function fixWord(w: string, local: Set<string>, localList: string[]): string | null {
   if (w.length < 3 || /\d/.test(w) || KNOWN.has(w) || COMMON.has(w) || local.has(w)) return null;
+  // A plural or other form of a real word is spelled right ("workshops").
+  for (const base of [w.replace(/ies$/, "y"), w.replace(/(ches|shes|sses|xes)$/, (m) => m.slice(0, -2)), w.replace(/s$/, ""), w.replace(/ing$/, ""), w.replace(/ed$/, "")]) {
+    if (base !== w && base.length >= 3 && (KNOWN.has(base) || local.has(base) || COMMON.has(base))) return null;
+  }
   // Typos first: "pars" is Paris, "mumbia" is Mumbai, "comdey" is comedy
   // (a word from the events on show), "workshp" is workshop.
   const typo = closest(w, PLACES_ONE) ?? closest(w, VOCAB) ?? closest(w, localList);
@@ -114,4 +118,10 @@ export function correctQuery(raw: string, seen: Iterable<string> = []): Spelled 
     }
   }
   return { text, fixes };
+}
+
+/** Is this a word the search knows (its own vocabulary, places, or everyday words)? */
+export function isKnownWord(w: string): boolean {
+  const x = w.toLowerCase();
+  return KNOWN.has(x) || COMMON.has(x) || KNOWN.has(x.replace(/s$/, ""));
 }

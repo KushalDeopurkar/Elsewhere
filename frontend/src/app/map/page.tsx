@@ -19,7 +19,7 @@ import { getMapEvents, MapBounds } from "@/lib/api";
 import { Event, EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { upcoming } from "@/lib/eventFilters";
-import { whenOf } from "@/lib/formatDate";
+import { startedLabel, whenOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import TimeScrubber from "@/components/TimeScrubber";
 import MapStrip from "@/components/MapStrip";
@@ -36,7 +36,7 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
   ),
 });
 
-const RETRY_DELAYS = [3000, 8000, 15000];
+const RETRY_DELAYS = [2500, 6000, 12000];
 
 export default function MapPage() {
   // Warm the connection to the map host. The map code itself loads after the
@@ -65,24 +65,51 @@ export default function MapPage() {
   const bounds = useRef<MapBounds | null>(null);
   const requestId = useRef(0);
 
-  const load = useCallback((next: MapBounds, cat: EventCategory | null) => {
-    const id = ++requestId.current;
-    // The API sleeps when idle and can fail its first requests while it
-    // wakes. Retry quietly so live events replace the sample set.
-    const run = async (attempt: number) => {
-      const res = await getMapEvents(next, cat ?? undefined);
-      if (id !== requestId.current) return;
-      // The map asks for events that started up to six hours ago, so what is
-      // on now shows up; anything that has already finished is dropped here.
-      setEvents(upcoming(res.events));
-      setIsSample(res.isSample);
-      if (res.isSample && attempt < RETRY_DELAYS.length) {
-        window.setTimeout(() => {
-          if (id === requestId.current) run(attempt + 1);
-        }, RETRY_DELAYS[attempt]);
-      }
+  // Events for the view: debounced while the map settles, skipped when the
+  // view hasn't really changed, the previous request aborted when a newer
+  // one starts, and retried with backoff while a sleeping API wakes up.
+  const [loaded, setLoaded] = useState(false);
+  const [listError, setListError] = useState(false);
+  const inflight = useRef<AbortController | null>(null);
+  const debounce = useRef<number | undefined>(undefined);
+  const lastKey = useRef("");
+  const load = useCallback((next: MapBounds, cat: EventCategory | null, immediate = false) => {
+    const key = `${[next.south, next.west, next.north, next.east].map((v) => v.toFixed(3)).join(",")}|${cat ?? ""}`;
+    if (key === lastKey.current) return;
+    window.clearTimeout(debounce.current);
+    const go = (attempt: number) => {
+      lastKey.current = key;
+      inflight.current?.abort();
+      const ctrl = new AbortController();
+      inflight.current = ctrl;
+      const id = ++requestId.current;
+      getMapEvents(next, cat ?? undefined, ctrl.signal)
+        .then((res) => {
+          if (id !== requestId.current) return;
+          // The map asks for events that started up to six hours ago, so what is
+          // on now shows up; anything that has already finished is dropped here.
+          setEvents(upcoming(res.events));
+          setIsSample(res.isSample);
+          setListError(false);
+          setLoaded(true);
+        })
+        .catch((e: unknown) => {
+          if ((e as Error)?.name === "AbortError" || id !== requestId.current) return;
+          if (attempt < RETRY_DELAYS.length) {
+            debounce.current = window.setTimeout(() => go(attempt + 1), RETRY_DELAYS[attempt]);
+          } else {
+            lastKey.current = "";
+            setListError(true);
+            setLoaded(true);
+          }
+        });
     };
-    run(0);
+    if (immediate) go(0);
+    else debounce.current = window.setTimeout(() => go(0), 250);
+  }, []);
+  useEffect(() => () => {
+    inflight.current?.abort();
+    window.clearTimeout(debounce.current);
   }, []);
 
   const onBoundsChange = useCallback(
@@ -100,7 +127,7 @@ export default function MapPage() {
     if (firstLoad.current || bounds.current) return;
     firstLoad.current = true;
     const c = zoneCity;
-    load({ south: c.lat - 0.18, north: c.lat + 0.18, west: c.lng - 0.22, east: c.lng + 0.22 }, category);
+    load({ south: c.lat - 0.18, north: c.lat + 0.18, west: c.lng - 0.22, east: c.lng + 0.22 }, category, true);
   }, [load, category, zoneCity]);
 
   // Refetch when the category changes without waiting for the next pan.
@@ -201,12 +228,37 @@ export default function MapPage() {
     <div className={`map-split is-${mobileView}`}>
       <aside className="map-list" aria-label="Events in view">
         <div className="map-list-head">
-          <p className="map-list-title">
-            <strong>{events.length}</strong> events in view
+          <p className="map-list-title" aria-live="polite">
+            {loaded ? (
+              <>
+                <strong>{events.length}</strong> events in view
+              </>
+            ) : (
+              "Loading events…"
+            )}
           </p>
           <LocationSelector compact />
         </div>
-        {events.length === 0 ? (
+        {!loaded ? (
+          <ul className="map-list-items" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <li key={i} className="map-item is-skeleton">
+                <span className="map-item-thumb skeleton" />
+                <span className="map-item-body">
+                  <span className="skeleton skeleton-line" />
+                  <span className="skeleton skeleton-line is-short" />
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : listError ? (
+          <p className="muted map-list-empty">
+            Events couldn&apos;t load just now.{" "}
+            <button type="button" className="text-link" onClick={() => bounds.current && load(bounds.current, category, true)}>
+              Try again
+            </button>
+          </p>
+        ) : events.length === 0 ? (
           <p className="muted map-list-empty">
             {timeOn ? "Nothing on at this moment here. Drag the timeline or zoom out." : "Nothing in this part of the map. Zoom out or pan to a city."}
           </p>
@@ -216,13 +268,13 @@ export default function MapPage() {
               <li key={e.id}>
                 {e.format === "online" ? (
                   // Online events have no place on the map; they open their page.
-                  <Link href={`/events/${e.id}`} className="map-item is-online">
+                  <Link href={`/events/${e.id}`} prefetch={false} className="map-item is-online">
                     <span className="map-item-thumb">
                       <EventImage src={e.image_url} category={e.category} ratio="1 / 1" width={96} />
                     </span>
                     <span className="map-item-body">
                       <span className="map-item-title">{e.title}</span>
-                      <span className="map-item-meta">{whenOf(e)}</span>
+                      <span className="map-item-meta">{startedLabel(e, now) ?? whenOf(e)}</span>
                       <span className="map-item-meta">{priceBadge(e)} · Online, no pin</span>
                     </span>
                   </Link>
@@ -244,7 +296,7 @@ export default function MapPage() {
                     </span>
                     <span className="map-item-body">
                       <span className="map-item-title">{e.title}</span>
-                      <span className="map-item-meta">{whenOf(e)}</span>
+                      <span className="map-item-meta">{startedLabel(e, now) ?? whenOf(e)}</span>
                       <span className="map-item-meta">
                         {priceBadge(e)}
                         {e.location_name ? ` · ${e.location_name}` : ""}

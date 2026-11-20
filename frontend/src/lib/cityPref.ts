@@ -43,16 +43,27 @@ export function onCityRepick(fn: (name: string) => void): () => void {
   return () => window.removeEventListener(REPICK, h);
 }
 
-const recent = createStore<string[]>("ee.recent-searches.v1", []);
+/** Recent searches, each with the city it was made in (older entries have none). */
+type Recent = string | { q: string; city: string };
+const recent = createStore<Recent[]>("ee.recent-searches.v1", []);
+const textOf = (r: Recent) => (typeof r === "string" ? r : r.q);
 
-export function useRecentSearches(): string[] {
-  return recent.useValue();
+/** This city's recent searches (searches saved before cities were kept count everywhere). */
+export function useRecentSearches(city?: string): string[] {
+  const all = recent.useValue();
+  return all
+    .filter((r) => !city || typeof r === "string" || r.city === city)
+    .map(textOf)
+    .slice(0, 6);
 }
 
-export function rememberSearch(q: string): void {
+/** Remember a search that found something, for this city. */
+export function rememberSearch(q: string, city?: string): void {
   const text = q.trim();
   if (text.length < 2) return;
-  recent.write([text, ...recent.read().filter((r) => r.toLowerCase() !== text.toLowerCase())].slice(0, 6));
+  const entry: Recent = city ? { q: text, city } : text;
+  const same = (r: Recent) => textOf(r).toLowerCase() === text.toLowerCase() && (typeof r === "string" || !city || r.city === city);
+  recent.write([entry, ...recent.read().filter((r) => !same(r))].slice(0, 18));
 }
 
 export function clearRecentSearches(): void {

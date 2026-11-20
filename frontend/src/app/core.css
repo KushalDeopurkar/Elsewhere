@@ -494,7 +494,9 @@ p {
     border-color: var(--fg);
     color: var(--fg);
   }
-  .chip[aria-pressed="true"]:hover {
+  .chip[aria-pressed="true"]:hover,
+  .chip.is-on:hover,
+  .chip[aria-selected="true"]:hover {
     color: var(--bg);
   }
 }
@@ -751,7 +753,9 @@ p {
   max-width: 100%;
 }
 .loc-name {
-  min-width: 0;
+  /* Never squeezed below a readable name ("Mumbai", "Pune"); long ones
+     still end in "…". */
+  min-width: 3.6rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3067,3 +3071,8 @@ p {
 @media (max-width: 767px) {
   .tnet { display: none; }
 }
+
+/* /alerts: how alerts work */
+.alerts-help { max-width: 46rem; }
+.alerts-steps { display: grid; gap: var(--s-3); margin: var(--s-6) 0; padding-left: 1.4rem; color: var(--fg-2); line-height: 1.5; }
+.alerts-steps b { color: var(--fg); }

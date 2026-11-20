@@ -12,8 +12,8 @@ import { EventActions, EventLocationMap } from "@/components/EventActions";
 import { getEvent } from "@/lib/api";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { formatFull, eventZone } from "@/lib/formatDate";
-import { priceLine, realTiers } from "@/lib/money";
+import { agoLabel, formatFull, eventZone } from "@/lib/formatDate";
+import { ticketState, priceLine, realTiers } from "@/lib/money";
 import { categoryHref } from "@/lib/categoryPages";
 import { Suspense } from "react";
 import PosterTintStyle from "@/components/PosterTintStyle";
@@ -27,6 +27,14 @@ import EventSocial from "@/components/EventSocial";
 import EventActionBar from "@/components/EventActionBar";
 import BookingWhen from "@/components/BookingWhen";
 import { listingStatus } from "@/lib/eventFilters";
+
+// Rendered on the server and cached: repeat views are served from the cache
+// and refreshed in the background every five minutes.
+export const revalidate = 300;
+// No pages at build time; each event page is built on first view, then cached.
+export function generateStaticParams(): { id: string }[] {
+  return [];
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -75,6 +83,28 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   // Unknown price is not "free": only say so when the source does.
   const free = event.is_free || event.price_min === 0 || (tickets.length > 0 && tickets.every((t) => t.price === 0));
   const priceKnown = free || event.price_min != null || tickets.some((t) => t.price != null);
+  const source = /^https:\/\/(www\.)?(luma\.com|lu\.ma)\//.test(event.url ?? "")
+    ? "Luma"
+    : (SOURCE_NAMES[event.source] ?? event.source);
+  // Never promise tickets the listing says are gone; when it says nothing,
+  // say "check" rather than "get".
+  const state = ticketState({ title: event.title, tickets: event.tickets }, requestTime());
+  const checked = event.details_fetched_at ? agoLabel(Date.parse(event.details_fetched_at), requestTime()) : null;
+  const cta =
+    state === "sold_out"
+      ? free
+        ? "Registration full · see the listing"
+        : "Sold out · see the listing"
+      : state === "closed"
+        ? "Sales closed · see the listing"
+        : free
+          ? "Register"
+          : state === "on_sale"
+            ? tickets.length > 1
+              ? `See all options on ${source}`
+              : "Get tickets"
+            : `Check tickets on ${source}`;
+  const gone = state === "sold_out" || state === "closed";
   const where = [event.location_name, event.address || d.address].filter(Boolean).join(", ");
   const about = d.about && d.about.length > (event.description?.length ?? 0) ? d.about : event.description;
   const facts = [
@@ -83,9 +113,6 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     d.language && { k: "Language", v: d.language },
     d.organizer && { k: "Organiser", v: d.organizer },
   ].filter(Boolean) as { k: string; v: string }[];
-  const source = /^https:\/\/(www\.)?(luma\.com|lu\.ma)\//.test(event.url ?? "")
-    ? "Luma"
-    : (SOURCE_NAMES[event.source] ?? event.source);
   const mapsUrl =
     event.lat != null && event.lng != null
       ? `https://www.google.com/maps/search/?api=1&query=${event.lat},${event.lng}`
@@ -115,7 +142,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         <EventActionBar
           event={event}
           price={priceLine(event)}
-          ctaLabel={free ? "Register" : "Get tickets"}
+          ctaLabel={gone ? (state === "sold_out" ? "Sold out" : "Sales closed") : free ? "Register" : state === "on_sale" ? "Get tickets" : "Check tickets"}
         />
         <Suspense fallback={null}>
           <PosterTintStyle url={event.image_url} scope={event.id} />
@@ -238,13 +265,22 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
               <TicketList tickets={tickets} fallbackUrl={event.url} sourceName={source} now={requestTime()} />
             )}
             {event.url ? (
-              <a className="btn btn-primary btn-lg booking-cta" href={event.url} target="_blank" rel="noopener noreferrer">
-                {free ? "Register" : tickets.length > 1 ? `See all options on ${source}` : "Get tickets"}{" "}
+              <a className={`btn ${gone ? "btn-ghost" : "btn-primary"} btn-lg booking-cta`} href={event.url} target="_blank" rel="noopener noreferrer">
+                {cta}{" "}
                 <ArrowSquareOut size={16} weight="bold" aria-hidden="true" />
                 <span className="sr-only">(opens {source})</span>
               </a>
             ) : (
               <Link className="btn btn-ghost booking-cta" href="/map">Find it on the map</Link>
+            )}
+            {gone && (
+              <p className="booking-gone" role="note">
+                {state === "sold_out" ? "Sold out" : "Sales had closed"} when {source} was last checked
+                {checked ? ` (${checked})` : ""}. Organisers sometimes release more, so the listing is still linked.
+              </p>
+            )}
+            {!gone && checked && state === "on_sale" && (
+              <p className="booking-checked">Tickets were on sale when last checked, {checked}.</p>
             )}
             <p className="booking-ref" aria-hidden="true">
               REF {event.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase()}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import AlertAction from "@/components/AlertAction";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -13,6 +14,8 @@ export default async function AlertPage({
   searchParams: Promise<{ action?: string; token?: string }>;
 }) {
   const { action, token } = await searchParams;
+  // Opened without the link's token (from a bookmark, or typed): explain alerts instead.
+  if (!token) redirect("/alerts");
   return (
     <>
       <section className="shell section alert-page">

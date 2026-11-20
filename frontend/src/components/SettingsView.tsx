@@ -10,10 +10,13 @@ import { EmptyState } from "./Section";
 import { openSignIn, refreshProfile, signOut, socialConfigured, useAuth } from "@/lib/auth";
 import { updateProfile, USERNAME_RE } from "@/lib/social";
 import { CITY_LIST } from "@/lib/cities";
+import { useActiveCities } from "@/lib/activeCities";
 
 export default function SettingsView() {
   const { ready, session, profile } = useAuth();
   const router = useRouter();
+  // Same cities as the header picker: India, plus world cities with events now.
+  const active = useActiveCities();
   const [form, setFormRaw] = useState({ username: "", display_name: "", bio: "", city: "", is_public: false });
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -112,7 +115,7 @@ export default function SettingsView() {
         <label htmlFor="st-city">City</label>
         <select id="st-city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
           <option value="">Not shown</option>
-          {CITY_LIST.map((c) => (
+          {CITY_LIST.filter((c) => !c.country || c.country === "IN" || !active || active.has(c.name) || c.name === form.city).map((c) => (
             <option key={c.name} value={c.name}>{c.name}</option>
           ))}
         </select>

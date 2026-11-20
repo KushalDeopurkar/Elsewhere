@@ -58,9 +58,11 @@ function start() {
   let lastUser: string | null = null;
   const apply = async (session: Session | null) => {
     const uid = session?.user.id ?? null;
-    set({ session, ready: true, profile: uid && state.profile?.id === uid ? state.profile : null });
+    const known = uid && state.profile?.id === uid ? state.profile : uid ? cachedProfile(uid) : null;
+    set({ session, ready: true, profile: known });
     if (uid) {
-      await refreshProfile();
+      // getSession and each auth event all land here: fetch the profile once.
+      if (!fetchedFor.has(uid)) await refreshProfile();
       if (uid !== lastUser) onSignInHooks.forEach((f) => f(uid));
     }
     lastUser = uid;
@@ -86,12 +88,43 @@ export function currentUserId(): string | null {
   return state.session?.user.id ?? null;
 }
 
-export async function refreshProfile(): Promise<void> {
+// The signed-in profile, remembered so the header avatar doesn't flick
+// between the initial and the photo while it loads on each page.
+const PROFILE_KEY = "ee.auth.profile";
+const fetchedFor = new Set<string>();
+let inflight: { uid: string; p: Promise<void> } | null = null;
+
+function cachedProfile(uid: string): Profile | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "null") as Profile | null;
+    return p?.id === uid ? p : null;
+  } catch {
+    return null;
+  }
+}
+
+export function refreshProfile(): Promise<void> {
   const sb = supabase();
   const uid = state.session?.user.id;
-  if (!sb || !uid) return;
-  const { data } = await sb.from("profiles").select("id, username, display_name, avatar_url, bio, city, is_public").eq("id", uid).maybeSingle();
-  if (state.session?.user.id === uid) set({ profile: (data as Profile | null) ?? null });
+  if (!sb || !uid) return Promise.resolve();
+  if (inflight?.uid === uid) return inflight.p;
+  const p = (async () => {
+    const { data, error } = await sb.from("profiles").select("id, username, display_name, avatar_url, bio, city, is_public").eq("id", uid).maybeSingle();
+    if (error) return;
+    fetchedFor.add(uid);
+    const profile = (data as Profile | null) ?? null;
+    try {
+      if (profile) localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      else localStorage.removeItem(PROFILE_KEY);
+    } catch {
+      /* storage blocked */
+    }
+    if (state.session?.user.id === uid) set({ profile });
+  })().finally(() => {
+    if (inflight?.uid === uid) inflight = null;
+  });
+  inflight = { uid, p };
+  return p;
 }
 
 export function openSignIn(reason = "to use social features"): void {
@@ -140,6 +173,12 @@ export async function signInWithEmail(email: string): Promise<string | null> {
 
 export async function signOut(): Promise<void> {
   await supabase()?.auth.signOut();
+  fetchedFor.clear();
+  try {
+    localStorage.removeItem(PROFILE_KEY);
+  } catch {
+    /* storage blocked */
+  }
   set({ session: null, profile: null });
 }
 

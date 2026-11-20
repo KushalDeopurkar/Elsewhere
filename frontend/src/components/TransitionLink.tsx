@@ -34,7 +34,7 @@ export default function TransitionLink({
   };
 
   // Warm the route as soon as the pointer or focus arrives, so the click
-  // has its code (and the event page's loading state) ready to paint.
+  // has its code and data ready to paint.
   const warm = () => {
     try {
       router.prefetch(href);
@@ -46,6 +46,9 @@ export default function TransitionLink({
   return (
     <Link
       {...props}
+      // Event grids hold dozens of cards: warm on hover or focus instead of
+      // prefetching every card that scrolls into view.
+      prefetch={props.prefetch ?? (kind === "event" ? false : undefined)}
       onClick={handle}
       onPointerEnter={(e) => {
         props.onPointerEnter?.(e);

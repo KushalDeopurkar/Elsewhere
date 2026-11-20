@@ -112,7 +112,7 @@ export default function MapStrip({
                 </span>
               </span>
             </button>
-            <Link href={`/events/${e.id}`} className="map-strip-open" aria-label={`Open ${e.title}`}>
+            <Link href={`/events/${e.id}`} prefetch={false} className="map-strip-open" aria-label={`Open ${e.title}`}>
               <ArrowRight size={18} weight="bold" aria-hidden="true" />
             </Link>
           </li>

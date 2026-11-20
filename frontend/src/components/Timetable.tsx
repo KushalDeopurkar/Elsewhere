@@ -241,7 +241,7 @@ function Row({ r, i }: { r: BoardRow; i: number }) {
           {r.day && <span className="tt-day">{r.day}</span>}
           <FlapText
             text={r.time === "ALL DAY" ? "--:--" : r.time}
-            label={r.time === "ALL DAY" ? "All day" : r.time}
+            label={r.time === "ALL DAY" ? "Time TBA" : r.time}
             length={5}
             delay={Math.min(i, 6) * 40}
           />

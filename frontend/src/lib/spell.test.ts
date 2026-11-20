@@ -61,3 +61,11 @@ describe("spelling correction", () => {
     expect(s.text).toBe("Comedy in mumbai!");
   });
 });
+
+describe("plurals are spelled right", () => {
+  it("never 'corrects' a plural or other form of a real word", () => {
+    for (const q of ["Free AI workshops this weekend", "hackathons", "concerts", "matches", "volunteering"]) {
+      expect(correctQuery(q).fixes).toEqual([]);
+    }
+  });
+});

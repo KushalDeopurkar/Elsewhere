@@ -780,3 +780,20 @@
     top: calc(var(--nav-h) + var(--s-4));
   }
 }
+
+/* Until the first tiles are drawn: the theme's surface and a word, not a black box. */
+.plan-map { background: var(--bg-2); }
+.plan-map-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg-2);
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.plan-map-box { position: relative; }

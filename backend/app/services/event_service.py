@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, timezone
 
 from supabase import Client
 
-from app.models.event import EventCreate, EventSearchParams
+from app.models.event import EventCategory, EventCreate, EventSearchParams
+from app.scrapers.classify import is_junk_title
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class EventService:
 
     def upsert_events(self, events: List[EventCreate]) -> int:
         """Insert or update events. Returns count of upserted rows."""
+        events = [e for e in events if not is_junk_title(e.title)]
         if not events:
             return 0
 
@@ -81,16 +83,30 @@ class EventService:
             "page_offset": params.offset,
         }
 
-        result = self.client.rpc("search_events", rpc_params).execute()
+        result = self._rpc_retry("search_events", rpc_params)
         # Cards need the tier count and range, not the long details.
         return self._with_details(result.data or [], "tickets")
 
+    def _rpc_retry(self, fn: str, params: Dict):
+        """Call an RPC, once more after a short pause if the first call fails.
+
+        A cold start's first database call is the one that times out or
+        drops; the second almost always succeeds. Retrying here turns that
+        into a slower answer instead of a 500.
+        """
+        import time
+
+        try:
+            return self.client.rpc(fn, params).execute()
+        except Exception as first:  # noqa: BLE001 - retried once, then raised
+            logger.warning("rpc %s failed once (%s); retrying", fn, first)
+            time.sleep(0.8)
+            return self.client.rpc(fn, params).execute()
+
     def get_by_id(self, event_id: str) -> Optional[Dict]:
         """Get single event by UUID via RPC (extracts lat/lng from coords)."""
-        result = self.client.rpc(
-            "get_event_by_id", {"p_id": event_id}
-        ).execute()
-        rows = self._with_details(result.data or [], "tickets,details")
+        result = self._rpc_retry("get_event_by_id", {"p_id": event_id})
+        rows = self._with_details(result.data or [], "tickets,details,details_fetched_at")
         return rows[0] if rows else None
 
     def get_in_bounds(
@@ -128,6 +144,65 @@ class EventService:
         return self._with_details(rows)
 
     _DETAIL_COLUMNS = "id,image_url,end_time,price_min,price_max,is_free,url,address,city,country,source"
+
+    def counts_near(self, lat: float, lng: float, radius_km: float = 40.0, max_rows: int = 5000) -> Dict:
+        """Upcoming events per category within radius_km, in one query.
+
+        Uses the events_in_bounds RPC (category and coordinates, nothing
+        else) for the box around the circle, then keeps what is inside the
+        circle. Returns every category, zero included, never null, plus the
+        total and one picture per category for its tile.
+        """
+        import math
+
+        dlat = radius_km / 111.0
+        dlng = radius_km / (111.0 * max(0.1, math.cos(math.radians(lat))))
+        rows = (
+            self.client.rpc(
+                "events_in_bounds",
+                {
+                    "south": lat - dlat,
+                    "west": lng - dlng,
+                    "north": lat + dlat,
+                    "east": lng + dlng,
+                    "from_time": datetime.now(timezone.utc).isoformat(),
+                    "category_filter": None,
+                    "max_results": max_rows,
+                },
+            ).execute().data
+            or []
+        )
+
+        def km(a_lat: float, a_lng: float) -> float:
+            p1, p2 = math.radians(lat), math.radians(a_lat)
+            dp, dl = p2 - p1, math.radians(a_lng - lng)
+            h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+            return 6371.0 * 2 * math.asin(math.sqrt(h))
+
+        counts: Dict[str, int] = {c.value: 0 for c in EventCategory}
+        first_ids: Dict[str, List[str]] = {}
+        for r in rows:
+            if r.get("lat") is None or r.get("lng") is None or km(r["lat"], r["lng"]) > radius_km:
+                continue
+            cat = r.get("category") or "other"
+            counts[cat] = counts.get(cat, 0) + 1
+            ids = first_ids.setdefault(cat, [])
+            if len(ids) < 8:
+                ids.append(r["id"])
+
+        images: Dict[str, Optional[str]] = {c: None for c in counts}
+        want = [i for ids in first_ids.values() for i in ids]
+        if want:
+            res = self.client.table("events").select("id,category,image_url").in_("id", want).execute()
+            order = {i: n for n, i in enumerate(want)}
+            for e in sorted(res.data or [], key=lambda e: order.get(e["id"], 0)):
+                if e.get("image_url") and not images.get(e["category"]):
+                    images[e["category"]] = e["image_url"]
+        return {
+            "total": sum(counts.values()),
+            "capped": len(rows) >= max_rows,
+            "categories": [{"value": c, "count": n, "image": images.get(c)} for c, n in counts.items()],
+        }
 
     def _with_details(self, rows: List[Dict], extra: str = "") -> List[Dict]:
         """Merge columns the RPCs don't return, by id, in one query.

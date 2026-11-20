@@ -31,6 +31,7 @@ from typing import List, Optional, Dict, Tuple
 
 from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
+from app.scrapers.classify import guess_category
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ CITY_COORDS: Dict[str, Tuple[float, float]] = {
 }
 
 # Keywords from JSON-LD / URL / title → our category
+
 CATEGORY_KEYWORDS: Dict[str, str] = {
     "music": "music",
     "concert": "music",
@@ -477,7 +479,10 @@ class DistrictScraper(BaseScraper):
 
     @staticmethod
     def _infer_category(title: str, url: str, default: str) -> str:
-        """Infer EventCategory from title and URL keywords."""
+        """Infer EventCategory from title first, then URL keywords."""
+        guess = guess_category(title, default="")
+        if guess:
+            return guess
         combined = f"{title} {url}".lower()
         for keyword, cat in CATEGORY_KEYWORDS.items():
             if keyword in combined:

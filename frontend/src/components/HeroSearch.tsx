@@ -3,17 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
-import { rememberSearch } from "@/lib/cityPref";
-
-// One prompt per kind of plan, so the first thing people see is the range.
-const PROMPTS = [
-  "Free AI workshops this weekend",
-  "I want to meet startup founders",
-  "Something educational tomorrow",
-  "Volunteering this Sunday",
-  "A run or a match this weekend",
-  "Live music tonight under ₹500",
-];
+import { useCity } from "@/lib/cityPref";
+import { cityCountry } from "@/lib/cities";
+import { homePrompts } from "@/lib/intent";
+import { cheapIn } from "@/lib/money";
 
 /**
  * The home page's plain-words search: Elsewhere reads the request (what,
@@ -22,12 +15,16 @@ const PROMPTS = [
  */
 export default function HeroSearch() {
   const router = useRouter();
+  const city = useCity();
   const [q, setQ] = useState("");
+  // One prompt per kind of plan, priced in the city's money; each is tested
+  // to return real matches (lib/intent.test.ts).
+  const prompts = homePrompts(cheapIn(cityCountry(city)));
 
+  // Explore remembers the search once it has results (junk isn't kept).
   const go = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    rememberSearch(t);
     router.push(`/explore?q=${encodeURIComponent(t)}`);
   };
 
@@ -64,7 +61,7 @@ export default function HeroSearch() {
       <div className="hsearch-try">
         <span className="hsearch-try-label">Try</span>
         <ul>
-          {PROMPTS.map((c) => (
+          {prompts.map((c) => (
             <li key={c}>
               <button type="button" className="hsearch-prompt" onClick={() => go(c)}>
                 {c}

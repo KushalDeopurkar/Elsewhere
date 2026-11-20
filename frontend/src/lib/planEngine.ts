@@ -593,7 +593,12 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
         }
       }
       if (stops.length > 0) {
-        const notes = [plan.note?.trim() || null];
+        console.info(`[plan] written by ${model} via ${cfg.provider}`);
+        // The AI's own words may describe picks that didn't survive the
+        // checks ("dinner is at Westin Powai" with no dinner stop): keep only
+        // sentences that don't name an event or venue missing from the plan.
+        const onPlan = (t: string | null | undefined) => onlyAboutPlan(t ?? "", stops, pool.map((x) => x.event));
+        const notes = [onPlan(plan.note) || null];
         if (dropped > 0)
           notes.push(
             `${dropped} AI suggestion${dropped > 1 ? "s" : ""} clashed on time or budget${toppedUp ? ", so similar events filled the gaps" : ""}.`,
@@ -605,7 +610,9 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
             ? `${stops.length} stop${stops.length === 1 ? "" : "s"}, ordered so you can make each one: ${stops
                 .map((s) => s.event.title.split(/[|:–-]/)[0].trim())
                 .join(", then ")}.`
-            : plan.summary?.trim() || "";
+            : onPlan(plan.summary);
+        const gap = longestGap(stops, zone);
+        if (gap) notes.push(gap);
         return {
           ...base,
           title: plan.title?.trim() || "Your day, planned",
@@ -613,7 +620,8 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
           note: notes.filter(Boolean).join(" ") || null,
           stops,
           totalCost: stops.reduce((sum, s) => sum + lowestPrice(s.event), 0),
-          engine: { kind: "ai", label: `${model} · ${cfg.provider}` },
+          // Which model wrote it is a detail for the logs, not the page.
+          engine: { kind: "ai", label: "Planned with AI" },
         };
       }
     } catch (err) {
@@ -633,4 +641,39 @@ export async function makePlan(input: { prompt: string; city?: string | null }):
     totalCost: stops.reduce((sum, s) => sum + lowestPrice(s.event), 0),
     engine: { kind: "rules", label: "Rules" },
   };
+}
+
+
+/** Names (capitalised words) in a text, lower case. */
+const namesIn = (t: string) => new Set((t.match(/\b[A-Z][\p{L}'’&.-]{2,}/gu) ?? []).map((w) => w.toLowerCase()));
+
+/**
+ * Only the sentences of the AI's text that are about the final plan: a
+ * sentence naming an event or venue from the candidates that is not on the
+ * plan is dropped.
+ */
+export function onlyAboutPlan(text: string, stops: { event: Event }[], pool: Event[]): string {
+  const kept = new Set<string>();
+  for (const s of stops) for (const n of namesIn(`${s.event.title} ${s.event.location_name ?? ""}`)) kept.add(n);
+  const elsewhere = new Set<string>();
+  for (const e of pool) for (const n of namesIn(`${e.title} ${e.location_name ?? ""}`)) if (!kept.has(n)) elsewhere.add(n);
+  const sentences = text.match(/[^.!?]+[.!?]*/g) ?? [];
+  return sentences
+    .filter((sentence) => ![...namesIn(sentence)].some((n) => elsewhere.has(n)))
+    .join("")
+    .trim();
+}
+
+/** A plain note about a long free stretch between stops, or null. */
+function longestGap(stops: { event: Event }[], zone: string): string | null {
+  const fmt = (ms: number) =>
+    new Intl.DateTimeFormat("en-IN", { timeZone: zone, hour: "numeric", minute: "2-digit", hour12: true }).format(ms).replace(":00", "");
+  let best: [number, number] | null = null;
+  for (let i = 1; i < stops.length; i++) {
+    const prev = stops[i - 1].event;
+    const end = prev.end_time ? Date.parse(prev.end_time) : Date.parse(prev.start_time) + 2 * 3_600_000;
+    const next = Date.parse(stops[i].event.start_time);
+    if (next - end >= 2.5 * 3_600_000 && (!best || next - end > best[1] - best[0])) best = [end, next];
+  }
+  return best ? `You're free from ${fmt(best[0])} to ${fmt(best[1])}: nothing listed nearby fit that stretch.` : null;
 }

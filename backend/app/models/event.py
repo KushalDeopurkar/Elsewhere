@@ -90,6 +90,8 @@ class EventDetailResponse(EventResponse):
     """Returned by get-by-id endpoint. Adds timestamps."""
     source_id: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
+    # When tickets and details were last read from the event's own page.
+    details_fetched_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

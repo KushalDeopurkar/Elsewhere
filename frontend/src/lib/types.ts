@@ -26,6 +26,8 @@ export interface Event {
   format?: EventFormat;
   /** Ticket tiers from the event's own page (enrich pass). Null until fetched. */
   tickets?: Ticket[] | null;
+  /** When tickets and details were last read from the event's own page. */
+  details_fetched_at?: string | null;
   /** Long description and facts from the event's own page (detail endpoint only). */
   details?: EventDetails | null;
 }

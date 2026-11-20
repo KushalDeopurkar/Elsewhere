@@ -18,8 +18,14 @@
 @media (min-width: 900px) {
   .detail-hero {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    align-items: start;
+    /* The title block sits level with the middle of the poster, so a short
+       title doesn't leave a hole under the buttons. */
+    align-items: center;
     gap: var(--s-7);
+  }
+  .detail-media .eimg {
+    aspect-ratio: 4 / 3 !important;
+    max-height: 30rem;
   }
 }
 
@@ -680,4 +686,60 @@
   color: var(--crit);
   font-weight: 600;
   text-transform: uppercase;
+}
+
+/* Event actions: calendar choices and a status line for what just happened */
+.cal-menu { position: relative; }
+.cal-pop {
+  position: absolute;
+  z-index: var(--z-overlay);
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  min-width: 15rem;
+  padding: var(--s-1);
+  background: var(--bg-2);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift-3);
+}
+.cal-pop a,
+.cal-pop button {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--fg);
+  font: 500 var(--t-sm) / 1.2 var(--font-body);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cal-pop a:hover,
+.cal-pop button:hover { background: var(--bg-3); }
+.detail-status {
+  flex-basis: 100%;
+  margin: 0;
+  min-height: 1.3em;
+  font-size: var(--t-sm);
+  color: var(--live);
+}
+
+/* Sold out / sales closed: said plainly, under a quieter button */
+.booking-gone {
+  margin: var(--s-2) 0 0;
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--crit);
+  background: var(--crit-wash);
+  color: var(--fg);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+.booking-checked {
+  margin: var(--s-2) 0 0;
+  font-size: var(--t-xs);
+  color: var(--fg-3);
 }

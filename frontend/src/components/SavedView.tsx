@@ -121,8 +121,8 @@ export default function SavedView() {
                       {!can ? "Can't poll a sample" : on ? "In the poll" : "Add to poll"}
                     </button>
                   ) : (
-                    <button type="button" className="saved-remove" onClick={() => removeSaved(event.id)}>
-                      <Trash size={14} weight="bold" /> Remove
+                    <button type="button" className="saved-remove" onClick={() => removeSaved(event.id)} aria-label={`Remove ${event.title} from saved`}>
+                      <Trash size={14} weight="bold" aria-hidden="true" /> Remove
                     </button>
                   )}
                 </div>
@@ -170,8 +170,8 @@ export default function SavedView() {
             {past.map(({ event }) => (
               <div key={event.id} className="saved-item">
                 <EventCard event={event} />
-                <button type="button" className="saved-remove" onClick={() => removeSaved(event.id)}>
-                  <Trash size={14} weight="bold" /> Remove
+                <button type="button" className="saved-remove" onClick={() => removeSaved(event.id)} aria-label={`Remove ${event.title} from saved`}>
+                  <Trash size={14} weight="bold" aria-hidden="true" /> Remove
                 </button>
               </div>
             ))}

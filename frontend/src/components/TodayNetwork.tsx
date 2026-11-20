@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Event, EventCategory } from "@/lib/types";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
-import { eventZone } from "@/lib/formatDate";
+import { eventZone, hasTime } from "@/lib/formatDate";
 
 /**
  * The next day and a half in the city, drawn as a line map: each kind of
@@ -103,7 +103,7 @@ function draw(events: Event[], now: number): Drawn[] {
 }
 
 const timeIn = (e: Event) =>
-  new Intl.DateTimeFormat("en-IN", { timeZone: eventZone(e), hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
+  !hasTime(e.start_time, eventZone(e)) ? "Time TBA" : new Intl.DateTimeFormat("en-IN", { timeZone: eventZone(e), hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
     new Date(e.start_time),
   );
 
@@ -136,6 +136,7 @@ export default function TodayNetwork({ events, now }: { events: Event[]; now: nu
             <Link
               key={s.event.id}
               href={`/events/${s.event.id}`}
+              prefetch={false}
               aria-label={`${s.event.title}, ${timeIn(s.event)}, ${label(l.cat)}`}
               onMouseEnter={() => setFocus(s.event)}
               onFocus={() => setFocus(s.event)}

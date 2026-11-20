@@ -3,11 +3,12 @@ import { DEMO_EVENTS } from "./demoEvents";
 import { kmBetween } from "./geo";
 
 import { decodeEntities } from "./text";
+import { dedupeEvents, displayTitle } from "./tidy";
 
 function clean(e: Event): Event {
   return {
     ...e,
-    title: decodeEntities(e.title),
+    title: displayTitle(decodeEntities(e.title)),
     description: e.description ? decodeEntities(e.description) : e.description,
     location_name: e.location_name ? decodeEntities(e.location_name) : e.location_name,
     // An empty picture means the event's page was checked and has none.
@@ -22,6 +23,30 @@ export interface EventsResult {
   events: Event[];
   /** True when these came from the bundled sample set, not the API. */
   isSample: boolean;
+  /** The server filled the page: there are more events than these. */
+  more?: boolean;
+}
+
+/**
+ * The bundled sample set is for local development only. In production a
+ * failed fetch is an error (shown as such, and retried), never fake events.
+ */
+const DEMO_ALLOWED = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEMO_DATA === "1";
+
+/** Fetch with two quick retries on a server error or a dropped connection (a waking backend). */
+async function fetchRetry(url: string, init?: RequestInit, delays = [600, 1800]): Promise<Response> {
+  let last: unknown;
+  for (let i = 0; i <= delays.length; i++) {
+    try {
+      const res = await fetch(url, init);
+      if (res.status < 500) return res;
+      last = new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      last = e;
+    }
+    if (i < delays.length) await new Promise((r) => setTimeout(r, delays[i]));
+  }
+  throw last instanceof Error ? last : new Error("Listings could not be reached");
 }
 
 /** Filters that make an empty response meaningful rather than just an empty database. */
@@ -72,34 +97,44 @@ export async function searchEvents(params: SearchParams): Promise<EventsResult> 
   if (params.offset) qs.set("offset", String(params.offset));
   if (params.from) qs.set("from_time", params.from);
   if (params.to) qs.set("to_time", params.to);
+  // Lists need a snippet, not the whole write-up: the event page loads that.
+  qs.set("desc_chars", "280");
 
+  const limit = params.limit ?? 100;
   try {
-    const res = await fetch(`${API_BASE}/events/search?${qs}`);
+    const res = await fetchRetry(`${API_BASE}/events/search?${qs}`);
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     const json: ApiResponse<Event[]> = await res.json();
-    const events = (json.data || []).map(clean);
-
-    // An empty result for an unfiltered browse means the database has nothing
-    // in it yet, so show the sample set instead of an empty page. An empty
-    // result for a real query is a genuine "no matches" and is left alone.
-    if (events.length === 0 && !isFiltered(params)) return sampleFor(params);
-    return { events, isSample: false };
-  } catch {
-    return sampleFor(params);
+    const raw = json.data || [];
+    const events = dedupeEvents(raw.map(clean));
+    // Locally, an empty unfiltered browse means an empty database: the
+    // sample set stands in. In production an empty answer is an answer.
+    if (DEMO_ALLOWED && events.length === 0 && !isFiltered(params)) return sampleFor(params);
+    return { events, isSample: false, more: raw.length >= limit };
+  } catch (e) {
+    if (DEMO_ALLOWED) return sampleFor(params);
+    throw e instanceof Error ? e : new Error("Listings could not be reached");
   }
 }
 
+/**
+ * One event, or null when it doesn't exist. Throws when the listings can't
+ * be reached, so a page can tell "not found" (404) from "try again".
+ */
 export async function getEvent(id: string): Promise<Event | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return DEMO_ALLOWED ? (DEMO_EVENTS.find((e) => e.id === id) ?? null) : null;
+  }
   try {
-    const res = await fetch(`${API_BASE}/events/${id}`);
-    if (res.status === 404) {
-      return DEMO_EVENTS.find((e) => e.id === id) ?? null;
-    }
+    const res = await fetchRetry(`${API_BASE}/events/${id}`, typeof window === "undefined" ? { next: { revalidate: 300 } } : undefined);
+    if (res.status === 404 || res.status === 422) return DEMO_ALLOWED ? (DEMO_EVENTS.find((e) => e.id === id) ?? null) : null;
     if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
     const json: ApiResponse<Event> = await res.json();
-    return json.data ? clean(json.data) : (DEMO_EVENTS.find((e) => e.id === id) ?? null);
-  } catch {
-    return DEMO_EVENTS.find((e) => e.id === id) ?? null;
+    return json.data ? clean(json.data) : null;
+  } catch (e) {
+    const demo = DEMO_EVENTS.find((x) => x.id === id);
+    if (DEMO_ALLOWED && demo) return demo;
+    throw e instanceof Error ? e : new Error("Listings could not be reached");
   }
 }
 
@@ -123,6 +158,7 @@ function withinBounds(event: Event, b: MapBounds): boolean {
 export async function getMapEvents(
   bounds: MapBounds,
   category?: string,
+  signal?: AbortSignal,
 ): Promise<EventsResult> {
   const qs = new URLSearchParams({
     south: String(bounds.south),
@@ -140,13 +176,15 @@ export async function getMapEvents(
   });
 
   try {
-    const res = await fetch(`${API_BASE}/events/map?${qs}`);
+    const res = await fetchRetry(`${API_BASE}/events/map?${qs}`, { signal });
     if (!res.ok) throw new Error(`Map fetch failed: ${res.status}`);
     const json: ApiResponse<Event[]> = await res.json();
-    const events = (json.data || []).map(clean);
-    if (events.length === 0 && !category) return sample();
+    const events = dedupeEvents((json.data || []).map(clean));
+    if (DEMO_ALLOWED && events.length === 0 && !category) return sample();
     return { events, isSample: false };
-  } catch {
-    return sample();
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") throw e;
+    if (DEMO_ALLOWED) return sample();
+    throw e instanceof Error ? e : new Error("Map listings could not be reached");
   }
 }

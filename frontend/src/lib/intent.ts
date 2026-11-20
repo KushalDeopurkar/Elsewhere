@@ -71,6 +71,8 @@ export interface Intent {
   /** Words to find in the event, lower case; "phrases" were typed in quotes. */
   terms: string[];
   phrases: string[];
+  /** Any one of the words is enough ("a run or a match", or after widening). */
+  anyOf: boolean;
   /** Dimensions the user asked for that the data cannot answer. */
   unsupported: string[];
 }
@@ -187,6 +189,7 @@ function findPhrase(haystack: string, needles: string[]): string | null {
 /** Category words broad enough to mean "only this kind of event". */
 const BROAD: Record<string, EventCategory> = {
   tech: "tech", technology: "tech", business: "business", education: "education", learning: "education",
+  educational: "education", sporty: "sports", musical: "music", artsy: "arts", foodie: "food",
   art: "arts", arts: "arts", culture: "arts", sport: "sports", sports: "sports", fitness: "sports",
   music: "music", community: "community", social: "community", food: "food", drink: "food",
   health: "health", wellness: "health", wellbeing: "health", lifestyle: "health",
@@ -199,8 +202,16 @@ const BROAD: Record<string, EventCategory> = {
  * category counts as a match ("concert" finds "Arijit Singh Live").
  */
 const CATEGORY_LIKE: Record<string, EventCategory> = {
-  concert: "music", concerts: "music", gig: "music", gigs: "music", "live music": "music",
-  party: "nightlife", parties: "nightlife", clubbing: "nightlife",
+  concert: "music", gig: "music", "live music": "music", live: "music", band: "music", dj: "music",
+  party: "nightlife", clubbing: "nightlife", "club night": "nightlife",
+  ai: "tech", "artificial intelligence": "tech", "machine learning": "tech", ml: "tech", coding: "tech",
+  developer: "tech", programming: "tech", robotics: "tech", software: "tech",
+  startup: "business", founder: "business", entrepreneur: "business", investor: "business", networking: "business",
+  volunteering: "community", volunteer: "community", meetup: "community",
+  run: "sports", running: "sports", match: "sports", game: "sports", tournament: "sports", fitness: "sports",
+  hike: "outdoor", trek: "outdoor", trekking: "outdoor",
+  yoga: "health", meditation: "health",
+  kids: "family", children: "family",
 };
 
 /** Other ways listings say the same thing, in English and the languages our cities list in. */
@@ -331,11 +342,25 @@ export function parseIntent(raw: string, opts: ReadOptions = {}): Intent {
     }
   }
 
+  // Known phrases ("live music", "stand up") are one thing to find: hide
+  // them before reading categories, so "music" in "live music" isn't read
+  // on its own and "live" left behind as a word every title must contain.
+  const masked: string[] = [];
+  let qx = q;
+  for (const [phrase, as] of PHRASE_TERMS) {
+    const re = new RegExp(`(^|[^a-z])${escapeRe(phrase)}(?=[^a-z]|$)`, "gi");
+    if (!re.test(qx)) continue;
+    const token = ` zzphrase${masked.length}zz `;
+    masked.push(as);
+    qx = qx.replace(re, `$1${token}`);
+    rest = rest.replace(new RegExp(`(^|[^a-z])${escapeRe(phrase)}(?=[^a-z]|$)`, "gi"), `$1${token}`);
+  }
+
   // What kind: broad category words filter, the rest only rank.
   const strict: EventCategory[] = [];
   const soft: EventCategory[] = [];
   for (const [cat, words] of Object.entries(INTEREST_WORDS) as [EventCategory, string[]][]) {
-    const hit = findPhrase(q, words);
+    const hit = findPhrase(qx, words);
     if (!hit) continue;
     const broad = BROAD[hit] === cat;
     (broad ? strict : soft).push(cat);
@@ -343,7 +368,7 @@ export function parseIntent(raw: string, opts: ReadOptions = {}): Intent {
     if (broad) take(hit);
   }
   // A broad word that isn't in the interest list ("family", "outdoors") still filters.
-  for (const w of wordsOf(lower)) {
+  for (const w of wordsOf(qx)) {
     const cat = BROAD[w];
     if (cat && !strict.includes(cat) && !signals.some((s) => s.kind === "interest" && s.value === cat && s.strict)) {
       strict.push(cat);
@@ -356,7 +381,7 @@ export function parseIntent(raw: string, opts: ReadOptions = {}): Intent {
 
   const goals: Goal[] = [];
   for (const [goal, words] of Object.entries(GOAL_WORDS) as [Goal, string[]][]) {
-    const hit = findPhrase(q, words);
+    const hit = findPhrase(qx, words);
     if (hit && !BROAD[hit]) {
       goals.push(goal);
       signals.push({ kind: "goal", value: goal, label: GOAL_LABEL[goal], source: hit });
@@ -374,10 +399,9 @@ export function parseIntent(raw: string, opts: ReadOptions = {}): Intent {
     }
   }
 
-  // Known phrases stay together as one thing to find ("stand up", "open mic").
-  for (const [phrase, as] of PHRASE_TERMS) {
-    rest = rest.replace(new RegExp(`(^|[^a-z])${escapeRe(phrase)}(?=[^a-z]|$)`, "gi"), `$1 ${as.replace(/ /g, "_")} `);
-  }
+
+  // "a run or a match": any one of the words will do.
+  const anyOf = /(^|\s)(or|either)(\s|$)/.test(rest);
 
   // The words to find: what is left, minus words that carry no topic.
   const terms = [...new Set(
@@ -385,12 +409,16 @@ export function parseIntent(raw: string, opts: ReadOptions = {}): Intent {
       .replace(/[^a-z0-9\u00c0-\u024f+#&'_ -]/gi, " ")
       .split(/\s+/)
       .map((w) => w.replace(/^['-]+|['-]+$/g, ""))
-      .filter((w) => w.length > 1 && !FILLER.has(w) && !/^\d+$/.test(w))
-      .map((w) => w.replace(/_/g, " ")),
+      .map((w) => {
+        const m = /^zzphrase(\d+)zz$/.exec(w);
+        return m ? masked[Number(m[1])] : w;
+      })
+      .filter((w) => w.length > 1 && !FILLER.has(w) && !/^\d+$/.test(w) && w !== "either"),
   )];
   if (terms.length || phrases.length) {
     const shown = [...phrases.map((p) => `“${p}”`), ...terms].join(" ");
-    signals.push({ kind: "words", value: [...terms, ...phrases.map((p) => `"${p}"`)].join("|"), label: shown, source: shown });
+    const label = anyOf && terms.length > 1 ? terms.join(" or ") : shown;
+    signals.push({ kind: "words", value: `${anyOf ? "~" : ""}${[...terms, ...phrases.map((p) => `"${p}"`)].join("|")}`, label, source: shown });
   }
 
   return build(text, signals, { city, format, unsupported, now, zone });
@@ -413,6 +441,7 @@ function build(
   let format: EventFormat | null = null;
   let terms: string[] = [];
   let phrases: string[] = [];
+  let anyOf = false;
   for (const s of signals) {
     if (s.kind === "interest") (s.strict ? strict : soft).add(s.value as EventCategory);
     if (s.kind === "goal") goals.push(s.value as Goal);
@@ -425,7 +454,8 @@ function build(
     }
     if (s.kind === "format") format = s.value as EventFormat;
     if (s.kind === "words") {
-      const parts = s.value.split("|").filter(Boolean);
+      anyOf = s.value.startsWith("~");
+      const parts = s.value.replace(/^~/, "").split("|").filter(Boolean);
       phrases = parts.filter((p) => p.startsWith('"')).map((p) => p.slice(1, -1));
       terms = parts.filter((p) => !p.startsWith('"'));
     }
@@ -447,6 +477,7 @@ function build(
     format,
     terms,
     phrases,
+    anyOf,
     unsupported: ctx.unsupported,
   };
 }
@@ -557,7 +588,9 @@ export function scoreEvent(event: Event, intent: Intent): Scored | null {
     }
   }
   const wanted = intent.terms.length + intent.phrases.length;
-  const exact = found === intent.terms.length && phrasesFound === intent.phrases.length;
+  const exact = intent.anyOf
+    ? found + phrasesFound > 0
+    : found === intent.terms.length && phrasesFound === intent.phrases.length;
   // All the words, in order, in the title: the strongest match there is.
   if (intent.terms.length > 1 && exact && f.titleText.includes(intent.terms.map((t) => wordsOf(t).join(" ")).join(" "))) score += 12;
   if (wanted && exact) {
@@ -654,6 +687,22 @@ export const EXAMPLE_PROMPTS = [
 
 
 
+/**
+ * The home page's suggested searches, one per kind of plan, with the price
+ * in the city's own money. Every one is tested to return real matches
+ * (intent.test.ts), so a suggestion never leads to an empty page.
+ */
+export function homePrompts(money: { symbol: string; cheap: number } = { symbol: "₹", cheap: 500 }): string[] {
+  return [
+    "Free AI workshops this weekend",
+    "I want to meet startup founders",
+    "Something educational tomorrow",
+    "Volunteering this Sunday",
+    "A run or a match this weekend",
+    `Live music tonight under ${money.symbol}${money.cheap}`,
+  ];
+}
+
 /** Parts of a request that can be let go of to widen a thin result. */
 export type Widen = "when" | "free" | "topic" | "words";
 
@@ -675,8 +724,11 @@ export function widenIntent(intent: Intent, widen: Widen[]): Intent {
     drop.add("interest");
     drop.add("goal");
   }
-  if (widen.includes("words")) drop.add("words");
-  return build(intent.text, intent.signals.filter((s) => !drop.has(s.kind)), { unsupported: intent.unsupported });
+  // Widening the words means any one of them will do, never "anything at all".
+  const signals = intent.signals
+    .filter((s) => !drop.has(s.kind))
+    .map((s) => (widen.includes("words") && s.kind === "words" && !s.value.startsWith("~") ? { ...s, value: `~${s.value}`, label: s.label.split(" ").join(" or ") } : s));
+  return build(intent.text, signals, { unsupported: intent.unsupported });
 }
 
 /** Which parts of this request could be widened at all. */
@@ -685,6 +737,6 @@ export function widenable(intent: Intent): Widen[] {
   if (intent.range || intent.hours) out.push("when");
   if (intent.freeOnly || intent.cap) out.push("free");
   if (intent.interests.length || intent.goals.length) out.push("topic");
-  if (intent.terms.length + intent.phrases.length > 1) out.push("words");
+  if (intent.terms.length + intent.phrases.length > 1 && !intent.anyOf) out.push("words");
   return out;
 }

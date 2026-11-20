@@ -4,6 +4,7 @@ import { getCategoryColor } from "@/lib/categoryColors";
 import { eventZone, whenOf, timedOf } from "@/lib/formatDate";
 import { priceBadge, realTiers } from "@/lib/money";
 import { listingStatus } from "@/lib/eventFilters";
+import { ticketState } from "@/lib/money";
 import EventImage from "./EventImage";
 import SaveButton from "./SaveButton";
 
@@ -54,7 +55,9 @@ export default function EventCard({
   // "Online, Online" reads as a bug: say a place once.
   const where = [...new Set([event.location_name, event.city].filter(Boolean))].join(", ");
   const tiers = realTiers(event.tickets, event.title).length;
-  const status = listingStatus(event);
+  // The title's own word ("postponed"), or the ticket tiers: every tier sold out.
+  const tickets = ticketState(event);
+  const status = listingStatus(event) ?? (tickets === "sold_out" ? "sold out" : tickets === "closed" ? "sales closed" : null);
   const style = { "--cat": hue.color } as React.CSSProperties;
   const ratio = variant === "featured" ? "4 / 3" : variant === "list" ? "16 / 10" : "4 / 3";
 
@@ -72,7 +75,7 @@ export default function EventCard({
           <span className="ecard-dow">{stub.dow}</span>
           <span className="ecard-day">{stub.day}</span>
           <span className="ecard-mon">{stub.month}</span>
-          <span className="ecard-time">{timed ? stub.time : "All day"}</span>
+          <span className="ecard-time">{timed ? stub.time : "Time TBA"}</span>
         </div>
         <div className="ecard-text">
           <p className="ecard-kicker">

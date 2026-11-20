@@ -272,7 +272,7 @@ function ListsTab({ lists, self, name, onCreated }: { lists: List[] | null; self
           }}
         >
           <label htmlFor="pf-list-title" className="sr-only">New list name</label>
-          <input id="pf-list-title" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} placeholder="New list, e.g. Monsoon weekends" />
+          <input id="pf-list-title" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} placeholder="New list name" />
           <label htmlFor="pf-list-vis" className="sr-only">Who can see it</label>
           <select id="pf-list-vis" value={vis} onChange={(e) => setVis(e.target.value as Visibility)}>
             {(Object.keys(VIS_LABEL) as Visibility[]).map((v) => (

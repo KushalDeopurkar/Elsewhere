@@ -23,6 +23,7 @@ from hashlib import md5
 
 from app.models.event import EventCreate, EventCategory
 from app.scrapers.base import BaseScraper
+from app.scrapers.classify import guess_category
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ CATEGORY_PATHS = [
     "sports", "workshops", "business", "health-and-wellness",
     "nightlife", "kids", "outdoor",
 ]
+
 
 CATEGORY_MAP: Dict[str, str] = {
     "all": "community",
@@ -191,12 +193,14 @@ class AllEventsScraper(BaseScraper):
             offers = raw.get("offers", [])
             if isinstance(offers, dict):
                 offers = [offers]
-            price_min, price_max, is_free = None, None, True
+            price_min, price_max, is_free = None, None, False
             for offer in (offers or []):
                 if isinstance(offer, dict):
                     low = offer.get("lowPrice") or offer.get("price")
                     high = offer.get("highPrice")
-                    if low and str(low).lower() not in ("free", "0"):
+                    if str(low).strip().lower() in ("free", "0", "0.0", "0.00") and not high:
+                        is_free = True  # only when the listing says so
+                    elif low:
                         try:
                             price_min = float(low)
                             is_free = False
@@ -210,7 +214,8 @@ class AllEventsScraper(BaseScraper):
                             pass
 
             # Category
-            category = CATEGORY_MAP.get(category_hint, "community")
+            fallback = CATEGORY_MAP.get(category_hint, "community")
+            category = guess_category(name, default=fallback) if category_hint == "all" else fallback
 
             # Image
             image = raw.get("image", "")

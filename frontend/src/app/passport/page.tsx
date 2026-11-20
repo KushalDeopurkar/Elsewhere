@@ -10,7 +10,7 @@ export default function PassportPage() {
     <>
       <PageHeader
         title="Your passport"
-        lede="A stamp for every kind of event you explore, and badges for the milestones. Kept on this device."
+        lede="A stamp for every kind of event you explore, and badges for the milestones. Saved to your account when you're signed in, and on this device otherwise."
         crumbs={[{ label: "Home", href: "/" }, { label: "Passport" }]}
       />
       <div className="shell">

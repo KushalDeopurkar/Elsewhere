@@ -79,7 +79,7 @@ export function badges(p: Passport, streak: number): Badge[] {
     { id: "owl", title: "Night owl", desc: "3 events that start after 9 pm", have: p.night.length, need: 3 },
     { id: "lark", title: "Early bird", desc: "3 events that start before 9 am", have: p.early.length, need: 3 },
     { id: "free", title: "Free spirit", desc: "5 free events", have: p.free.length, need: 5 },
-    { id: "regular", title: "Regular", desc: "Swipe 3 days in a row", have: streak, need: 3 },
+    { id: "regular", title: "Regular", desc: "Visit 3 days in a row", have: streak, need: 3 },
   ];
   return list.map((b) => ({ ...b, have: Math.min(b.have, b.need), earned: b.have >= b.need }));
 }

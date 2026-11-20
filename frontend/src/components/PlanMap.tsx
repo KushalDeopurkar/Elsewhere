@@ -99,6 +99,7 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
   const ready = useRef(false);
   const latest = useRef(stops);
   const [failed, setFailed] = useState(false);
+  const [painted, setPainted] = useState(false);
 
   // The style can finish loading after newer stops arrive; keep the latest.
   useEffect(() => {
@@ -115,6 +116,9 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
       zoom: 11.5,
       pitch: 35,
       attributionControl: { compact: true },
+      // An embedded map shouldn't take over page scrolling: zoom with
+      // Ctrl/⌘ + scroll, or two fingers on a phone.
+      cooperativeGestures: true,
     });
     map.current = instance;
     let triedFallback = false;
@@ -124,6 +128,7 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
       ready.current = true;
       draw(instance, latest.current, markers);
     });
+    instance.once("idle", () => setPainted(true));
     instance.on("error", () => {
       if (ready.current) return;
       if (!triedFallback) {
@@ -230,6 +235,11 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
   const mapEl = (
     <div className="plan-map-box">
       <div ref={container} className="plan-map" aria-label="Map of your plan" role="img" />
+      {!painted && !failed && (
+        <div className="plan-map-loading" aria-hidden="true">
+          <span>Loading map…</span>
+        </div>
+      )}
       {failed && (
         <div className="plan-map-failed" role="status">
           <p className="plan-map-failed-title">The map couldn&apos;t load here.</p>

@@ -23,6 +23,8 @@ export default function FriendsView() {
   const [results, setResults] = useState<Profile[] | null>(null);
   const [following, setFollowing] = useState<Profile[]>([]);
   const [followers, setFollowers] = useState<Profile[]>([]);
+  // Until the lists arrive, say so instead of "Friends (0)".
+  const [listsReady, setListsReady] = useState(false);
   const [plans, setPlans] = useState<{ plan: FriendPlan[]; event: Event }[] | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -35,13 +37,17 @@ export default function FriendsView() {
         if (!live) return;
         setFollowing(fo);
         setFollowers(fr);
+        setListsReady(true);
         // Group by event: "Asha and Rohan are going".
         const byEvent = new Map<string, FriendPlan[]>();
         up.forEach((p) => byEvent.set(p.event_id, [...(byEvent.get(p.event_id) ?? []), p]));
         const events = await eventsByIds([...byEvent.keys()]);
         if (live) setPlans(events.map((event) => ({ event, plan: byEvent.get(event.id)! })));
       } catch {
-        if (live) setPlans([]);
+        if (live) {
+          setPlans([]);
+          setListsReady(true);
+        }
       }
     })();
     return () => {
@@ -203,8 +209,14 @@ export default function FriendsView() {
       )}
 
       <section className="fr-sec" aria-labelledby="fr-fr">
-        <h2 id="fr-fr" className="pp-h2">Friends ({friends.length})</h2>
-        {friends.length ? <ul className="fr-list">{friends.map((p) => <Row key={p.id} p={p} />)}</ul> : <p className="muted">Search for people above, or send your profile link.</p>}
+        <h2 id="fr-fr" className="pp-h2">Friends{listsReady ? ` (${friends.length})` : ""}</h2>
+        {!listsReady ? (
+          <p className="muted" aria-live="polite">Loading your friends…</p>
+        ) : friends.length ? (
+          <ul className="fr-list">{friends.map((p) => <Row key={p.id} p={p} />)}</ul>
+        ) : (
+          <p className="muted">Search for people above, or send your profile link.</p>
+        )}
       </section>
 
       {following.length > friends.length && (

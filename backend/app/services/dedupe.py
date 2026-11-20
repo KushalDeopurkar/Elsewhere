@@ -17,11 +17,20 @@ from app.models.event import EventCreate
 
 # Lower is preferred.
 PRIORITY = {"ticketmaster": 0, "eventfinda": 1, "paris-opendata": 1, "seatgeek": 2, "ics": 3, "football": 4}
-NOISE = re.compile(r"\b(tickets?|live( at| in)?|presents?|the|20\d\d)\b")
+NOISE = re.compile(r"\b(tickets?|live( at| in)?|presents?|the|tour|concert|edition|ft|feat|featuring|20\d\d)\b")
 
 
 def norm_title(t: str) -> str:
-    t = re.sub(r"[^\w\s]", " ", t.lower())
+    """Lower case, accents and emoji gone, "Æ" as "ae", filler words dropped.
+
+    "ANYMA presents AEDEN" and "Anyma presents ÆDEN" come out the same.
+    """
+    import unicodedata
+
+    t = t.replace("Æ", "AE").replace("æ", "ae").replace("Œ", "OE").replace("œ", "oe").replace("ß", "ss")
+    t = unicodedata.normalize("NFKD", t)
+    t = "".join(ch for ch in t if not unicodedata.combining(ch))
+    t = re.sub(r"[^a-z0-9\s]", " ", t.lower())
     t = NOISE.sub(" ", t)
     return re.sub(r"\s+", " ", t).strip()
 
@@ -44,7 +53,8 @@ def dedupe(events: List[EventCreate]) -> List[EventCreate]:
         clash = False
         for s in (slot - 1, slot, slot + 1):
             for other in buckets.get((title, s), []):
-                if other.source != e.source and abs((other.start_time - e.start_time).total_seconds()) <= 1800 and _near(other, e):
+                # The same listing twice, from two sites or posted twice on one.
+                if (other.source != e.source or other.source_id != e.source_id) and abs((other.start_time - e.start_time).total_seconds()) <= 1800 and _near(other, e):
                     clash = True
                     break
             if clash:

@@ -16,8 +16,8 @@ import { useCityEvents } from "@/hooks/useCityEvents";
 import { useCity, useRecentSearches, rememberSearch, clearRecentSearches } from "@/lib/cityPref";
 import { CATEGORIES, Event, EventCategory } from "@/lib/types";
 import { cityCountry, cityZone, detectCity } from "@/lib/cities";
-import { addDays, zonedTime } from "@/lib/when";
-import { correctQuery } from "@/lib/spell";
+import { addDays, readDays, zonedTime } from "@/lib/when";
+import { correctQuery, isKnownWord } from "@/lib/spell";
 import { wordsOf } from "@/lib/fuzzy";
 import { dropSignal, parseIntent, passesFilters, scoreEvent, widenIntent, widenable, type Widen } from "@/lib/intent";
 import {
@@ -86,7 +86,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   const pathname = usePathname();
   const params = useSearchParams();
   const homeCity = useCity();
-  const recent = useRecentSearches();
+  const recent = useRecentSearches(homeCity.name);
 
   // What was typed, as typed. The search itself reads a spell-checked copy
   // (q, below) unless the person asked for exactly their words (?exact=1).
@@ -173,7 +173,6 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
 
   const submit = (text: string) => {
     const t = text.trim();
-    if (t) rememberSearch(t);
     setParams({ q: t || null, sort: null, widen: null, drop: null, exact: null });
   };
 
@@ -187,13 +186,17 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
   // words to find (searched on the server too, beyond the loaded events).
   const [openedAt] = useState(() => Date.now());
   const early = useMemo(() => {
-    if (!typed) return null;
-    const read = parseIntent(asTyped ? typed : correctQuery(typed).text, readOpts);
     const zone = readOpts.zone;
-    const from = read.range ? new Date(Math.max(openedAt - 6 * 3_600_000, zonedTime(addDays(read.range.from, -1), 0, zone))).toISOString() : undefined;
-    const to = read.range ? new Date(zonedTime(addDays(read.range.to, 1), 6, zone)).toISOString() : undefined;
-    return { from, to, words: read.terms.join(" ") };
-  }, [typed, asTyped, readOpts, openedAt]);
+    // Days from the words win; otherwise the date filter's window. Either
+    // way the server is asked for those days, so nothing past the first
+    // 100 upcoming events is out of reach.
+    const read = typed ? parseIntent(asTyped ? typed : correctQuery(typed).text, readOpts) : null;
+    const phrase = { today: "today", tomorrow: "tomorrow", weekend: "this weekend", week: "next 7 days" } as Record<string, string>;
+    const range = read?.range ?? (when !== "any" && phrase[when] ? readDays(phrase[when], openedAt, zone) : null);
+    const from = range ? new Date(Math.max(openedAt - 6 * 3_600_000, zonedTime(addDays(range.from, -1), 0, zone))).toISOString() : undefined;
+    const to = range ? new Date(zonedTime(addDays(range.to, 1), 6, zone)).toISOString() : undefined;
+    return { from, to, words: read?.terms.join(" ") ?? "" };
+  }, [typed, asTyped, readOpts, openedAt, when]);
 
   // Keyword/category pool from the existing search API.
   const pool = useCityEvents(city, { category: cat, limit: 100, from: early?.from, to: early?.to });
@@ -288,7 +291,13 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
       const partial = scored.filter((x) => !x.exact).sort(byScore);
       partial.forEach((x) => shown.add(x.event.id));
       const wordsAsked = intent.terms.length + intent.phrases.length > 0;
-      const semantic = wordsAsked
+      // Words that appear nowhere (not in any listing, not in the search's
+      // vocabulary) are noise: no "related" results for them either.
+      const nonsense =
+        wordsAsked &&
+        intent.signals.every((x) => x.kind === "words") &&
+        intent.terms.every((t) => !isKnownWord(t) && !seenWords.has(t));
+      const semantic = wordsAsked && !nonsense
         ? upcoming(meaning)
             .filter((e) => !shown.has(e.id) && (!cat || e.category === cat) && passesFilters(e, scoring))
             .map((e) => ({
@@ -322,8 +331,18 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
       list = [...tier(false), ...tier(true)];
     }
     return list;
-  }, [allEvents, meaning, q, intent, cat, when, price, format, withinKmValue, city.lat, city.lng, mood, sort]);
+  }, [allEvents, meaning, q, intent, cat, when, price, format, withinKmValue, city.lat, city.lng, mood, sort, seenWords]);
   const matchCount = results.filter((r) => !r.related).length;
+  // Remember a search once it has found something (junk isn't kept), under
+  // the city it's for, so Mumbai's recent searches aren't Paris's.
+  const rememberedFor = useRef("");
+  useEffect(() => {
+    if (!typed || pool.loading || matchCount === 0) return;
+    const k = `${typed}|${homeCity.name}`;
+    if (rememberedFor.current === k) return;
+    rememberedFor.current = k;
+    rememberSearch(typed, homeCity.name);
+  }, [typed, homeCity.name, pool.loading, matchCount]);
 
   // Named interests with nothing to show: say so, rather than let closest
   // matches from other categories pass for an answer.
@@ -616,7 +635,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
                 ? "Searching…"
                 : q
                   ? `${matchCount} ${matchCount === 1 ? "match" : "matches"}`
-                  : `${results.length}${pool.events.length >= 100 && results.length >= 100 ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
+                  : `${results.length}${pool.more ? "+" : ""} event${results.length === 1 ? "" : "s"}`}
               <span> near {city.name}</span>
             </p>
             <div className="xbar-end">
@@ -748,13 +767,27 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
                   </div>
                 </>
               )}
-              {results.length > visible.length && (
+              {(results.length > visible.length || pool.more) && (
                 <div className="xmore">
                   <p className="xmore-count">
                     Showing {visible.length} of {results.length}
+                    {pool.more ? "+" : ""}
                   </p>
-                  <button type="button" className="btn btn-ghost" onClick={() => setShown({ key: viewKey, n: limit + PAGE })}>
-                    Show {Math.min(PAGE, results.length - visible.length)} more
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    disabled={pool.paging}
+                    onClick={async () => {
+                      // Past what is loaded, fetch the next page from the server first.
+                      if (results.length - visible.length < PAGE && pool.more) await pool.loadMore();
+                      setShown({ key: viewKey, n: limit + PAGE });
+                    }}
+                  >
+                    {pool.paging
+                      ? "Loading…"
+                      : results.length > visible.length
+                        ? `Show ${Math.min(PAGE, results.length - visible.length)} more`
+                        : "Show more"}
                   </button>
                 </div>
               )}

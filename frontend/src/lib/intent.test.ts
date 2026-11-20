@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable } from "./intent";
+import { homePrompts, matchesIntentWhen, parseIntent, scoreEvent, widenIntent, widenable } from "./intent";
 import type { Event } from "./types";
 
 // Friday 20 November 2026, 12:00 in Mumbai.
@@ -162,5 +162,42 @@ describe("plurals", () => {
   });
   it("doesn't read a longer word as the shorter one", () => {
     expect(read("workshopping my script").interests).not.toContain("education");
+  });
+});
+
+describe("every suggested search finds something", () => {
+  // Friday 20 November 2026, 17:00 in Mumbai; listings like the live site's.
+  const at = (iso: string) => iso;
+  const listings: Event[] = [
+    ev({ title: "Bitcoin Hardware Wallets Workshop", category: "tech", is_free: true, price_min: null, start_time: at("2026-11-21T05:30:00Z") }),
+    ev({ title: "Startup Founders Mixer", category: "business", start_time: at("2026-11-24T13:30:00Z") }),
+    ev({ title: "Intro to Astronomy", category: "education", start_time: at("2026-11-21T12:30:00Z") }),
+    ev({ title: "Juhu Beach Clean-up Drive", category: "community", is_free: true, price_min: null, start_time: at("2026-11-22T01:30:00Z") }),
+    ev({ title: "Mumbai City FC vs FC Goa", category: "sports", start_time: at("2026-11-21T14:00:00Z") }),
+    ev({ title: "Friday Karaoke at Roxanne's", category: "music", price_min: 99, start_time: at("2026-11-20T15:30:00Z") }),
+  ];
+  const matches = (q: string) =>
+    listings.filter((e) => scoreEvent(e, parseIntent(q, { now: Date.parse("2026-11-20T11:30:00Z"), zone: "Asia/Kolkata" }))?.exact);
+
+  for (const q of homePrompts()) {
+    it(`"${q}"`, () => {
+      expect(matches(q).length).toBeGreaterThan(0);
+    });
+  }
+
+  it("live music: 'live' is part of the phrase, not a word every title needs", () => {
+    const i = parseIntent("Live music tonight under ₹500", { now: Date.parse("2026-11-20T11:30:00Z") });
+    expect(i.terms).toEqual(["live music"]);
+    expect(i.cap?.max).toBe(500);
+  });
+
+  it("follows the city's money", () => {
+    expect(homePrompts({ symbol: "£", cheap: 20 })[5]).toBe("Live music tonight under £20");
+  });
+
+  it("gibberish matches nothing, even widened", () => {
+    const i = parseIntent("asdfghjkl qwerty", { now: Date.parse("2026-11-20T11:30:00Z") });
+    expect(listings.filter((e) => scoreEvent(e, i)?.exact)).toEqual([]);
+    expect(listings.filter((e) => scoreEvent(e, widenIntent(i, ["words"]))?.exact)).toEqual([]);
   });
 });

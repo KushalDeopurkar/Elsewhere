@@ -49,9 +49,10 @@ export default function EventSocial({ event }: { event: Event }) {
   // here or from the sticky action bar).
   useEffect(() => {
     if (!enabled) return;
-    const t = window.setTimeout(() => void load(), status === undefined ? 0 : 400);
+    if (busy) return; // our own save reloads when it lands
+    const t = window.setTimeout(() => void load(), status === undefined ? 0 : 1200);
     return () => window.clearTimeout(t);
-  }, [enabled, load, status]);
+  }, [enabled, load, status, busy]);
 
   if (!enabled) return null;
 
@@ -74,6 +75,9 @@ export default function EventSocial({ event }: { event: Event }) {
       if (value) {
         recordSignal(event, "save");
       }
+      // Count only once the write has landed, or a fast read can undo the
+      // optimistic number (this is why "Going" sometimes showed no count).
+      void load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't save that.");
       void load();
@@ -242,7 +246,18 @@ function AddToList({ event }: { event: Event }) {
             onSubmit={async (e) => {
               e.preventDefault();
               if (!title.trim()) return;
+              setErr(null);
+              const same = lists?.find((l) => l.title.trim().toLowerCase() === title.trim().toLowerCase());
               try {
+                if (same) {
+                  // Same name as one they have: use that list instead of a twin.
+                  if (!inLists.has(same.id)) {
+                    await setInList(same.id, event.id, true);
+                    setInLists((s) => new Set(s).add(same.id));
+                  }
+                  setTitle("");
+                  return;
+                }
                 const l = await createList(title);
                 await setInList(l.id, event.id, true);
                 setLists((x) => [l, ...(x ?? [])]);
@@ -254,7 +269,7 @@ function AddToList({ event }: { event: Event }) {
             }}
           >
             <label className="sr-only" htmlFor="addlist-name">New list name</label>
-            <input id="addlist-name" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} placeholder="New list, e.g. Weekend ideas" />
+            <input id="addlist-name" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} placeholder="New list name" />
             <button type="submit" className="icon-btn" aria-label="Create list">
               <Plus size={16} weight="bold" />
             </button>

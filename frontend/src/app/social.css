@@ -345,7 +345,17 @@
 /* Friends */
 .friends { display: grid; gap: 2rem; padding-bottom: 3rem; }
 .fr-top { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
-.fr-search { flex: 1; min-width: 16rem; margin: 0; }
+.fr-search {
+  flex: 1;
+  min-width: 16rem;
+  margin: 0;
+  /* Icon, field: one row, icon centred on the field. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "icon input go";
+  align-items: center;
+}
+.fr-search .xsearch-icon { grid-area: icon; margin-left: var(--s-4); color: var(--fg-3); }
+.fr-search .xsearch-input { padding: var(--s-3) var(--s-3); }
 .fr-sec { display: grid; gap: 0.5rem; }
 .fr-list { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; }
 .fr-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; border-radius: var(--r-control); }

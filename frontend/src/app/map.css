@@ -193,12 +193,23 @@
 }
 
 .maplibregl-ctrl-attrib {
-  background: color-mix(in oklch, var(--bg) 75%, transparent) !important;
+  background: color-mix(in oklch, var(--bg) 88%, transparent) !important;
   border-radius: var(--r-sm) 0 0 0;
+  color: var(--fg-2) !important;
 }
 
+/* Credits must stay legible: fg-2 on a near-solid backing passes 4.5:1. */
 .maplibregl-ctrl-attrib a {
-  color: var(--fg-3) !important;
+  color: var(--fg-2) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Phones: the switch and card strip sit above the credits line, not on it. */
+@media (max-width: 899px) {
+  .map-switch {
+    bottom: 2.1rem;
+  }
 }
 
 .map-status {
@@ -370,7 +381,7 @@
     padding-bottom: 5rem;
   }
   .map-split .map-peek {
-    margin-bottom: 3.5rem;
+    margin-bottom: 4.6rem;
   }
 }
 
@@ -967,7 +978,7 @@
   .map-strip {
     display: flex;
     gap: 0.6rem;
-    margin: auto -1rem 3.4rem; /* sits above the Map / List switch */
+    margin: auto -1rem 4.6rem; /* sits above the Map / List switch */
     padding: 0.25rem calc((100% - min(82vw, 21rem)) / 2 + 1rem);
     overflow-x: auto;
     overscroll-behavior-x: contain;
@@ -1252,3 +1263,80 @@
 .pin-anchor.is-active .pin-tip {
   display: none;
 }
+
+/* Loading rows in the map list (shape of a real row, no false "nothing here") */
+.map-item.is-skeleton {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+}
+.map-item.is-skeleton .map-item-thumb {
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+.skeleton-line {
+  display: block;
+  height: 12px;
+  margin: 6px 0;
+  width: 90%;
+}
+.skeleton-line.is-short {
+  width: 55%;
+}
+.text-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--signal-text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- The time dial in "Play tonight" (TimeDial.tsx) ----------------------
+   Its styles had gone missing, so the SVG filled the panel as a black disc
+   and crushed the label beside it. A small clock face: evening arc, hour
+   ticks, a hand you can drag, arrow keys to step. */
+.tdial {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--r-round);
+}
+.tdial:active { cursor: grabbing; }
+.tdial:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 3px;
+}
+.tdial-face {
+  fill: var(--bg-3);
+  stroke: var(--rule-strong);
+  stroke-width: 2;
+}
+.tdial-night {
+  fill: none;
+  stroke: color-mix(in oklch, var(--signal) 45%, transparent);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+.tdial-major { stroke: var(--fg-2); stroke-width: 3; stroke-linecap: round; }
+.tdial-minor { stroke: var(--fg-3); stroke-width: 1.5; stroke-linecap: round; opacity: 0.6; }
+.tdial-hand line { stroke: var(--signal); stroke-width: 4; stroke-linecap: round; }
+.tdial-hand circle { fill: var(--signal); }
+.tdial-hub { fill: var(--fg); }
+.tdial.is-night .tdial-face { fill: var(--bg-2); }
+@media (prefers-reduced-motion: no-preference) {
+  .tdial-hand { transition: transform var(--t-hover) var(--ease); }
+}
+
+/* The label takes the room it needs; the close pill never sits on it. */
+.tl-head { flex-wrap: wrap; row-gap: 0.4rem; }
+.tl-label { min-width: 9rem; }
+.tl-label strong { white-space: nowrap; }
+.tl-label span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.3rem; }
+.tl-close { flex: none; margin-left: auto; white-space: nowrap; }
+.tl-skip { margin-left: 0; white-space: nowrap; }

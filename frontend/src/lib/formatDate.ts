@@ -130,3 +130,26 @@ export function zoneLabel(zone: string, at: number): string {
     .find((p) => p.type === "timeZoneName")?.value;
   return part && !part.startsWith("GMT+") && !part.startsWith("GMT-") ? part : "LOCAL";
 }
+
+/**
+ * For an event already underway: "On now · started 2 h ago" (or "· until
+ * 11 pm" when the end is listed). Null when it hasn't started or has ended.
+ */
+export function startedLabel(e: { start_time: string; end_time?: string | null }, now = Date.now()): string | null {
+  const start = Date.parse(e.start_time);
+  const end = e.end_time ? Date.parse(e.end_time) : start + 3 * 3_600_000;
+  if (Number.isNaN(start) || start > now || end < now) return null;
+  const mins = Math.round((now - start) / 60_000);
+  const ago = mins < 60 ? `${mins} min ago` : `${Math.round(mins / 60)} h ago`;
+  return `On now · started ${ago}`;
+}
+
+/** "3 h ago", "2 days ago", "just now": how long ago a moment was. */
+export function agoLabel(then: number, now = Date.now()): string {
+  const mins = Math.max(0, Math.round((now - then) / 60_000));
+  if (mins < 2) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 36) return `${hours} h ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}

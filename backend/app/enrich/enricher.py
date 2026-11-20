@@ -2,7 +2,8 @@
 Enrich pass: open each upcoming event's own page and store its full
 description, ticket tiers and details. Runs after the scrape in GitHub
 Actions. Polite: one request per host at a time with a delay, a capped
-batch per run, and a 3-day refresh so pages are not re-fetched every 6 h.
+batch per run, and a 3-day refresh so pages are not re-fetched every 6 h
+(8 h for events in the next three days, whose tickets can sell out).
 """
 from __future__ import annotations
 
@@ -43,6 +44,25 @@ def pick_batch(client, limit: int, sources=None, retry_failed: bool = False) -> 
     if retry_failed:
         return base.is_("details", "null").order("start_time").limit(limit).execute().data or []
     fresh = base.is_("details_fetched_at", "null").order("start_time").limit(limit).execute().data or []
+    if len(fresh) >= limit:
+        return fresh
+    # Tickets sell out: events in the next three days are re-checked when
+    # their details are more than 8 hours old, so a sold-out show stops
+    # being offered within a run or two.
+    soon = (
+        client.table("events")
+        .select(cols)
+        .gte("start_time", now.isoformat())
+        .lte("start_time", (now + timedelta(days=3)).isoformat())
+        .in_("source", srcs)
+        .lt("details_fetched_at", (now - timedelta(hours=8)).isoformat())
+        .order("start_time")
+        .limit(limit - len(fresh))
+        .execute()
+        .data
+        or []
+    )
+    fresh = fresh + [r for r in soon if r["id"] not in {f["id"] for f in fresh}]
     if len(fresh) >= limit:
         return fresh
     older = (

@@ -3,7 +3,7 @@ from typing import Optional
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.config import get_settings
 from app.database import get_supabase, get_supabase_service
@@ -54,8 +54,10 @@ def search_events(
     to_time: Optional[datetime] = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    desc_chars: Optional[int] = Query(default=None, ge=0, le=2000),
     service: EventService = Depends(get_event_service),
 ):
+    """`desc_chars` trims each description for list views (smaller payload)."""
     params = EventSearchParams(
         q=q,
         category=category,
@@ -68,6 +70,11 @@ def search_events(
         offset=offset,
     )
     results = service.search(params)
+    if desc_chars is not None:
+        for r in results:
+            d = r.get("description")
+            if d and len(d) > desc_chars:
+                r["description"] = d[:desc_chars].rstrip() + "…"
     return ApiResponse(
         data=[EventResponse.model_validate(r) for r in results],
         meta=Meta(limit=limit, offset=offset),
@@ -96,6 +103,21 @@ def map_events(
     )
     # Map events return a subset of fields; EventResponse handles missing fields via defaults
     return ApiResponse(data=[EventResponse.model_validate(r) for r in results])
+
+
+@router.get("/counts")
+def event_counts(
+    response: Response,
+    lat: float = Query(...),
+    lng: float = Query(...),
+    radius_km: float = Query(default=40.0, gt=0, le=200),
+    service: EventService = Depends(get_event_service),
+):
+    """Upcoming events per category near a point, in one query (never null)."""
+    data = service.counts_near(lat, lng, radius_km)
+    # Counts change when the scraper runs (every 6 hours): cache at the edge.
+    response.headers["Cache-Control"] = "public, s-maxage=600, stale-while-revalidate=3600"
+    return ApiResponse(data=data)
 
 
 @router.get("/{event_id}")

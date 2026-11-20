@@ -4,7 +4,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { CalendarPlus, ShareNetwork, Check, WhatsappLogo } from "@phosphor-icons/react/ssr";
 import { whatsappUrl, eventShareText } from "@/lib/share";
-import { googleCalendarLink } from "@/lib/plan";
+import { googleCalendarLink, planToIcs } from "@/lib/plan";
+import type { PlanResult } from "@/lib/plan";
 import type { Event } from "@/lib/types";
 import SaveButton from "./SaveButton";
 
@@ -15,36 +16,76 @@ const PlanMap = dynamic(() => import("@/components/PlanMap"), {
 
 /** Save, add to calendar and share: the client-side actions on an event page. */
 export function EventActions({ event }: { event: Event }) {
-  const [shared, setShared] = useState(false);
+  // What just happened, said on screen and to screen readers.
+  const [status, setStatus] = useState("");
+  const [calOpen, setCalOpen] = useState(false);
+  const tell = (msg: string) => {
+    setStatus(msg);
+    window.setTimeout(() => setStatus((s) => (s === msg ? "" : s)), 3500);
+  };
 
   const share = async () => {
     const url = `${window.location.origin}/events/${event.id}`;
     try {
-      if (navigator.share) await navigator.share({ title: event.title, url });
-      else {
+      if (navigator.share) {
+        await navigator.share({ title: event.title, url });
+        tell("Shared");
+      } else {
         await navigator.clipboard.writeText(url);
-        setShared(true);
-        setTimeout(() => setShared(false), 2000);
+        tell("Link copied");
       }
-    } catch {
-      /* share sheet dismissed */
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return; // share sheet dismissed
+      try {
+        await navigator.clipboard.writeText(url);
+        tell("Link copied");
+      } catch {
+        tell("Couldn't share from this browser. Copy the address bar link instead.");
+      }
     }
   };
 
-  const calendar = () => {
-    window.open(
-      googleCalendarLink({ event, why: "Found on Elsewhere", travel: null }, window.location.origin),
-      "_blank",
-      "noopener,noreferrer",
-    );
+  const downloadIcs = () => {
+    const ics = planToIcs({ stops: [{ event, why: "Found on Elsewhere", travel: null }] } as unknown as PlanResult, window.location.origin);
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${event.title.replace(/[^\w\s-]+/g, "").trim().slice(0, 60) || "event"}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setCalOpen(false);
+    tell("Calendar file downloaded: open it to add the event");
   };
 
   return (
     <div className="detail-actions">
       <SaveButton event={event} variant="button" />
-      <button type="button" className="btn btn-ghost" onClick={calendar}>
-        <CalendarPlus size={17} weight="bold" /> Add to calendar
-      </button>
+      <div className="cal-menu">
+        <button type="button" className="btn btn-ghost" aria-expanded={calOpen} onClick={() => setCalOpen((o) => !o)}>
+          <CalendarPlus size={17} weight="bold" /> Add to calendar
+        </button>
+        {calOpen && (
+          <div className="cal-pop" role="menu">
+            <a
+              role="menuitem"
+              href={googleCalendarLink({ event, why: "Found on Elsewhere", travel: null }, typeof window === "undefined" ? "" : window.location.origin)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                setCalOpen(false);
+                tell("Opened Google Calendar in a new tab");
+              }}
+            >
+              Google Calendar
+            </a>
+            <button type="button" role="menuitem" onClick={downloadIcs}>
+              Apple, Outlook or other (.ics)
+            </button>
+          </div>
+        )}
+      </div>
       <button
         type="button"
         className="btn btn-ghost btn-wa"
@@ -53,14 +94,16 @@ export function EventActions({ event }: { event: Event }) {
         <WhatsappLogo size={17} weight="fill" /> WhatsApp
       </button>
       <button type="button" className="btn btn-ghost" onClick={share}>
-        {shared ? <Check size={17} weight="bold" /> : <ShareNetwork size={17} weight="bold" />}
-        {shared ? "Link copied" : "Share"}
+        {status === "Link copied" ? <Check size={17} weight="bold" /> : <ShareNetwork size={17} weight="bold" />}
+        {status === "Link copied" ? "Link copied" : "Share"}
       </button>
+      <p className="detail-status" role="status" aria-live="polite">
+        {status}
+      </p>
     </div>
   );
 }
 
-/** Single-pin map of the venue. */
 export function EventLocationMap({ event }: { event: Event }) {
   // The map library is large: load it only when the map is about to scroll
   // into view, not with the page.
