@@ -17,6 +17,7 @@ import type { MapHandle } from "@/components/EventMap";
 import { getMapEvents, MapBounds } from "@/lib/api";
 import { Event, EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
+import { upcoming } from "@/lib/eventFilters";
 import { whenOf } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import TimeScrubber from "@/components/TimeScrubber";
@@ -70,7 +71,9 @@ export default function MapPage() {
     const run = async (attempt: number) => {
       const res = await getMapEvents(next, cat ?? undefined);
       if (id !== requestId.current) return;
-      setEvents(res.events);
+      // The map asks for events that started up to six hours ago, so what is
+      // on now shows up; anything that has already finished is dropped here.
+      setEvents(upcoming(res.events));
       setIsSample(res.isSample);
       if (res.isSample && attempt < RETRY_DELAYS.length) {
         window.setTimeout(() => {

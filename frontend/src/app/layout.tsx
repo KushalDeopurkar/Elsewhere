@@ -13,6 +13,7 @@ import "./planner.css";
 import "./social.css";
 import "./passport.css";
 import "./motion.css";
+import "./vivid.css";
 import Nav from "@/components/Nav";
 import RouteSignal from "@/components/RouteSignal";
 import SocialRoot from "@/components/SocialRoot";

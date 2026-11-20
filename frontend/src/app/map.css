@@ -988,17 +988,17 @@
   display: flex;
   align-items: stretch;
   border-radius: var(--r-card);
-  background: color-mix(in oklch, var(--bg-2) 94%, transparent);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  /* Solid, so pins behind never show through the text. Cards off-centre are
+     dimmed with a filter rather than opacity for the same reason. */
+  background: var(--bg-2);
   border: 1px solid var(--rule-strong);
   box-shadow: var(--lift-3);
-  opacity: 0.72;
+  filter: brightness(0.72) saturate(0.7);
   transform: scale(0.96);
-  transition: transform var(--t-hover) var(--ease), opacity var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
+  transition: transform var(--t-hover) var(--ease), filter var(--t-hover) var(--ease), border-color var(--t-hover) var(--ease);
 }
 .map-strip-card.is-on {
-  opacity: 1;
+  filter: none;
   transform: none;
   border-color: color-mix(in oklab, var(--cat-hue) 70%, var(--rule-strong));
 }
@@ -1058,11 +1058,48 @@
   display: none;
 }
 
-/* The category chip row fades at its edge so it reads as scrollable */
-.map-bar .rail {
-  mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
-  padding-right: 40px;
+/* The category row fades on whichever side has more, and steps with arrows
+   on pointer screens (FilterRail's CategoryRail). Keyboard users tab through
+   the chips, so the arrows stay out of the tab order. */
+.rail-scroller {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.rail-scroller .rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  --fade-l: 40px;
+  --fade-r: 40px;
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+}
+.rail-scroller.at-start .rail { --fade-l: 0px; }
+.rail-scroller.at-end .rail { --fade-r: 0px; }
+.rail-step {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  translate: 0 -50%;
+  display: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-round);
+  background: var(--bg-3);
+  color: var(--fg);
+  border: 1px solid var(--rule-strong);
+  box-shadow: var(--lift-3);
+  cursor: pointer;
+  transition: background var(--t-hover) var(--ease);
+}
+.rail-step:hover { background: var(--bg-4); }
+.rail-step.is-prev { left: 0; }
+.rail-step.is-next { right: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .rail-step:not([hidden]) { display: grid; }
 }
 
 /* Pins are round again (the site's corners are square, map pins are points) */

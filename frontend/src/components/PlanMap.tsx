@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pause, Play } from "@phosphor-icons/react/ssr";
 import { LngLatBounds, MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
-import { STYLE_URL, FALLBACK_STYLE_URL, applyDarkTheme } from "@/lib/mapTheme";
+import { STYLE_URL, FALLBACK_STYLE_URL, applyDarkTheme, onPaletteChange } from "@/lib/mapTheme";
 import type { PlanStop } from "@/lib/plan";
 import { pathTo, pointAt, stopIndexAt, type LngLat } from "@/lib/route";
 import { whenOf } from "@/lib/formatDate";
@@ -138,8 +138,15 @@ export default function PlanMap({ stops, animate = false }: { stops: PlanStop[];
     // layout settling, a sheet opening): keep the canvas filling it.
     const sizer = new ResizeObserver(() => instance.resize());
     if (instance.getContainer()) sizer.observe(instance.getContainer());
+    // Switching between Night and Vivid repaints the basemap in place.
+    const stopPalette = onPaletteChange(() => {
+      if (instance.isStyleLoaded()) {
+        applyDarkTheme(instance);
+      }
+    });
 
     return () => {
+      stopPalette();
       sizer.disconnect();
       // Removing the map also removes its markers' DOM.
       instance.remove();

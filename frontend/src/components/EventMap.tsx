@@ -13,6 +13,7 @@ import {
   DEFAULT_VIEW,
   applyDarkTheme,
   add3DBuildings,
+  onPaletteChange,
 } from "@/lib/mapTheme";
 import type { MapBounds } from "@/lib/api";
 import type { CityLights } from "@/lib/cityLightsLayer";
@@ -254,8 +255,16 @@ export default function EventMap({
     // layout settling, a sheet opening): keep the canvas filling it.
     const sizer = new ResizeObserver(() => instance.resize());
     if (instance.getContainer()) sizer.observe(instance.getContainer());
+    // Switching between Night and Vivid repaints the basemap in place.
+    const stopPalette = onPaletteChange(() => {
+      if (instance.isStyleLoaded()) {
+        applyDarkTheme(instance);
+        add3DBuildings(instance);
+      }
+    });
 
     return () => {
+      stopPalette();
       sizer.disconnect();
       clearTimeout(stall);
       pins.forEach((pin) => pin.remove());
@@ -576,15 +585,6 @@ export default function EventMap({
     });
   }, []);
 
-  const rotate = useCallback((delta: number) => {
-    const m = map.current;
-    if (!m) return;
-    m.easeTo({
-      bearing: m.getBearing() + delta,
-      duration: prefersReducedMotion() ? 0 : 400,
-    });
-  }, []);
-
   const resetNorth = useCallback(() => {
     map.current?.easeTo({
       bearing: 0,
@@ -592,11 +592,24 @@ export default function EventMap({
     });
   }, []);
 
+  // "Show every event": fit the view to all the events loaded, the same
+  // thing a person wants after panning off somewhere. With none, the city.
+  const allEvents = useRef(events);
+  useEffect(() => {
+    allEvents.current = events;
+  }, [events]);
   const reset = useCallback(() => {
-    map.current?.easeTo({
-      ...DEFAULT_VIEW,
-      duration: prefersReducedMotion() ? 0 : 900,
-    });
+    const m = map.current;
+    if (!m) return;
+    const placed = allEvents.current.filter((e) => e.lat != null && e.lng != null && e.format !== "online");
+    const duration = prefersReducedMotion() ? 0 : 900;
+    if (placed.length < 2) {
+      m.easeTo({ ...DEFAULT_VIEW, duration });
+      return;
+    }
+    const box = new LngLatBounds([placed[0].lng!, placed[0].lat!], [placed[0].lng!, placed[0].lat!]);
+    placed.forEach((e) => box.extend([e.lng!, e.lat!]));
+    m.fitBounds(box, { padding: { top: 140, bottom: 60, left: 60, right: 80 }, maxZoom: 15, bearing: 0, pitch: 0, duration });
   }, []);
 
   return (
@@ -613,25 +626,18 @@ export default function EventMap({
             <path d="M5 12h14" />
           </svg>
         </button>
-        <button type="button" className="map-tool" onClick={() => rotate(-30)} aria-label="Rotate left" title="Rotate left (or right-click and drag)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" />
-          </svg>
-        </button>
-        <button type="button" className="map-tool" onClick={() => rotate(30)} aria-label="Rotate right" title="Rotate right (or right-click and drag)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" />
-          </svg>
-        </button>
-        <button type="button" className="map-tool map-compass" onClick={resetNorth} aria-label="Point north" title="Point north">
+        {Math.abs(bearing) > 0.5 && (
+        <button type="button" className="map-tool map-compass" onClick={resetNorth} aria-label="Point north" title="Point north (right-click and drag to turn)">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ transform: `rotate(${-bearing}deg)` }}>
             <path d="M12 3l3.5 9h-7z" fill="var(--signal)" />
             <path d="M12 21l-3.5-9h7z" fill="currentColor" opacity="0.5" />
           </svg>
         </button>
-        <button type="button" className="map-tool" onClick={reset} aria-label="Reset the view">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
+        )}
+        <button type="button" className="map-tool" onClick={reset} aria-label="Show every event" title="Show every event">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+            <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
           </svg>
         </button>
       </div>

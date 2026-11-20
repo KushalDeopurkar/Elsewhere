@@ -7,6 +7,7 @@ import BrandMark from "./BrandMark";
 import LocationSelector from "./LocationSelector";
 import AccountButton from "./AccountButton";
 import CityClock from "./CityClock";
+import ThemeMenu from "./ThemeMenu";
 import { useSaved } from "@/lib/saved";
 
 // Three doors, numbered like platforms: Discover (what is on, and ask for
@@ -67,6 +68,7 @@ export default function Nav() {
               <LocationSelector />
               <CityClock className="topnav-clock" />
             </div>
+            <ThemeMenu />
             <TransitionLink href="/explore?focus=1" className="icon-btn" aria-label="Search events">
               <MagnifyingGlass size={18} weight="bold" />
             </TransitionLink>

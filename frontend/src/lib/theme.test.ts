@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveTheme, themeAt, themeBootScript } from "./theme";
+import { paletteOf, resolveTheme, themeAt, themeBootScript } from "./theme";
 
 const at = (iso: string) => Date.parse(iso);
 
@@ -30,4 +30,21 @@ describe("theme follows the sun in the chosen city", () => {
     expect(js).toContain("ee.theme.v1");
     expect(() => new Function(js)).not.toThrow();
   });
+
+  it("vivid is night at any hour, in its own palette", () => {
+    const noon = at("2026-11-20T06:30:00Z");
+    expect(resolveTheme("vivid", noon, "Asia/Kolkata")).toBe("night");
+    expect(paletteOf("vivid")).toBe("vivid");
+    expect(paletteOf("night")).toBe("board");
+    expect(paletteOf("auto")).toBe("board");
+  });
+
+  it("the boot script paints vivid before first paint", () => {
+    const store: Record<string, string> = { "ee.theme.v1": JSON.stringify("vivid") };
+    const root = { dataset: {} as Record<string, string> };
+    const run = new Function("document", "localStorage", themeBootScript());
+    run({ documentElement: root }, { getItem: (k: string) => store[k] ?? null });
+    expect(root.dataset).toEqual({ palette: "vivid", theme: "night" });
+  });
 });
+

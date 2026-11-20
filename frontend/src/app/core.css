@@ -645,6 +645,68 @@ p {
   color: var(--board-fg);
 }
 
+/* Display switch (ThemeMenu): an icon button and a small menu of radios. */
+.theme-menu {
+  position: relative;
+}
+.theme-btn.is-vivid {
+  color: var(--signal);
+}
+.theme-pop {
+  position: absolute;
+  z-index: var(--z-overlay);
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 13rem;
+  padding: var(--s-1);
+  background: var(--board-2);
+  color: var(--board-fg);
+  border: 1px solid var(--board-rule);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift-3);
+  animation: theme-pop-in var(--t-enter) var(--ease);
+}
+@keyframes theme-pop-in {
+  from { opacity: 0; translate: 0 -4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-pop { animation: none; }
+}
+.theme-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-control);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.theme-opt input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.theme-opt:hover {
+  background: color-mix(in oklch, var(--board-fg) 8%, transparent);
+}
+.theme-opt:has(input:focus-visible) {
+  outline: 2px solid var(--lamp);
+  outline-offset: -2px;
+}
+.theme-opt.is-on {
+  background: color-mix(in oklch, var(--lamp) 18%, transparent);
+  color: var(--lamp);
+}
+.theme-opt.is-vivid svg {
+  color: oklch(0.75 0.21 340);
+}
+
 .topnav .icon-btn[aria-current="page"] {
   color: var(--lamp);
 }

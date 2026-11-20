@@ -30,7 +30,7 @@ export const FALLBACK_STYLE_URL =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
 /** App tokens as hex, since the MapLibre style spec does not parse oklch(). */
-const C = {
+const BOARD = {
   base: "#0b0d12",
   land: "#11141b",
   water: "#0d1a28",
@@ -43,6 +43,28 @@ const C = {
   label: "#b6bccb",
   labelHalo: "#08090d",
   boundary: "#333a4a",
+};
+
+/** The Vivid palette (tokens.css): violet land, indigo water, glowing purple roads. */
+const VIVID: typeof BOARD = {
+  base: "#120a24",
+  land: "#170e2d",
+  water: "#0c1840",
+  park: "#0e2733",
+  roadMinor: "#2a1c49",
+  roadMajor: "#3b2766",
+  roadTrunk: "#6a3f9e",
+  buildingLow: "#211640",
+  buildingHigh: "#4a3378",
+  label: "#dccbff",
+  labelHalo: "#0b0618",
+  boundary: "#59408a",
+};
+
+/** The palette in force, read from <html data-palette> each time the map is painted. */
+let C = BOARD;
+const pickPalette = () => {
+  C = typeof document !== "undefined" && document.documentElement.dataset.palette === "vivid" ? VIVID : BOARD;
 };
 
 const has = (id: string, ...needles: string[]) =>
@@ -81,6 +103,7 @@ function lineColorFor(id: string): string {
 
 /** Repaint a light basemap to the app's dark palette, in place. */
 export function applyDarkTheme(map: MapLibreMap): void {
+  pickPalette();
   const style = map.getStyle();
   if (!style?.layers) return;
 
@@ -141,6 +164,11 @@ const BUILDING_SOURCE_LAYERS = ["building", "buildings"];
  * zoom into a neighbourhood, and taller ones lighten so the skyline has depth.
  */
 export function add3DBuildings(map: MapLibreMap): boolean {
+  pickPalette();
+  if (map.getLayer("ee-buildings-3d")) {
+    paint(map, "ee-buildings-3d", "fill-extrusion-color", buildingColour());
+    return true;
+  }
   const source = vectorSourceId(map);
   if (!source) return false;
 
@@ -153,13 +181,7 @@ export function add3DBuildings(map: MapLibreMap): boolean {
         "source-layer": sourceLayer,
         minzoom: 14,
         paint: {
-          "fill-extrusion-color": [
-            "interpolate",
-            ["linear"],
-            ["coalesce", ["get", "render_height"], ["get", "height"], 8],
-            0, C.buildingLow,
-            60, C.buildingHigh,
-          ],
+          "fill-extrusion-color": buildingColour() as never,
           "fill-extrusion-height": [
             "interpolate",
             ["linear"],
@@ -191,3 +213,21 @@ export const DEFAULT_VIEW = {
   pitch: 55,
   bearing: -18,
 };
+
+function buildingColour(): unknown {
+  return [
+    "interpolate",
+    ["linear"],
+    ["coalesce", ["get", "render_height"], ["get", "height"], 8],
+    0, C.buildingLow,
+    60, C.buildingHigh,
+  ];
+}
+
+/** Repaint a loaded map when the palette changes (Night to Vivid and back). */
+export function onPaletteChange(run: () => void): () => void {
+  if (typeof MutationObserver === "undefined") return () => {};
+  const mo = new MutationObserver(run);
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-palette"] });
+  return () => mo.disconnect();
+}

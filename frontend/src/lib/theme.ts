@@ -1,7 +1,8 @@
 /**
  * Day and night. By default the site follows the sun in the chosen city: the
  * printed timetable by day, the lit departure board from 18:00 to 06:00. The
- * person can pin either one in Settings.
+ * person can pin either one in Settings, or pick Vivid: night in full colour
+ * (deep violet, neon category hues, a magenta signal) at any hour.
  *
  * The same rule runs twice: as a tiny inline script before first paint (so a
  * night visit never flashes paper), and as a hook that keeps it current when
@@ -11,8 +12,10 @@
 import { CITY_LIST } from "./cities";
 import { zoneHour } from "./sky";
 
-export type ThemePref = "auto" | "day" | "night";
+export type ThemePref = "auto" | "day" | "night" | "vivid";
 export type Theme = "day" | "night";
+/** Which night: the departure board, or the colourful one. Set as <html data-palette>. */
+export type Palette = "board" | "vivid";
 
 export const THEME_KEY = "ee.theme.v1";
 export const CITY_KEY = "ee.city.v1";
@@ -24,7 +27,12 @@ export function themeAt(now: number, zone: string): Theme {
 }
 
 export function resolveTheme(pref: ThemePref, now: number, zone: string): Theme {
-  return pref === "auto" ? themeAt(now, zone) : pref;
+  if (pref === "vivid") return "night";
+  return pref === "day" || pref === "night" ? pref : themeAt(now, zone);
+}
+
+export function paletteOf(pref: ThemePref): Palette {
+  return pref === "vivid" ? "vivid" : "board";
 }
 
 /** City name to time zone, for the cities outside India's single zone. */
@@ -41,5 +49,5 @@ export function themeBootScript(): string {
     THEME_KEY,
   )}))||"auto";c=JSON.parse(localStorage.getItem(${JSON.stringify(
     CITY_KEY,
-  )}))||"Mumbai"}catch(e){}var t=p;if(p!=="day"&&p!=="night"){var z=${zones}[c]||"Asia/Kolkata",h=+new Intl.DateTimeFormat("en-GB",{timeZone:z,hour:"numeric",hourCycle:"h23"}).format(new Date());t=h>=18||h<6?"night":"day"}d.dataset.theme=t}catch(e){}})();`;
+  )}))||"Mumbai"}catch(e){}var t=p;if(p==="vivid"){t="night";d.dataset.palette="vivid"}else if(p!=="day"&&p!=="night"){var z=${zones}[c]||"Asia/Kolkata",h=+new Intl.DateTimeFormat("en-GB",{timeZone:z,hour:"numeric",hourCycle:"h23"}).format(new Date());t=h>=18||h<6?"night":"day"}d.dataset.theme=t}catch(e){}})();`;
 }

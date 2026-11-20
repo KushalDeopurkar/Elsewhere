@@ -144,6 +144,65 @@
   color-scheme: dark;
 }
 
+/* Vivid: night in full colour. Chosen in the header's display switch or in
+   Settings (lib/theme.ts sets <html data-palette="vivid"> with data-theme
+   night). Deep violet surfaces, a magenta signal with a cyan partner for
+   gradients, and category hues at full chroma. Re-declared on night subtrees
+   (the map) so they pick it up too. Contrast: --fg-3 on --bg-2 clears 4.5:1. */
+:root[data-palette="vivid"],
+:root[data-palette="vivid"] [data-theme="night"] {
+  --bg: oklch(0.175 0.065 288);
+  --bg-2: oklch(0.215 0.08 290);
+  --bg-3: oklch(0.26 0.095 292);
+  --bg-4: oklch(0.31 0.11 294);
+
+  --fg: oklch(0.97 0.018 310);
+  --fg-2: oklch(0.87 0.045 305);
+  --fg-3: oklch(0.76 0.07 300);
+
+  --rule-soft: oklch(0.85 0.12 310 / 0.09);
+  --rule: oklch(0.85 0.12 310 / 0.16);
+  --rule-strong: oklch(0.85 0.14 310 / 0.36);
+
+  --signal: oklch(0.72 0.23 352);
+  --signal-hi: oklch(0.77 0.21 355);
+  --on-signal: oklch(0.16 0.06 290);
+  --signal-wash: oklch(0.72 0.23 352 / 0.2);
+  --signal-text: oklch(0.8 0.17 352);
+  --signal-2: oklch(0.83 0.14 205);
+  --spectrum: linear-gradient(100deg, oklch(0.72 0.23 352), oklch(0.74 0.2 300) 35%, oklch(0.8 0.15 240) 65%, oklch(0.85 0.15 190));
+
+  --live: oklch(0.84 0.2 150);
+  --crit: oklch(0.74 0.18 25);
+  --crit-wash: oklch(0.74 0.18 25 / 0.16);
+
+  --board: oklch(0.15 0.06 288);
+  --board-2: oklch(0.2 0.075 290);
+  --board-fg: oklch(0.97 0.018 310);
+  --board-fg-2: oklch(0.8 0.06 300);
+  --board-rule: oklch(0.85 0.12 310 / 0.16);
+  --lamp: oklch(0.8 0.17 352);
+  --scrim: oklch(0.1 0.05 288);
+  --here: oklch(0.83 0.14 205);
+
+  --lift-2: 0 1px 0 var(--rule);
+  --lift-3: 0 22px 48px -14px oklch(0.08 0.08 300 / 0.75), 0 0 0 1px oklch(0.85 0.12 310 / 0.08);
+
+  --cat-l: 0.8;
+  --cat-c: 0.17;
+  color-scheme: dark;
+}
+
+/* A soft aurora behind the whole page, fixed so it does not scroll with it. */
+:root[data-palette="vivid"] body {
+  background:
+    radial-gradient(60rem 40rem at 8% -10%, oklch(0.45 0.2 352 / 0.28), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 10%, oklch(0.5 0.17 220 / 0.22), transparent 60%),
+    radial-gradient(70rem 50rem at 50% 120%, oklch(0.45 0.2 300 / 0.3), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
 /* Category hues are data, not brand: one hue per category, lightness per theme. */
 :root { --cat-l: 0.5; --cat-c: 0.13; }
 :root[data-theme="night"],
@@ -154,4 +213,11 @@
 [data-theme="night"]:not(:root) {
   color: var(--fg);
   background-color: var(--bg);
+}
+
+/* Vivid's category hues, after the per-theme pair above so they win. */
+:root[data-palette="vivid"],
+:root[data-palette="vivid"] [data-theme="night"] {
+  --cat-l: 0.8;
+  --cat-c: 0.17;
 }

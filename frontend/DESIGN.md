@@ -11,6 +11,10 @@ Every city is a timetable and every event is a departure: a start time, a destin
 - `<html data-theme>` is set before paint by `themeBootScript()`; `ThemeSync` keeps it current; Settings can pin Day or Night. Any subtree can opt into the board with `data-theme="night"` (the map does).
 - Category hues are data, not brand: one hue each, lightness set per theme (`--cat-l`).
 
+## Vivid: the third look, chosen by the person
+
+Night in full colour, for anyone who wants it at any hour. It is picked from the display switch in the header (the icon beside search) or in Settings, never by the sun. Deep violet surfaces with a faint aurora behind the page, a magenta signal, and a spectrum (magenta, violet, blue, cyan) on a few signature pieces: the city in the headline, the primary buttons, section numbers and the nav underline. Category hues run at full chroma: departure times, card edges and map clusters each glow in their own event's colour. The basemap is repainted violet to match. Set as `<html data-theme="night" data-palette="vivid">`; tokens in `tokens.css`, the rest in `vivid.css`.
+
 ## Type
 | Role | Face | Use |
 |---|---|---|
@@ -58,3 +62,11 @@ Compared version 1 (`main`, midnight and coral) and version 2 (`missile/20261120
 | Data | De-dupe by id | Same | + the same listing from two sites, cancelled titles and unreadable dates dropped; postponed and sold out shown only when the listing says so |
 
 Why not a third look: version 2's design system already passes contrast, keyboard and performance checks and reads as its own identity; what it lacked was breadth (it framed the site around tonight) and the discovery tools above. 3.0 keeps the system and fixes those.
+
+### Map fixes (after the live screenshot of 20 Nov)
+
+- Events that have already finished are dropped: the map asks for six hours back so "on now" shows, and the list was opening on last night's events.
+- Clusters merge until no two markers overlap (the grid alone split neighbours across a cell line).
+- Controls: zoom, a compass only once the map is turned, and "Show every event". The two rotate buttons went (right-drag still turns the map); three near-identical arrows read as one.
+- The category row fades only on the side with more, scrolls with a mouse wheel, and has arrow buttons on pointer screens.
+- Phone cards over the map are solid, so pins never show through their text.
