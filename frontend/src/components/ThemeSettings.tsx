@@ -7,7 +7,7 @@ const OPTIONS: { value: ThemePref; label: string; note: string }[] = [
   { value: "auto", label: "Follow the sun", note: "Day timetable until 18:00 in your city, the lit board after." },
   { value: "day", label: "Always day", note: "White paper and ink." },
   { value: "night", label: "Always night", note: "The lit departure board." },
-  { value: "vivid", label: "Vivid", note: "Night in full colour: deep violet, neon category hues." },
+  { value: "vivid", label: "Vivid", note: "The city as a transit map at night: charcoal, with every kind of event on its own coloured line." },
 ];
 
 /** Day or night: the one display setting, kept on this device. */

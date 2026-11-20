@@ -2,7 +2,7 @@
  * Day and night. By default the site follows the sun in the chosen city: the
  * printed timetable by day, the lit departure board from 18:00 to 06:00. The
  * person can pin either one in Settings, or pick Vivid: night in full colour
- * (deep violet, neon category hues, a magenta signal) at any hour.
+ * (the transit map at night: charcoal, flat line colours, a vermilion signal) at any hour.
  *
  * The same rule runs twice: as a tiny inline script before first paint (so a
  * night visit never flashes paper), and as a hook that keeps it current when

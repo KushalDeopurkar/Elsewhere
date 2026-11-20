@@ -402,9 +402,9 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
               </button>
             ))}
           </div>
-          {!cat && intent && intent.interests.length > 0 && (
+          {!cat && intent && intent.strict.length > 0 && (
             <p className="fnote is-words">
-              From your words: {intent.interests.map((c) => CATEGORIES.find((x) => x.value === c)?.label ?? c).join(", ")}
+              From your words: {intent.strict.map((c) => CATEGORIES.find((x) => x.value === c)?.label ?? c).join(", ")}
             </p>
           )}
         </fieldset>
@@ -438,7 +438,11 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </button>
           ))}
         </div>
-              {when === "any" && intent && intent.when !== "any" && <p className="fnote is-words">From your words: {intent?.signals.find((x) => x.kind === "when")?.label}</p>}
+              {when === "any" && intent && (intent.range || intent.hours) && (
+                <p className="fnote is-words">
+                  From your words: {[intent.range?.label, intent.hours?.label].filter(Boolean).join(", ")}
+                </p>
+              )}
       </fieldset>
       <fieldset className="fgroup">
         <legend>Price</legend>
@@ -449,7 +453,7 @@ export default function ExploreView({ lockedCategory }: { lockedCategory?: Event
             </button>
           ))}
         </div>
-              {price === "any" && intent?.freeOnly && <p className="fnote is-words">From your words: Free</p>}
+              {price === "any" && (intent?.freeOnly || intent?.cap) && <p className="fnote is-words">From your words: {intent?.freeOnly ? "Free" : intent?.cap?.label}</p>}
       </fieldset>
       <fieldset className="fgroup">
         <legend>Format</legend>

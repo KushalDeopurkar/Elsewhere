@@ -11,9 +11,14 @@ Every city is a timetable and every event is a departure: a start time, a destin
 - `<html data-theme>` is set before paint by `themeBootScript()`; `ThemeSync` keeps it current; Settings and the header's display switch can pin Day, Night or Vivid. Every page follows the choice, the header, tab bar and map included (the map has its own day, night and vivid basemap palettes in `mapTheme.ts`; city lights run at night only). The monthly recap stays a night slideshow by design. Any subtree can still opt into the board with `data-theme="night"`.
 - Category hues are data, not brand: one hue each, lightness set per theme (`--cat-l`).
 
-## Vivid: the third look, chosen by the person
+## Vivid: the city's transit map at night
 
-Night in full colour, for anyone who wants it at any hour. It is picked from the display switch in the header (the icon beside search) or in Settings, never by the sun. Deep violet surfaces with a faint aurora behind the page, a magenta signal, and a spectrum (magenta, violet, blue, cyan) on a few signature pieces: the city in the headline, the primary buttons, section numbers and the nav underline. Category hues run at full chroma: departure times, card edges and map clusters each glow in their own event's colour. The basemap is repainted violet to match. Set as `<html data-theme="night" data-palette="vivid">`; tokens in `tokens.css`, the rest in `vivid.css`.
+The third look, chosen by the person from the display switch in the header or in Settings, never by the sun. A printed line map after dark: warm charcoal surfaces, one vermilion signal for actions and "now", and all other colour from the category lines, flat and at full strength, each used only where its category is (departure times, card edges, section roundels, map clusters). No gradients, no glows. The earlier magenta-to-cyan version read as generic and was replaced. Set as `<html data-theme="night" data-palette="vivid">`; tokens in `tokens.css`, the rest in `vivid.css`.
+
+## The network: backdrop and masthead
+
+- **Backdrop** (`NetworkBackdrop.tsx`, every theme): a schematic line map, octilinear (0°, 45°, 90°), stations at the turns, drawn once from a fixed seed. Full strength in the margins outside the content column, a faint trace behind it, so the page never reads as an empty field and text always sits on plain background. Faintest by day, strongest in Vivid.
+- **Masthead** (`TodayNetwork.tsx`): the next 36 hours as a line map. Each kind of event with something on is a line (up to five), each real listing a stop in time order; stops open the event, and hovering or focusing one names it below. It fills the right of the masthead on wide screens; phones skip it so search stays near the top, and the board below lists the same events.
 
 ## Type
 | Role | Face | Use |

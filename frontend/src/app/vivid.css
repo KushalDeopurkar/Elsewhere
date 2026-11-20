@@ -1,70 +1,63 @@
 /* ==========================================================================
-   Vivid: night in full colour. Tokens are in tokens.css; this file adds the
-   colour that tokens alone cannot: the spectrum on a few signature pieces,
-   and each event's own category hue where night keeps one amber.
+   Vivid: the city's transit map at night. Tokens are in tokens.css; this
+   file adds what tokens alone cannot. The rule: colour is flat and always
+   means something. The signal (vermilion) marks actions and "now"; every
+   other colour is a category's line colour, used where that category is.
+   No gradients, no glows.
    Everything here is scoped to :root[data-palette="vivid"].
    ========================================================================== */
 
 :root[data-palette="vivid"] {
-  /* Headline: the city in the spectrum */
+  /* Headline: the city in the signal colour */
   & .tt-in {
-    background: var(--spectrum);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--signal-text);
   }
 
-  /* Brand mark and the nav's "you are here" bar */
   & .brand-mark {
     color: var(--signal);
-    filter: drop-shadow(0 0 6px oklch(0.72 0.23 352 / 0.55));
-  }
-  & .topnav-link::after {
-    background: var(--spectrum);
   }
 
-  /* Primary actions wear the spectrum */
   & .btn-primary {
-    background: var(--spectrum);
-    border-color: transparent;
+    background: var(--signal);
+    border-color: var(--signal);
     color: var(--on-signal);
     font-weight: 700;
   }
-  & .btn-primary:hover {
-    filter: brightness(1.08) saturate(1.1);
+  @media (hover: hover) {
+    & .btn-primary:hover {
+      background: var(--signal-hi);
+      border-color: var(--signal-hi);
+    }
   }
 
-  /* Section numbers glow */
+  /* Section numbers as line roundels, each section on its own line colour */
   & .sec-index {
-    background: var(--spectrum);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    display: inline-grid;
+    place-items: center;
+    width: 2.2em;
+    height: 2.2em;
+    border-radius: var(--r-round);
+    background: var(--sec-line, var(--signal));
+    color: var(--on-signal);
+    font-size: clamp(1.5rem, 2.2vw, 1.9rem);
+    font-stretch: 75%;
+    line-height: 1;
+    letter-spacing: -0.02em;
   }
 
-  /* The departures board: each time in its event's own colour */
+  /* The departures board: each time in its event's own line colour */
   & .tt-row .tt-time {
     color: var(--cat, var(--fg));
-    text-shadow: 0 0 18px color-mix(in oklch, var(--cat, var(--signal)) 45%, transparent);
   }
 
-  /* Cards: a category-coloured edge and glow */
+  /* Cards: a category-coloured edge, like the line on a map */
   & .ecard {
-    background: color-mix(in oklch, var(--bg-2) 70%, transparent);
-    border-color: color-mix(in oklch, var(--cat, var(--signal)) 30%, var(--rule));
-    box-shadow: inset 0 3px 0 var(--cat, var(--signal));
+    border-color: var(--rule);
+    box-shadow: inset 0 4px 0 var(--cat, var(--signal));
   }
   @media (hover: hover) {
     & .ecard:hover {
       border-color: var(--cat, var(--signal));
-      box-shadow: inset 0 3px 0 var(--cat, var(--signal)),
-        0 18px 40px -16px color-mix(in oklch, var(--cat, var(--signal)) 55%, transparent);
     }
-  }
-
-  /* Map pins and clusters glow in their category colour */
-  & .pc-face,
-  & .pc-stack.is-plain::before {
-    box-shadow: 0 0 14px color-mix(in oklch, var(--pin-hue, var(--signal)) 60%, transparent);
   }
 }

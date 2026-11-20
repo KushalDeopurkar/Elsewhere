@@ -144,63 +144,52 @@
   color-scheme: dark;
 }
 
-/* Vivid: night in full colour. Chosen in the header's display switch or in
-   Settings (lib/theme.ts sets <html data-palette="vivid"> with data-theme
-   night). Deep violet surfaces, a magenta signal with a cyan partner for
-   gradients, and category hues at full chroma. Re-declared on night subtrees
-   (the map) so they pick it up too. Contrast: --fg-3 on --bg-2 clears 4.5:1. */
+/* Vivid: the city's transit map at night. Chosen in the header's display
+   switch or in Settings (lib/theme.ts sets <html data-palette="vivid"> with
+   data-theme night). Warm charcoal like a printed map after dark, one
+   vermilion signal, and all the colour from the lines: each category's hue
+   at full strength, flat, never blended. Re-declared on night subtrees (the
+   map) so they pick it up too. Contrast: --fg-3 on --bg-2 clears 4.5:1. */
 :root[data-palette="vivid"],
 :root[data-palette="vivid"] [data-theme="night"] {
-  --bg: oklch(0.175 0.065 288);
-  --bg-2: oklch(0.215 0.08 290);
-  --bg-3: oklch(0.26 0.095 292);
-  --bg-4: oklch(0.31 0.11 294);
+  --bg: oklch(0.175 0.006 70);
+  --bg-2: oklch(0.215 0.007 70);
+  --bg-3: oklch(0.255 0.008 70);
+  --bg-4: oklch(0.3 0.009 70);
 
-  --fg: oklch(0.97 0.018 310);
-  --fg-2: oklch(0.87 0.045 305);
-  --fg-3: oklch(0.76 0.07 300);
+  --fg: oklch(0.96 0.012 85);
+  --fg-2: oklch(0.84 0.014 80);
+  --fg-3: oklch(0.72 0.014 75);
 
-  --rule-soft: oklch(0.85 0.12 310 / 0.09);
-  --rule: oklch(0.85 0.12 310 / 0.16);
-  --rule-strong: oklch(0.85 0.14 310 / 0.36);
+  --rule-soft: oklch(0.96 0.012 85 / 0.08);
+  --rule: oklch(0.96 0.012 85 / 0.15);
+  --rule-strong: oklch(0.96 0.012 85 / 0.32);
 
-  --signal: oklch(0.72 0.23 352);
-  --signal-hi: oklch(0.77 0.21 355);
-  --on-signal: oklch(0.16 0.06 290);
-  --signal-wash: oklch(0.72 0.23 352 / 0.2);
-  --signal-text: oklch(0.8 0.17 352);
-  --signal-2: oklch(0.83 0.14 205);
-  --spectrum: linear-gradient(100deg, oklch(0.72 0.23 352), oklch(0.74 0.2 300) 35%, oklch(0.8 0.15 240) 65%, oklch(0.85 0.15 190));
+  --signal: oklch(0.68 0.19 36);
+  --signal-hi: oklch(0.73 0.18 40);
+  --on-signal: oklch(0.17 0.01 60);
+  --signal-wash: oklch(0.68 0.19 36 / 0.18);
+  --signal-text: oklch(0.76 0.16 42);
 
-  --live: oklch(0.84 0.2 150);
-  --crit: oklch(0.74 0.18 25);
-  --crit-wash: oklch(0.74 0.18 25 / 0.16);
+  --live: oklch(0.8 0.17 150);
+  --crit: oklch(0.72 0.18 25);
+  --crit-wash: oklch(0.72 0.18 25 / 0.16);
 
-  --board: oklch(0.15 0.06 288);
-  --board-2: oklch(0.2 0.075 290);
-  --board-fg: oklch(0.97 0.018 310);
-  --board-fg-2: oklch(0.8 0.06 300);
-  --board-rule: oklch(0.85 0.12 310 / 0.16);
-  --lamp: oklch(0.8 0.17 352);
-  --scrim: oklch(0.1 0.05 288);
-  --here: oklch(0.83 0.14 205);
+  --board: oklch(0.145 0.005 70);
+  --board-2: oklch(0.2 0.007 70);
+  --board-fg: oklch(0.96 0.012 85);
+  --board-fg-2: oklch(0.78 0.014 75);
+  --board-rule: oklch(0.96 0.012 85 / 0.14);
+  --lamp: oklch(0.76 0.16 42);
+  --scrim: oklch(0.1 0.005 70);
+  --here: oklch(0.8 0.13 235);
 
   --lift-2: 0 1px 0 var(--rule);
-  --lift-3: 0 22px 48px -14px oklch(0.08 0.08 300 / 0.75), 0 0 0 1px oklch(0.85 0.12 310 / 0.08);
+  --lift-3: 0 22px 48px -14px oklch(0.05 0.005 70 / 0.8), 0 0 0 1px oklch(0.96 0.012 85 / 0.06);
 
-  --cat-l: 0.8;
+  --cat-l: 0.76;
   --cat-c: 0.17;
   color-scheme: dark;
-}
-
-/* A soft aurora behind the whole page, fixed so it does not scroll with it. */
-:root[data-palette="vivid"] body {
-  background:
-    radial-gradient(60rem 40rem at 8% -10%, oklch(0.45 0.2 352 / 0.28), transparent 60%),
-    radial-gradient(50rem 36rem at 100% 10%, oklch(0.5 0.17 220 / 0.22), transparent 60%),
-    radial-gradient(70rem 50rem at 50% 120%, oklch(0.45 0.2 300 / 0.3), transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
 }
 
 /* Category hues are data, not brand: one hue per category, lightness per theme. */
@@ -218,6 +207,6 @@
 /* Vivid's category hues, after the per-theme pair above so they win. */
 :root[data-palette="vivid"],
 :root[data-palette="vivid"] [data-theme="night"] {
-  --cat-l: 0.8;
+  --cat-l: 0.76;
   --cat-c: 0.17;
 }

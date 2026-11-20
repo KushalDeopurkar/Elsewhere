@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 
+/** Line colours for numbered sections, in order: red, yellow, green, blue, violet, pink. */
+const LINE_HUES = [30, 85, 150, 235, 300, 350];
+
 /** Section heading with an optional "see all" link. */
 export function SectionHeader({
   title,
@@ -21,7 +24,12 @@ export function SectionHeader({
   return (
     <div className="sec-head">
       {index && (
-        <span className="sec-index" aria-hidden="true">
+        <span
+          className="sec-index"
+          aria-hidden="true"
+          // Each numbered section sits on its own line colour (Vivid shows it as a roundel).
+          style={{ "--sec-line": `oklch(var(--cat-l) var(--cat-c) ${LINE_HUES[(Number(index) - 1 + LINE_HUES.length) % LINE_HUES.length] ?? 30})` } as React.CSSProperties}
+        >
           {index}
         </span>
       )}

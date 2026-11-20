@@ -10,6 +10,7 @@ import { boardCount, boardRows, pages, type BoardRow, type BoardTab } from "@/li
 import { useNow } from "@/lib/clock";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { zoneLabel } from "@/lib/formatDate";
+import TodayNetwork from "./TodayNetwork";
 import FlapText from "./FlapText";
 import TransitionLink from "./TransitionLink";
 
@@ -114,6 +115,7 @@ export default function Timetable({
           <FlapText text={time} length={5} className="tt-clock-face" label={now ? `Time in ${city}: ${time}` : ""} />
           <span className="tt-clock-zone">{now ? zoneLabel(zone, now) : ""}</span>
         </div>
+        <TodayNetwork events={events} now={now} />
       </header>
 
       <div className="tt-grid">

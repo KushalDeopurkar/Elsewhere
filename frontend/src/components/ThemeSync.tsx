@@ -41,7 +41,7 @@ export default function ThemeSync() {
     document
       .querySelectorAll('meta[name="theme-color"]')
       .forEach((m) =>
-        m.setAttribute("content", palette === "vivid" ? "#1b1034" : theme === "night" ? "#10172b" : "#f9fafc"),
+        m.setAttribute("content", palette === "vivid" ? "#171613" : theme === "night" ? "#10172b" : "#f9fafc"),
       );
     const id = window.setTimeout(() => delete root.dataset.themeSwitching, 300);
     return () => window.clearTimeout(id);

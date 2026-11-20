@@ -25,7 +25,8 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* The page colour lives on <html>, so the network backdrop can sit between. */
+  background: transparent;
   color: var(--fg);
   font-family: var(--font-body);
   font-size: var(--t-base);
@@ -721,7 +722,7 @@ p {
   color: var(--lamp);
 }
 .theme-opt.is-vivid svg {
-  color: oklch(0.75 0.21 340);
+  color: oklch(0.7 0.19 36);
 }
 
 .topnav .icon-btn[aria-current="page"] {
@@ -2936,4 +2937,133 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+
+/* ---- The network backdrop (NetworkBackdrop.tsx) --------------------------
+   A schematic transit map behind the page. It frames the left and right
+   edges and fades to nothing behind the content column, so text always
+   sits on plain background. Stronger in Vivid, faintest by day. */
+.netbg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--netbg-opacity, 0.2);
+  /* Only in the margins outside the content column, whatever the width. */
+  --netbg-edge: calc(50% - var(--shell) / 2);
+  /* Full strength in the margins; a faint trace behind the content. */
+  --netbg-trace: rgb(0 0 0 / 0.12);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--netbg-edge) - 3rem), var(--netbg-trace) calc(var(--netbg-edge) + 2rem), var(--netbg-trace) calc(100% - var(--netbg-edge) - 2rem), #000 calc(100% - var(--netbg-edge) + 3rem), #000 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--netbg-edge) - 3rem), var(--netbg-trace) calc(var(--netbg-edge) + 2rem), var(--netbg-trace) calc(100% - var(--netbg-edge) - 2rem), #000 calc(100% - var(--netbg-edge) + 3rem), #000 100%);
+}
+.netbg svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+:root[data-theme="day"] { --netbg-opacity: 0.3; }
+:root[data-theme="night"] { --netbg-opacity: 0.3; }
+:root[data-palette="vivid"] { --netbg-opacity: 0.45; }
+/* Phones: the content is the whole width, so only a hint at the very edges. */
+@media (max-width: 767px) {
+  .netbg {
+    --netbg-trace: rgb(0 0 0 / 0.2);
+  }
+}
+@media print {
+  .netbg { display: none; }
+}
+
+/* ---- Today's network in the masthead (TodayNetwork.tsx) ------------------ */
+.tnet {
+  margin: 0;
+  display: grid;
+  gap: var(--s-2);
+  align-content: start;
+}
+.tnet-head {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.tnet-map {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.tnet-line {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tnet-count {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  fill: var(--fg-2);
+}
+.tnet-hit {
+  fill: transparent;
+}
+.tnet-stop {
+  fill: var(--bg);
+  transition: r var(--t-hover) var(--ease);
+}
+.tnet-map a:focus-visible {
+  outline: none;
+}
+.tnet-map a:focus-visible .tnet-stop {
+  stroke-width: 6;
+}
+.tnet-map a:focus-visible .tnet-hit {
+  stroke: var(--fg);
+  stroke-width: 2;
+}
+.tnet-caption {
+  margin: 0;
+  min-height: 2.6em;
+  font-size: var(--t-sm);
+  color: var(--fg-2);
+  line-height: 1.35;
+}
+.tnet-caption b {
+  font-family: var(--font-mono);
+  color: var(--fg);
+  margin-right: 6px;
+}
+
+/* Wide screens: the network fills the right of the masthead, beside the
+   title and intro; the clock moves up to the date line. */
+@media (min-width: 1024px) {
+  .tt-mast {
+    grid-template-columns: minmax(0, 1fr) min(36vw, 31rem);
+    grid-template-areas:
+      "kick  clock"
+      "title net"
+      "lede  net";
+    align-items: start;
+  }
+  .tt-mast .tt-kicker { grid-area: kick; align-self: center; }
+  .tt-mast .tt-clock { grid-area: clock; grid-column: auto; grid-row: auto; }
+  .tt-mast .tt-title { grid-area: title; }
+  .tt-mast .tt-lede { grid-area: lede; }
+  .tt-mast .tnet { grid-area: net; align-self: end; }
+}
+@media (max-width: 1023px) {
+  .tnet {
+    grid-column: 1 / -1;
+    margin-top: var(--s-4);
+  }
+}
+/* Phones: search comes first; the board below shows the same events. */
+@media (max-width: 767px) {
+  .tnet { display: none; }
 }
