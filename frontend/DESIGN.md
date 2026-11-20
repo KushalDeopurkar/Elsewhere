@@ -42,3 +42,19 @@ Scale 1.25 from 16px (`--t-*`), plus `--t-mast` and `--t-time`. Times always `ta
 
 ## Banned here
 Rounded cards, pills, glows, gradients, glass, story circles, sparkles for AI, centred hero copy, a second accent.
+
+## Elsewhere 3.0: decisions
+
+Compared version 1 (`main`, midnight and coral) and version 2 (`missile/20261120`, the city timetable) before building.
+
+| | Version 1 | Version 2 | 3.0 |
+|---|---|---|---|
+| Look | Near-black with one coral pop, rounded cards, pills, gradients, sparkle icons: the generic dark-SaaS look (critic 5.3/10) | Designed day and night themes on OKLCH tokens, Archivo/Geist, tickets, ruled sections (8.2/10) | Version 2's system, kept |
+| First screen | AI search hero ("Find your next reason to step out") with a departures board on the side | "TONIGHT IN MUMBAI" masthead with the timetable as hero | "WHAT'S ON IN MUMBAI" plus one line naming every kind of event; Ask Elsewhere (AI search) leads, the board sits beside it |
+| Navigation | Tonight · Explore · Map | Tonight · Explore · Map | **Discover** · Explore · Map: "Tonight" read as nightlife-first |
+| AI search | Parses intent; reasons computed but hidden | Same | Intent chips, honest notes when a request can't be filtered, and the reasons on every result ticket |
+| Explore filters | Category, mood, date, price | Same | + format (in person / online), distance, removable chips for every filter, Clear all, Show more |
+| Map | Pins capped at the soonest 80 in view | Same, night board | + screen-space clustering, category-coloured clusters, list hover lifts the pin |
+| Data | De-dupe by id | Same | + the same listing from two sites, cancelled titles and unreadable dates dropped; postponed and sold out shown only when the listing says so |
+
+Why not a third look: version 2's design system already passes contrast, keyboard and performance checks and reads as its own identity; what it lacked was breadth (it framed the site around tonight) and the discovery tools above. 3.0 keeps the system and fixes those.

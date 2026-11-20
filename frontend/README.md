@@ -16,9 +16,9 @@ Elsewhere gathers gigs, workshops, matches, meetups and free walks from ticketin
 
 ## What you can do
 
-- **Tonight** (`/`): the city's departures timetable. Tabs for today, tomorrow and the weekend; a live NOW line between what has started and what departs next; a plain-words search ("free tech events this weekend").
-- **Explore** (`/explore`, `/categories/<slug>`): every listing with filters for category, mood, date and price, and search by meaning.
-- **Map** (`/map`): the city at night, with a timeline you can scrub to see what is on at any hour, travel times and a phone card strip.
+- **Discover** (`/`): what's on in your city, in every category. Ask Elsewhere in plain words ("I want to meet startup founders", "free AI workshops this weekend"); beside it, the departures board of what's next with a live NOW line. Below: headliners, starting soon, every category as a line, collections by plan (learn something, meet people, get moving), the weekend, free entry.
+- **Explore** (`/explore`, `/categories/<slug>`): every listing with filters for category, mood, date, price, format (in person or online) and distance; removable chips for whatever is in force; 24 at a time. A plain-words request shows what it understood and, on each ticket, why the event matches.
+- **Map** (`/map`): the city at night. Busy areas cluster into numbered markers in their category colour; pointing at an event in the list lifts its pin; a timeline shows what is on at any hour; travel times and a phone card strip.
 - **Keep it**: save events, get reminders, add to your calendar, plan a day around them (`/plan-my-day`), collect passport stamps, replay your month (`/recap`).
 - **Go with friends** (with an account): profiles, friends, who's going, lists and "who's free?" polls.
 
