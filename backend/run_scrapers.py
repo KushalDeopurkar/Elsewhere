@@ -19,6 +19,7 @@ Environment variables required:
 
 import argparse
 import asyncio
+import glob
 import logging
 import os
 import sys
@@ -36,6 +37,7 @@ from app.scrapers.eventfinda import EventfindaScraper
 from app.scrapers.paris_opendata import ParisOpenDataScraper
 from app.scrapers.ics_feeds import IcsFeedsScraper
 from app.scrapers.football import FootballScraper
+from app.models.event import EventCreate
 from app.services.dedupe import dedupe
 
 INDIA_SOURCES = ["allevents", "district", "meetup"]
@@ -72,6 +74,12 @@ async def main():
                         help="Max event pages to enrich per run")
     parser.add_argument("--images-only", action="store_true",
                         help="Skip scraping; find pictures on the pages of events that have none")
+    parser.add_argument("--out", default=None,
+                        help="Write scraped events to this JSON-lines file instead of saving them")
+    parser.add_argument("--load", default=None,
+                        help="Skip scraping; read every *.jsonl file in this folder, de-duplicate and save")
+    parser.add_argument("--budget-min", type=float, default=None,
+                        help="Stop a scraper after this many minutes (keeps the run inside its time limit)")
     parser.add_argument("--retry-failed", action="store_true",
                         help="Enrich: also retry events tried before that got no details")
     args = parser.parse_args()
@@ -136,17 +144,47 @@ async def main():
     if wanted("football"):
         scrapers.append(FootballScraper())
 
-    # Run all selected scrapers
     all_events = []
     results = {}
-    for scraper in scrapers:
+    if args.load:
+        # The save step of a split run: each source scraped in its own job
+        # and left a file; de-duplicate across all of them, then save once.
+        files = sorted(glob.glob(os.path.join(args.load, "**", "*.jsonl"), recursive=True))
+        for path in files:
+            with open(path, encoding="utf-8") as fh:
+                rows = [EventCreate.model_validate_json(line) for line in fh if line.strip()]
+            all_events.extend(rows)
+            results[os.path.splitext(os.path.basename(path))[0]] = len(rows)
+        logger.info(f"Loaded {len(all_events)} events from {len(files)} files")
+        scrapers = []
+
+    # Run the selected scrapers side by side: each one mostly waits on the
+    # network, so running them together takes as long as the slowest one.
+    async def guarded(scraper):
         try:
-            events = await run_scraper(scraper, city=args.city)
-            all_events.extend(events)
-            results[scraper.name] = len(events)
+            coro = run_scraper(scraper, city=args.city)
+            if args.budget_min:
+                return scraper.name, await asyncio.wait_for(coro, timeout=args.budget_min * 60)
+            return scraper.name, await coro
+        except asyncio.TimeoutError:
+            logger.error(f"Scraper {scraper.name} ran past {args.budget_min} min; skipped this run")
+            print(f"::warning::{scraper.name} ran past its {args.budget_min}-minute budget")
         except Exception as e:
             logger.error(f"Scraper {scraper.name} failed: {e}")
-            results[scraper.name] = 0
+        return scraper.name, []
+
+    for name, events in await asyncio.gather(*(guarded(s) for s in scrapers)):
+        all_events.extend(events)
+        results[name] = len(events)
+
+    if args.out:
+        os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+        with open(args.out, "w", encoding="utf-8") as fh:
+            for event in all_events:
+                fh.write(event.model_dump_json() + "\n")
+        logger.info(f"Wrote {len(all_events)} events to {args.out}")
+        print(f"::notice::{', '.join(f'{k}: {v}' for k, v in results.items())} events scraped")
+        return
 
     before = len(all_events)
     all_events = dedupe(all_events)

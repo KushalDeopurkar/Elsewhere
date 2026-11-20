@@ -35,11 +35,42 @@ on:
         default: false
         type: boolean
 
+# One job per source, side by side, so the slowest source sets the run time
+# instead of all of them added up. Each job leaves its events as a file; the
+# save job de-duplicates across sources and writes them once, then runs the
+# follow-up steps. A source that fails or runs long only loses its own turn.
+concurrency:
+  group: scrape-events
+  cancel-in-progress: false
+
 jobs:
-  scrape:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
+    outputs:
+      sources: ${{ steps.pick.outputs.sources }}
+    steps:
+      - id: pick
+        run: |
+          SOURCE="${{ github.event.inputs.source || 'all' }}"
+          INDIA='"allevents","district","meetup"'
+          GLOBAL='"ticketmaster","seatgeek","eventfinda","paris","ics","football"'
+          case "$SOURCE" in
+            all)    LIST="[$INDIA,$GLOBAL]" ;;
+            india)  LIST="[$INDIA]" ;;
+            global) LIST="[$GLOBAL]" ;;
+            *)      LIST="[\"$SOURCE\"]" ;;
+          esac
+          echo "sources=$LIST" >> "$GITHUB_OUTPUT"
+          echo "Sources: $LIST"
+
+  scrape:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        source: ${{ fromJSON(needs.plan.outputs.sources) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -55,11 +86,8 @@ jobs:
           cd backend
           pip install -r requirements.txt
 
-      - name: Run scrapers
+      - name: Scrape ${{ matrix.source }}
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           # Global sources: each one is skipped if its secret isn't set.
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
           SEATGEEK_CLIENT_ID: ${{ secrets.SEATGEEK_CLIENT_ID }}
@@ -69,24 +97,62 @@ jobs:
           EVENTFINDA_AU_PASSWORD: ${{ secrets.EVENTFINDA_AU_PASSWORD }}
           EVENTFINDA_SG_USERNAME: ${{ secrets.EVENTFINDA_SG_USERNAME }}
           EVENTFINDA_SG_PASSWORD: ${{ secrets.EVENTFINDA_SG_PASSWORD }}
+          CITY: ${{ github.event.inputs.city || '' }}
         run: |
           cd backend
-          SOURCE="${{ github.event.inputs.source || 'all' }}"
-          CITY="${{ github.event.inputs.city || '' }}"
-          DRY="${{ github.event.inputs.dry_run || 'false' }}"
-          
-          CMD="python run_scrapers.py --source $SOURCE"
-          
-          if [ -n "$CITY" ]; then
-            CMD="$CMD --city $CITY"
+          ARGS=(--source "${{ matrix.source }}" --out "out/${{ matrix.source }}.jsonl" --budget-min 38)
+          if [ -n "$CITY" ]; then ARGS+=(--city "$CITY"); fi
+          python run_scrapers.py "${ARGS[@]}"
+
+      - name: Keep the events for the save job
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: events-${{ matrix.source }}
+          path: backend/out/*.jsonl
+          if-no-files-found: ignore
+          retention-days: 2
+
+  save:
+    needs: scrape
+    # Save whatever the sources that finished brought back, even if one failed.
+    if: ${{ always() && needs.scrape.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Collect scraped events
+        uses: actions/download-artifact@v4
+        with:
+          pattern: events-*
+          path: backend/in
+
+      - name: De-duplicate and save
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          cd backend
+          mkdir -p in
+          if [ "${{ github.event.inputs.dry_run || 'false' }}" = "true" ]; then
+            python run_scrapers.py --load in --dry-run
+          else
+            python run_scrapers.py --load in
           fi
-          
-          if [ "$DRY" = "true" ]; then
-            CMD="$CMD --dry-run"
-          fi
-          
-          echo "Running: $CMD"
-          $CMD
 
       # Each upcoming event's own page: full description, ticket tiers
       # (GA, VIP, ...), duration, organiser. Needs migration 008.
