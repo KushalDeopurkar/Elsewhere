@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
-import { getEvent } from "@/lib/api";
+import { loadEvent } from "@/lib/eventServer";
 import { eventZone } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { OG, OG_FONTS } from "@/lib/ogTheme";
@@ -41,7 +41,7 @@ const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trim
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [event, black, bold, text] = await Promise.all([
-    getEvent(id),
+    loadEvent(id),
     load(OG_FONTS.black),
     load(OG_FONTS.bold),
     load(OG_FONTS.text),

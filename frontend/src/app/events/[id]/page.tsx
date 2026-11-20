@@ -9,7 +9,7 @@ import EventImage from "@/components/EventImage";
 import CategoryIcon from "@/components/CategoryIcon";
 import { Breadcrumbs } from "@/components/Section";
 import { EventActions, EventLocationMap } from "@/components/EventActions";
-import { getEvent } from "@/lib/api";
+import { loadEvent } from "@/lib/eventServer";
 import { CATEGORIES } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import { agoLabel, formatFull, eventZone } from "@/lib/formatDate";
@@ -38,7 +38,7 @@ export function generateStaticParams(): { id: string }[] {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const event = await getEvent(id);
+  const event = await loadEvent(id);
   if (!event) return { title: "Event not found - Elsewhere" };
   const when = formatFull(event.start_time, eventZone(event));
   const place = [event.location_name, event.city].filter(Boolean).join(", ");
@@ -73,7 +73,7 @@ function requestTime(): number {
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const event = await getEvent(id);
+  const event = await loadEvent(id);
   if (!event) notFound();
 
   const meta = CATEGORIES.find((c) => c.value === event.category);

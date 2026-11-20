@@ -5,7 +5,7 @@ import { kmBetween } from "./geo";
 import { decodeEntities } from "./text";
 import { dedupeEvents, displayTitle } from "./tidy";
 
-function clean(e: Event): Event {
+export function clean(e: Event): Event {
   return {
     ...e,
     title: displayTitle(decodeEntities(e.title)),
