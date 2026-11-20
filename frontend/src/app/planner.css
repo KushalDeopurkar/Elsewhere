@@ -772,3 +772,11 @@
   background: transparent !important;
   box-shadow: none;
 }
+
+/* The short "own words" card stays in view beside the long details form */
+@media (min-width: 900px) {
+  .planner-modes > .planner-card:first-child {
+    position: sticky;
+    top: calc(var(--nav-h) + var(--s-4));
+  }
+}

@@ -18,7 +18,7 @@
 @media (min-width: 900px) {
   .detail-hero {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    align-items: end;
+    align-items: start;
     gap: var(--s-7);
   }
 }
