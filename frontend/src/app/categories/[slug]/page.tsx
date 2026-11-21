@@ -28,6 +28,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     <>
       <div className="cat-hero" style={{ "--cat-hue": hue.color, "--cat-wash": hue.wash } as React.CSSProperties}>
         <PageHeader
+          line={hue.color}
+          posters
+          category={cat.value}
           title={
             <>
               <span className="cat-hero-icon" aria-hidden="true">

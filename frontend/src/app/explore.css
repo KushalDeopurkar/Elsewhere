@@ -426,7 +426,6 @@
 /* Category page header: the category is a line on the map */
 .cat-hero {
   position: relative;
-  border-top: 10px solid var(--cat-hue);
 }
 
 .cat-hero .page-title {

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import ExploreView from "@/components/ExploreView";
 import SiteFooter from "@/components/SiteFooter";
-import { PageHeader } from "@/components/Section";
+import { PAGE_LINES, PageHeader, lineColor } from "@/components/Section";
 
 export const metadata: Metadata = {
   title: "Explore events - Elsewhere",
@@ -13,6 +13,8 @@ export default function ExplorePage() {
   return (
     <>
       <PageHeader
+        line={lineColor(PAGE_LINES.explore)}
+        posters
         title="Explore"
         lede="Every upcoming event near you, in every category. Ask in plain words and see why each one matches, or narrow it down with filters."
         crumbs={[{ label: "Home", href: "/" }, { label: "Explore" }]}

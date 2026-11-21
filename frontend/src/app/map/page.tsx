@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { preconnect } from "react-dom";
 import { STYLE_URL } from "@/lib/mapTheme";
@@ -38,15 +39,24 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
 
 const RETRY_DELAYS = [2500, 6000, 12000];
 
-/** The place an event page sent us to, from /map?event=<id>&lat=&lng=. */
-function readFocus(): { id: string; lat: number; lng: number } | null {
-  if (typeof window === "undefined") return null;
-  const q = new URLSearchParams(window.location.search);
+type Focus = { id: string; lat: number; lng: number };
+
+/**
+ * Reads /map?event=<id>&lat=&lng= (sent by an event page's map). Its own
+ * little component so only it waits on the URL: on a client-side move from
+ * the event page, window.location still shows the old address while the map
+ * page first renders, so the search params have to come from the router.
+ */
+function FocusFromUrl({ onFocus }: { onFocus: (f: Focus) => void }) {
+  const q = useSearchParams();
   const id = q.get("event");
   const lat = Number(q.get("lat"));
   const lng = Number(q.get("lng"));
-  if (!id || !q.get("lat") || !q.get("lng") || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  return { id, lat, lng };
+  const ok = Boolean(id && q.get("lat") && q.get("lng") && Number.isFinite(lat) && Number.isFinite(lng));
+  useEffect(() => {
+    if (ok && id) onFocus({ id, lat, lng });
+  }, [ok, id, lat, lng, onFocus]);
+  return null;
 }
 
 export default function MapPage() {
@@ -195,8 +205,16 @@ export default function MapPage() {
   const pendingJump = useRef(false);
   // Opened from an event page (/map?event=<id>&lat=&lng=): start on that
   // place, zoomed in, and open the event's card once its pin has loaded.
-  const [focus] = useState(readFocus);
+  const focus = useRef<Focus | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const takeFocus = useCallback((f: Focus) => {
+    focus.current = f;
+    setFocusId(f.id);
+    if (ready.current && handle.current) {
+      handle.current.flyToEvent({ id: f.id, lat: f.lat, lng: f.lng } as Event);
+      focus.current = null;
+    }
+  }, []);
   // Open its card as soon as its pin has loaded (state set during render,
   // the pattern React recommends over an effect for derived updates).
   if (focusId) {
@@ -251,6 +269,9 @@ export default function MapPage() {
 
   return (
     <div className={`map-split is-${mobileView}`}>
+      <Suspense fallback={null}>
+        <FocusFromUrl onFocus={takeFocus} />
+      </Suspense>
       <aside className="map-list" aria-label="Events in view">
         <div className="map-list-head">
           <p className="map-list-title" aria-live="polite">
@@ -370,8 +391,9 @@ export default function MapPage() {
         onReady={(h) => {
           handle.current = h;
           ready.current = true;
-          if (focus) {
-            const f = focus;
+          if (focus.current) {
+            const f = focus.current;
+            focus.current = null;
             pendingJump.current = false;
             h.flyToEvent({ id: f.id, lat: f.lat, lng: f.lng } as Event);
             setFocusId(f.id);

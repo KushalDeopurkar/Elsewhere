@@ -93,3 +93,12 @@ Why not a third look: version 2's design system already passes contrast, keyboar
 
 ### Pictures for cities outside India
 - iCal calendars (Luma), SeatGeek and football fixtures arrive without pictures. After each scrape, `run_scrapers.py --images-only` opens each upcoming event's own page and keeps the picture that page shares (event JSON-LD, og:image, Twitter card). A picture a site puts on many pages (its logo) is ignored, and nothing is invented. Scrapes no longer overwrite a picture with an empty value.
+
+## Page bands and the colour layer (21 Nov 2026)
+
+Inner pages read as plain: a big title on a flat field, then thin outlines everywhere. Two changes, both flat colour, square corners, no gradients:
+
+- **Page bands** (`PageHeader` with `line`, styles at the end of `core.css`): every inner page sits on its own line of the network (`PAGE_LINES` in `Section.tsx`: Explore blue, Saved pink, Passport green, Settings teal, Friends violet, Plan my day red; a category page uses its category colour). The band is the line colour tinted into the page, the line itself across the top with three stations, a 2px rule of the same colour closing it. With `posters`, `PosterRail` shows the next four real events with pictures in the city as small tickets (the line colour is their stub) and one count line: coming up, today, free. Phones get a shorter band and a scrolling row of smaller tickets.
+- **Colour layer** (`colour.css`, loaded before `vivid.css`): tags and filters are filled, not outlined (neutral: an ink tint; category: its line colour tinted, solid when chosen); suggested searches are signal-tinted; tickets carry a 4px top edge in their category colour and a tinted stub; panels, notes and empty states are tinted fields with a full edge. Side-stripe accents (a thick left border) are retired everywhere: a chosen option is a full fill with a 2px edge.
+
+This supersedes "Tags and filters: square, hairline border" above.

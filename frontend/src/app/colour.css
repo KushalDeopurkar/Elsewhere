@@ -1,0 +1,193 @@
+/* ==========================================================================
+   Colour layer: filled surfaces in place of thin outlines.
+
+   The site read as plain because almost every control and panel was a 1px
+   outline on the page colour. Here each one gets a flat fill: neutral
+   controls a quiet ink tint, anything with a category its own line colour
+   (tinted at rest, solid when chosen), and the selected state is always a
+   full fill, never a side stripe. Flat colour only, square corners, no
+   gradients or glows (DESIGN.md). Loaded after the component sheets and
+   before vivid.css, so Vivid keeps the last word.
+   ========================================================================== */
+
+/* ---- Tags and filters --------------------------------------------------- */
+.fchip,
+.chip,
+.chip-prompt {
+  border-color: transparent;
+  background: color-mix(in oklch, var(--fg) 8%, var(--bg));
+  color: var(--fg);
+}
+@media (hover: hover) {
+  .fchip:not([aria-pressed="true"]):hover,
+  .chip:hover,
+  .chip-prompt:hover {
+    border-color: transparent;
+    background: color-mix(in oklch, var(--fg) 15%, var(--bg));
+  }
+}
+
+.fchip[aria-pressed="true"] {
+  background: var(--fg);
+  border-color: var(--fg);
+  color: var(--bg);
+}
+
+/* A category tag sits on its own line colour. */
+.fchip[style*="--chip-hue"],
+.chip[style*="--chip-hue"] {
+  background: color-mix(in oklch, var(--chip-hue) 20%, var(--bg));
+}
+@media (hover: hover) {
+  .fchip[style*="--chip-hue"]:not([aria-pressed="true"]):hover,
+  .chip[style*="--chip-hue"]:hover {
+    background: color-mix(in oklch, var(--chip-hue) 32%, var(--bg));
+  }
+}
+.fchip[style*="--chip-hue"][aria-pressed="true"],
+.chip[style*="--chip-hue"][aria-pressed="true"],
+.chip[style*="--chip-hue"].is-on,
+.chip[style*="--chip-hue"][aria-selected="true"] {
+  background: var(--chip-hue);
+  border-color: var(--chip-hue);
+  color: var(--bg);
+}
+.fchip[style*="--chip-hue"][aria-pressed="true"] .chip-dot,
+.chip[style*="--chip-hue"][aria-pressed="true"] .chip-dot,
+.chip[style*="--chip-hue"].is-on .chip-dot,
+.chip[style*="--chip-hue"][aria-selected="true"] .chip-dot {
+  background: var(--bg);
+}
+
+/* Suggested searches: signal-tinted, so they read as things to try. */
+.chip-prompt {
+  background: color-mix(in oklch, var(--signal) 18%, var(--bg-2));
+}
+@media (hover: hover) {
+  .chip-prompt:hover {
+    background: color-mix(in oklch, var(--signal) 30%, var(--bg));
+  }
+}
+
+/* ---- Tickets: each card on its category's line --------------------------- */
+.ecard {
+  border-color: color-mix(in oklch, var(--cat, var(--fg)) 30%, transparent);
+  border-top: 4px solid var(--cat, var(--rule-strong));
+}
+.ecard-body {
+  background: color-mix(in oklch, var(--cat, var(--fg)) 8%, var(--bg));
+  border-radius: 0 0 var(--r-card) var(--r-card);
+}
+
+/* ---- Panels ------------------------------------------------------------- */
+.empty {
+  border: 0;
+  background: color-mix(in oklch, var(--signal) 9%, var(--bg-2));
+}
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--signal);
+  color: var(--on-signal, var(--bg));
+}
+
+/* ---- Settings: chosen option is a full fill ------------------------------ */
+.st-options {
+  gap: 4px;
+  border-top: 0;
+}
+.st-option {
+  border-bottom: 0;
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+}
+.st-option.is-on {
+  background: color-mix(in oklch, var(--signal) 24%, var(--bg));
+  box-shadow: inset 0 0 0 2px var(--signal);
+}
+@media (hover: hover) {
+  .st-option:not(.is-on):hover {
+    background: color-mix(in oklch, var(--fg) 12%, var(--bg));
+  }
+}
+
+/* ---- Passport ----------------------------------------------------------- */
+.pp-stamp {
+  border: 0;
+  background: color-mix(in oklch, var(--cat-hue) 12%, var(--bg));
+}
+.pp-stamp .pp-ring {
+  border-color: transparent;
+  background: color-mix(in oklch, var(--cat-hue) 26%, var(--bg));
+  color: var(--cat-hue);
+}
+.pp-stamp.is-got {
+  background: var(--cat-hue);
+  color: var(--bg);
+}
+.pp-stamp.is-got .pp-ring {
+  background: var(--bg);
+  color: var(--cat-hue);
+}
+.pp-stamp.is-got .pp-date,
+.pp-stamp.is-got .pp-name {
+  color: var(--bg);
+}
+.pp-stats p {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  padding: var(--s-3) var(--s-4);
+}
+.pp-stats p:nth-child(1) { background: color-mix(in oklch, oklch(var(--cat-l) var(--cat-c) 150) 18%, var(--bg)); }
+.pp-stats p:nth-child(2) { background: color-mix(in oklch, oklch(var(--cat-l) var(--cat-c) 85) 18%, var(--bg)); }
+.pp-stats p:nth-child(3) { background: color-mix(in oklch, oklch(var(--cat-l) var(--cat-c) 235) 18%, var(--bg)); }
+.pp-stats p:nth-child(4) { background: color-mix(in oklch, oklch(var(--cat-l) var(--cat-c) 30) 18%, var(--bg)); }
+.pp-stamp { color: var(--fg); }
+.pp-stamp .pp-ring { opacity: 1; }
+.pp-stamp .pp-date { color: var(--fg-2); }
+.pp-badge { border: 0; background: color-mix(in oklch, var(--signal) 10%, var(--bg-2)); }
+
+/* ---- Notes and callouts: a tinted field with a full edge, not a side stripe */
+.notice,
+.panel,
+.xwiden,
+.fnote.is-words,
+.xnone,
+.plan-map-failed,
+.countdown.is-sales {
+  border: 1px solid color-mix(in oklch, var(--signal) 55%, transparent);
+  background: color-mix(in oklch, var(--signal) 13%, var(--bg));
+}
+.booking-gone,
+.xread-note.is-miss {
+  border: 1px solid color-mix(in oklch, var(--crit) 55%, transparent);
+  background: color-mix(in oklch, var(--crit) 12%, var(--bg));
+}
+.pin-tip {
+  border: 1px solid var(--pin-hue, var(--lamp));
+  border-top-width: 3px;
+}
+
+.pp-recap {
+  border: 0;
+  background: color-mix(in oklch, var(--signal) 16%, var(--bg-2));
+}
+
+/* Phones: a shorter band, smaller tickets, so search stays near the top. */
+@media (max-width: 639px) {
+  .page-head.is-band {
+    padding-block: var(--s-4) var(--s-5);
+    margin-bottom: var(--s-5);
+  }
+  .page-head.is-band .page-head-grid {
+    gap: var(--s-4);
+  }
+  .prail-list {
+    grid-auto-columns: 5.25rem;
+  }
+  .prail-when {
+    font-size: 11px;
+    padding: 4px 6px;
+    white-space: normal;
+  }
+}

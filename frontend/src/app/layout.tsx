@@ -13,6 +13,7 @@ import "./planner.css";
 import "./social.css";
 import "./passport.css";
 import "./motion.css";
+import "./colour.css";
 import "./vivid.css";
 import Nav from "@/components/Nav";
 import NetworkBackdrop from "@/components/NetworkBackdrop";
