@@ -20,17 +20,15 @@ const cachedFromDatabase = unstable_cache(fromDatabase, ["event-by-id"], { reval
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * The event for its page. The database is one hop from the site, while the
- * API on Render is two (and sometimes asleep), so read the database first
- * and use the API only when the database can't answer. Shared per request
- * by metadata, page and share image.
+ * The event for its page, read straight from the database (one hop from the
+ * site; the API on Render is two and sometimes asleep), cached for five
+ * minutes. The API is used only where the database isn't configured.
+ * Shared per request by metadata, page and share image.
  */
 export const loadEvent = cache(async (id: string): Promise<Event | null> => {
   if (!UUID.test(id) || !supabaseConfigured()) return getEvent(id);
-  try {
-    return await cachedFromDatabase(id);
-  } catch (e) {
-    console.warn(`[event ${id}] database read failed, asking the API`, e instanceof Error ? e.message : e);
-    return getEvent(id);
-  }
+  // No fallback to the API here: it reads the same database, so when the
+  // database is struggling a second try only adds load. The page's error
+  // screen retries on its own a few seconds later.
+  return cachedFromDatabase(id);
 });

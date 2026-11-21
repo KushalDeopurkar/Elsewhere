@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 # a chunk that still times out is split in half until it fits (MIN_BATCH).
 UPSERT_BATCH = 200
 MIN_BATCH = 10
+#: Seconds between writes, so the site's reads get the database in between.
+WRITE_PAUSE = 0.3
 
 
 _TEXT_FIELDS = ("title", "description", "location_name", "address")
@@ -34,12 +36,52 @@ def _unescape_row(row: Dict) -> Dict:
     return row
 
 
+#: Columns a listing may leave empty that the page passes fill in (pictures,
+#: prices, free). An empty value from the listing means "not stated", so it
+#: must not wipe what was found on the event's own page.
+KEEP_IF_EMPTY = ("image_url", "price_min", "price_max")
+
+#: Columns compared to decide whether a listing changed since the last run.
+COMPARED = ("title", "description", "category", "start_time", "end_time", "location_name", "address",
+            "city", "country", "url", "image_url", "price_min", "price_max", "is_free")
+
+
+def _unstated(r: Dict) -> tuple:
+    """The keys this row should leave alone (see KEEP_IF_EMPTY)."""
+    keys = [k for k in KEEP_IF_EMPTY if r.get(k) in (None, "")]
+    # "Not free" with no price is a default, not a statement.
+    if not r.get("is_free") and r.get("price_min") is None and r.get("price_max") is None:
+        keys.append("is_free")
+    return tuple(keys)
+
+
 def split_by_image(rows: List[Dict]) -> List[List[Dict]]:
-    """Rows with a picture as they are; rows without one minus the image_url
-    key (a bulk upsert needs the same keys in every row of a request)."""
-    with_img = [r for r in rows if r.get("image_url")]
-    without = [{k: v for k, v in r.items() if k != "image_url"} for r in rows if not r.get("image_url")]
-    return [b for b in (with_img, without) if b]
+    """Group rows by which columns they leave unstated, dropping those keys:
+    a bulk upsert needs the same keys in every row of a request, and an
+    empty key would wipe a picture or price found on the event's page."""
+    groups: Dict[tuple, List[Dict]] = {}
+    for r in rows:
+        drop = _unstated(r)
+        groups.setdefault(drop, []).append({k: v for k, v in r.items() if k not in drop})
+    return [g for g in groups.values() if g]
+
+
+def _same(a, b) -> bool:
+    if a is None or b is None:
+        return a is None and b is None
+    if isinstance(a, (int, float)) or isinstance(b, (int, float)):
+        try:
+            return abs(float(a) - float(b)) < 0.005
+        except (TypeError, ValueError):
+            return False
+    a, b = str(a), str(b)
+    if a == b:
+        return True
+    # Timestamps: compare the instant, not the spelling.
+    try:
+        return datetime.fromisoformat(a.replace("Z", "+00:00")) == datetime.fromisoformat(b.replace("Z", "+00:00"))
+    except ValueError:
+        return False
 
 
 class EventService:
@@ -83,12 +125,51 @@ class EventService:
         # so no single request is too large. Rows whose source sent no
         # picture are sent without the column, so a picture found later on
         # the event's own page (app/enrich/images.py) is kept.
-        count = 0
+        # Most listings are the same as six hours ago. Writing them again
+        # costs the database a trigger run and an index update each, and on
+        # a small instance 20,000 of those starve the site's own reads
+        # (statement timeouts, 21 Nov). So only new or changed rows are sent,
+        # in paced chunks.
+        count = skipped = 0
         for batch in split_by_image(rows):
             for i in range(0, len(batch), UPSERT_BATCH):
-                count += self._upsert_chunk(batch[i : i + UPSERT_BATCH])
-        logger.info(f"Upserted {count} events")
+                part = batch[i : i + UPSERT_BATCH]
+                chunk = self._changed_only(part)
+                skipped += len(part) - len(chunk)
+                if chunk:
+                    count += self._upsert_chunk(chunk)
+                    time.sleep(WRITE_PAUSE)
+        logger.info(f"Upserted {count} events, {skipped} unchanged and skipped")
         return count
+
+    def _changed_only(self, rows: List[Dict]) -> List[Dict]:
+        """Rows that are new or differ from what's stored, in one read per source."""
+        by_source: Dict[str, List[Dict]] = {}
+        for r in rows:
+            by_source.setdefault(r["source"], []).append(r)
+        keep: List[Dict] = []
+        for source, group in by_source.items():
+            cols = ["source_id", *[c for c in COMPARED if c in group[0]]]
+            try:
+                stored = (
+                    self.client.table("events")
+                    .select(",".join(cols))
+                    .eq("source", source)
+                    .in_("source_id", [r["source_id"] for r in group])
+                    .execute()
+                    .data
+                    or []
+                )
+            except Exception as e:  # noqa: BLE001 - can't tell, so write them all
+                logger.warning(f"Couldn't read stored {source} rows ({e}); writing all {len(group)}")
+                keep.extend(group)
+                continue
+            have = {s["source_id"]: s for s in stored}
+            for r in group:
+                old = have.get(r["source_id"])
+                if old is None or any(not _same(r.get(c), old.get(c)) for c in cols if c != "source_id"):
+                    keep.append(r)
+        return keep
 
     def search(self, params: EventSearchParams) -> List[Dict]:
         """Full-text + geo search via the search_events RPC.

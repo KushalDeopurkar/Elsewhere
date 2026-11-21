@@ -11,7 +11,13 @@ if (dsn) {
       // No user details, cookies, headers, bodies or query strings (see /privacy).
       dataCollection: PRIVATE,
       // Noise from browser extensions and the like.
-      ignoreErrors: ["ResizeObserver loop", "Non-Error promise rejection captured", "AbortError"],
+      ignoreErrors: [
+        "ResizeObserver loop",
+        "Non-Error promise rejection captured",
+        "AbortError",
+        // View transitions the browser cancels (tab hidden, a second click).
+        /Transition was (aborted|skipped)/,
+      ],
       denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
     });
   });

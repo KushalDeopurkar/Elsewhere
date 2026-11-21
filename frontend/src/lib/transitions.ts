@@ -33,6 +33,9 @@ export function canTransition(): boolean {
   return (
     typeof document !== "undefined" &&
     "startViewTransition" in document &&
+    // A hidden tab can't run a transition (the browser aborts it with an
+    // InvalidStateError): just navigate.
+    document.visibilityState === "visible" &&
     !window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 }
@@ -63,7 +66,13 @@ export function transitionTo(
     navigate();
     await waitForRoute();
   });
-  vt.finished.finally(() => {
-    delete root.dataset.vt;
-  });
+  // An aborted transition (tab hidden mid-way, a second click) still
+  // navigates; its promises reject, which is expected, not an error.
+  vt.ready.catch(() => undefined);
+  vt.updateCallbackDone.catch(() => undefined);
+  vt.finished
+    .catch(() => undefined)
+    .finally(() => {
+      delete root.dataset.vt;
+    });
 }

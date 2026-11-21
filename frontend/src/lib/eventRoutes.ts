@@ -8,7 +8,7 @@ export const CATEGORIES = new Set([
   "tech", "business", "education", "arts", "sports", "music", "community",
   "food", "health", "outdoor", "family", "nightlife", "other",
 ]);
-export const EDGE_CACHE = "public, s-maxage=60, stale-while-revalidate=600";
+export const EDGE_CACHE = "public, s-maxage=60, stale-while-revalidate=600, stale-if-error=86400";
 
 const DETAIL_COLUMNS = "id,image_url,end_time,price_min,price_max,is_free,url,address,city,country,source";
 // The fields the API's EventResponse returns; anything else stays out.
