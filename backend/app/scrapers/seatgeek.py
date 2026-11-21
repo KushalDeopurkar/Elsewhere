@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from app.models.event import EventCategory, EventCreate
@@ -21,7 +21,11 @@ logger = logging.getLogger(__name__)
 
 API = "https://api.seatgeek.com/2/events"
 PER_PAGE = 100
-MAX_PAGES = 10  # up to 1,000 events per city
+# Up to 300 events per city in the next 30 days. SeatGeek alone sent
+# ~13,900 rows a run (two thirds of everything), and writing them all
+# exhausted the database's disk budget on 21 Nov.
+MAX_PAGES = 3
+HORIZON_DAYS = 30
 
 SPORTS = {
     "sports", "nba", "nfl", "mlb", "nhl", "mls", "ncaa_football", "ncaa_basketball", "minor_league_baseball",
@@ -111,7 +115,9 @@ class SeatGeekScraper(BaseScraper):
         if not self.client_id:
             self._log("SEATGEEK_CLIENT_ID not set; skipping")
             return []
-        since = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        now = datetime.now(timezone.utc)
+        since = now.strftime("%Y-%m-%dT%H:%M:%S")
+        until = (now + timedelta(days=HORIZON_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
         out: Dict[str, EventCreate] = {}
         async with new_client() as client:
             for c in cities_for("seatgeek", city):
@@ -129,6 +135,7 @@ class SeatGeekScraper(BaseScraper):
                             "page": page,
                             "sort": "datetime_utc.asc",
                             "datetime_utc.gte": since,
+                            "datetime_utc.lte": until,
                         },
                     )
                     if not data:

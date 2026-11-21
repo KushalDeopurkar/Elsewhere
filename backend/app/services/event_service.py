@@ -84,6 +84,34 @@ def _same(a, b) -> bool:
         return False
 
 
+class DatabaseUnavailable(RuntimeError):
+    """The database didn't answer after waiting: stop, don't write blind."""
+
+
+#: Seconds to wait before each retry when the database is unavailable.
+OUTAGE_WAITS = (10, 30, 60)
+
+
+def _unavailable(e: Exception) -> bool:
+    text = str(e)
+    return getattr(e, "code", None) == "PGRST002" or "PGRST002" in text or "503" in text or "Service Unavailable" in text
+
+
+def _with_outage_retry(fn, what: str):
+    """Run fn; while the database reports itself unavailable, wait and retry."""
+    for i, wait in enumerate((0, *OUTAGE_WAITS)):
+        if wait:
+            logger.warning(f"Database unavailable ({what}); waiting {wait}s before retry {i}")
+            time.sleep(wait)
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001 - only outages are retried
+            if not _unavailable(e):
+                raise
+            last = e
+    raise DatabaseUnavailable(f"{what}: {last}")
+
+
 class EventService:
     def __init__(self, client: Client):
         self.client = client
@@ -97,9 +125,12 @@ class EventService:
         on their own are logged and skipped, never the whole run.
         """
         try:
-            self.client.table("events").upsert(
-                rows, on_conflict="source,source_id", returning=ReturnMethod.minimal
-            ).execute()
+            _with_outage_retry(
+                lambda: self.client.table("events")
+                .upsert(rows, on_conflict="source,source_id", returning=ReturnMethod.minimal)
+                .execute(),
+                f"writing {len(rows)} rows",
+            )
             return len(rows)
         except APIError as e:
             if getattr(e, "code", None) != "57014" and "timeout" not in str(e).lower():
@@ -150,16 +181,20 @@ class EventService:
         keep: List[Dict] = []
         for source, group in by_source.items():
             cols = ["source_id", *[c for c in COMPARED if c in group[0]]]
+            ids = [r["source_id"] for r in group]
             try:
-                stored = (
-                    self.client.table("events")
+                stored = _with_outage_retry(
+                    lambda: self.client.table("events")
                     .select(",".join(cols))
                     .eq("source", source)
-                    .in_("source_id", [r["source_id"] for r in group])
+                    .in_("source_id", ids)
                     .execute()
                     .data
-                    or []
+                    or [],
+                    f"reading {source} rows",
                 )
+            except DatabaseUnavailable:
+                raise  # an outage: stop rather than write everything blind
             except Exception as e:  # noqa: BLE001 - can't tell, so write them all
                 logger.warning(f"Couldn't read stored {source} rows ({e}); writing all {len(group)}")
                 keep.extend(group)

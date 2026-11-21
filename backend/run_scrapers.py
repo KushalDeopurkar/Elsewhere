@@ -223,8 +223,17 @@ async def main():
     from app.database import get_supabase_service
     from app.services.event_service import EventService
 
+    from app.services.event_service import DatabaseUnavailable
+
     event_service = EventService(get_supabase_service())
-    upserted = event_service.upsert_events(all_events)
+    try:
+        upserted = event_service.upsert_events(all_events)
+    except DatabaseUnavailable as e:
+        logger.error(f"Database unavailable, stopped saving: {e}")
+        print("::error::The database didn't answer (Supabase 503 / PGRST002) even after waiting, so this run "
+              "stopped saving. Nothing is lost: the next run brings the same listings. Check the Supabase "
+              "project's health and Disk IO budget.")
+        sys.exit(1)
     logger.info(f"Upserted {upserted} events to Supabase")
 
     # Print summary for GitHub Actions

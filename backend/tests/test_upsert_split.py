@@ -50,3 +50,22 @@ def test_other_errors_still_raise():
     except APIError:
         return
     raise AssertionError("expected APIError")
+
+
+def test_outage_waits_then_stops(monkeypatch):
+    import pytest
+    from app.services.event_service import DatabaseUnavailable
+
+    monkeypatch.setattr("app.services.event_service.time.sleep", lambda s: None)
+
+    class Down(FakeClient):
+        def table(self, name):
+            t = FakeTable(self.log, 10**6)
+            def boom():
+                raise APIError({"code": "PGRST002", "message": "Could not query the database for the schema cache."})
+            t.execute = boom
+            return t
+
+    svc = EventService(Down(0))
+    with pytest.raises(DatabaseUnavailable):
+        svc._upsert_chunk([{"source": "s", "source_id": "1"}])
