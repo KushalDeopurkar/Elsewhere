@@ -468,8 +468,12 @@
   gap: 0.45rem;
 }
 
+/* Label, address field, cancel: the field always gets the room. (As a
+   flex row the label select took the full width and squeezed the field
+   to ~20px, so an address couldn't really be typed.) */
 .travel-add-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr) 36px;
   align-items: center;
   gap: 0.35rem;
 }
@@ -480,14 +484,19 @@
   min-width: 0;
 }
 
-.travel-label {
-  width: auto;
-  flex-shrink: 0;
+.travel-add-row .travel-label {
+  width: 100%;
+  min-width: 0;
+}
+.travel-add-row input.binput {
+  width: 100%;
+  min-height: 40px;
+  font-size: 1rem; /* 16px: phones don't zoom in on focus */
 }
 
 .travel-add-row .icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .travel-hits {
