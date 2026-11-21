@@ -183,6 +183,8 @@ jobs:
           cd backend
           python run_scrapers.py --enrich-only --source allevents --limit 120
           python run_scrapers.py --enrich-only --source meetup --limit 60
+          # iCal calendars (mostly Luma): prices, full descriptions, pictures.
+          python run_scrapers.py --enrich-only --source ics --limit 300
 
       # Pictures for events whose source sends none (iCal calendars such as
       # Luma, SeatGeek, football): the picture each event's own page shares.
@@ -195,7 +197,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           cd backend
-          python run_scrapers.py --images-only --limit 600
+          python run_scrapers.py --images-only --limit 1200
 
       # New and edited events get embeddings (meaning-based search, "More like
       # this", the planner), then Telegram alerts go out for what is new.

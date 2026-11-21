@@ -38,6 +38,17 @@ const EventMap = dynamic(() => import("@/components/EventMap"), {
 
 const RETRY_DELAYS = [2500, 6000, 12000];
 
+/** The place an event page sent us to, from /map?event=<id>&lat=&lng=. */
+function readFocus(): { id: string; lat: number; lng: number } | null {
+  if (typeof window === "undefined") return null;
+  const q = new URLSearchParams(window.location.search);
+  const id = q.get("event");
+  const lat = Number(q.get("lat"));
+  const lng = Number(q.get("lng"));
+  if (!id || !q.get("lat") || !q.get("lng") || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { id, lat, lng };
+}
+
 export default function MapPage() {
   // Warm the connection to the map host. The map code itself loads after the
   // page has painted, so the header, filters and cards show up first.
@@ -182,6 +193,20 @@ export default function MapPage() {
   // Changing city flies across the country to it, with a title card.
   const lastCity = useRef(city.name);
   const pendingJump = useRef(false);
+  // Opened from an event page (/map?event=<id>&lat=&lng=): start on that
+  // place, zoomed in, and open the event's card once its pin has loaded.
+  const [focus] = useState(readFocus);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  // Open its card as soon as its pin has loaded (state set during render,
+  // the pattern React recommends over an effect for derived updates).
+  if (focusId) {
+    const hit = allEvents.find((e) => e.id === focusId);
+    if (hit) {
+      setFocusId(null);
+      setStripLocked(true);
+      setSelected(hit);
+    }
+  }
   const lastCityPoint = useRef(city);
   useEffect(() => {
     lastCityPoint.current = city;
@@ -345,6 +370,13 @@ export default function MapPage() {
         onReady={(h) => {
           handle.current = h;
           ready.current = true;
+          if (focus) {
+            const f = focus;
+            pendingJump.current = false;
+            h.flyToEvent({ id: f.id, lat: f.lat, lng: f.lng } as Event);
+            setFocusId(f.id);
+            return;
+          }
           if (pendingJump.current) {
             pendingJump.current = false;
             h.jumpToPoint(lastCityPoint.current.lat, lastCityPoint.current.lng);

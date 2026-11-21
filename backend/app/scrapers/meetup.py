@@ -232,8 +232,8 @@ class MeetupScraper(BaseScraper):
             url = raw.get("eventUrl", "")
 
             description = raw.get("description", "")
-            if len(description) > 2000:
-                description = description[:1997] + "..."
+            if len(description) > 10000:
+                description = description[:9997] + "..."
 
             # Price
             fee = raw.get("feeSettings")

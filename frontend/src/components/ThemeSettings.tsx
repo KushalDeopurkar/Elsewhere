@@ -4,7 +4,7 @@ import { setThemePref, useTheme, useThemePref } from "./ThemeSync";
 import type { ThemePref } from "@/lib/theme";
 
 const OPTIONS: { value: ThemePref; label: string; note: string }[] = [
-  { value: "auto", label: "Follow the sun", note: "Day timetable until 18:00 in your city, the lit board after." },
+  { value: "auto", label: "Automatic", note: "Matches your device: light when it is in light mode, the lit board in dark mode." },
   { value: "day", label: "Always day", note: "White paper and ink." },
   { value: "night", label: "Always night", note: "The lit departure board." },
   { value: "vivid", label: "Vivid", note: "The city as a transit map at night: charcoal, with every kind of event on its own coloured line." },

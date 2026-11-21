@@ -296,8 +296,8 @@ class InsiderScraper(BaseScraper):
 
             # Description
             description = raw.get("short_desc", "") or raw.get("description", "")
-            if isinstance(description, str) and len(description) > 2000:
-                description = description[:1997] + "..."
+            if isinstance(description, str) and len(description) > 10000:
+                description = description[:9997] + "..."
 
             return EventCreate(
                 source="insider",

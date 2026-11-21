@@ -6,7 +6,7 @@ import { setThemePref, useThemePref } from "./ThemeSync";
 import type { ThemePref } from "@/lib/theme";
 
 const OPTIONS: { value: ThemePref; label: string; icon: typeof Sun }[] = [
-  { value: "auto", label: "Follow the sun", icon: CircleHalf },
+  { value: "auto", label: "Automatic", icon: CircleHalf },
   { value: "day", label: "Day", icon: Sun },
   { value: "night", label: "Night", icon: Moon },
   { value: "vivid", label: "Vivid", icon: Sparkle },

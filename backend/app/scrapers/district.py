@@ -294,8 +294,8 @@ class DistrictScraper(BaseScraper):
                 # Clean up HTML entities and tags
                 description = re.sub(r"<[^>]+>", " ", description)
                 description = re.sub(r"\s+", " ", description).strip()
-                if len(description) > 2000:
-                    description = description[:1997] + "..."
+                if len(description) > 10000:
+                    description = description[:9997] + "..."
 
             # Category — infer from title, URL and default
             category = self._infer_category(title, event_url, default_category)

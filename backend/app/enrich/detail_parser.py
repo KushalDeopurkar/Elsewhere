@@ -193,7 +193,96 @@ def _notes(text: str) -> List[str]:
     return notes
 
 
-def parse_detail(html: str, source: str, event_name: str = "") -> Dict[str, Any]:
+def _find_key(node: Any, key: str, depth: int = 0) -> Optional[Dict[str, Any]]:
+    """The first dict under `node` that has `key` (breadth isn't needed here)."""
+    if depth > 12:
+        return None
+    if isinstance(node, dict):
+        if key in node:
+            return node
+        for v in node.values():
+            hit = _find_key(v, key, depth + 1)
+            if hit is not None:
+                return hit
+    elif isinstance(node, list):
+        for v in node:
+            hit = _find_key(v, key, depth + 1)
+            if hit is not None:
+                return hit
+    return None
+
+
+def _luma_money(v: Any) -> tuple[Optional[float], Optional[str]]:
+    """Luma prices come as {"cents": 49900, "currency": "inr"} or bare cents."""
+    if isinstance(v, dict):
+        cents = v.get("cents") if v.get("cents") is not None else v.get("amount")
+        cur = v.get("currency")
+        return (round(float(cents) / 100, 2) if isinstance(cents, (int, float)) else None,
+                str(cur).upper() if cur else None)
+    if isinstance(v, (int, float)):
+        return round(float(v) / 100, 2), None
+    return None, None
+
+
+def luma_tickets(html: str) -> List[Dict[str, Any]]:
+    """Ticket tiers from a Luma page (lu.ma / luma.com).
+
+    Luma's pages carry no prices in their JSON-LD; the page data
+    (__NEXT_DATA__) has `ticket_types` (each tier: name, cents, currency,
+    free or paid) and `ticket_info` (overall free / price range / sold out).
+    """
+    m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.S)
+    if not m:
+        return []
+    try:
+        data = json.loads(m.group(1))
+    except ValueError:
+        return []
+    holder = _find_key(data, "ticket_info") or {}
+    info = holder.get("ticket_info") or {}
+    types_holder = holder if "ticket_types" in holder else (_find_key(data, "ticket_types") or {})
+    sold_out = bool(info.get("is_sold_out") or holder.get("sold_out"))
+
+    tiers: List[Dict[str, Any]] = []
+    for t in types_holder.get("ticket_types") or []:
+        if not isinstance(t, dict) or t.get("is_hidden"):
+            continue
+        if t.get("type") == "free":
+            price, cur = 0.0, None
+        else:
+            price, cur = _luma_money({"cents": t.get("cents"), "currency": t.get("currency")})
+            if price is None:  # pay-what-you-want with a floor
+                price, cur = _luma_money({"cents": t.get("min_cents"), "currency": t.get("currency")})
+        name = str(t.get("name") or "").strip() or "Ticket"
+        left = t.get("spots_remaining")
+        tiers.append({
+            "name": name,
+            "price": price,
+            "currency": cur or (None if price == 0 else "INR"),
+            "available": False if (sold_out or t.get("is_disabled") or left == 0) else None,
+            "url": None,
+        })
+    if tiers:
+        return tiers
+
+    # No tier list: fall back to the summary.
+    if info.get("is_free"):
+        return [{"name": "Free", "price": 0.0, "currency": None, "available": False if sold_out else None, "url": None}]
+    lo, cur = _luma_money(info.get("price"))
+    hi, cur2 = _luma_money(info.get("max_price"))
+    if lo is None:
+        return []
+    out = [{"name": "Ticket", "price": lo, "currency": cur or cur2 or "INR", "available": False if sold_out else None, "url": None}]
+    if hi is not None and hi > lo:
+        out.append({"name": "Ticket", "price": hi, "currency": cur2 or cur or "INR", "available": False if sold_out else None, "url": None})
+    return out
+
+
+def is_luma(url: Optional[str]) -> bool:
+    return bool(url) and re.search(r"^https?://(www\.)?(lu\.ma|luma\.com)/", url or "") is not None
+
+
+def parse_detail(html: str, source: str, event_name: str = "", url: Optional[str] = None) -> Dict[str, Any]:
     blocks = _ld_blocks(html)
     ev = next((b for b in blocks if any(t and t.endswith("Event") for t in _types(b))), {}) or {}
     name = event_name or str(ev.get("name") or "")
@@ -212,8 +301,8 @@ def parse_detail(html: str, source: str, event_name: str = "") -> Dict[str, Any]
     ld_desc = str(ev.get("description") or "")
     candidates = [c for c in (about_html, ld_desc) if c]
     about = max((restore_paragraphs(c) for c in candidates), key=len, default="") or None
-    if about and len(about) > 6000:
-        about = about[:5997].rstrip() + "..."
+    if about and len(about) > 12000:
+        about = about[:11997].rstrip() + "..."
 
     organizer = ev.get("organizer")
     if isinstance(organizer, list):
@@ -236,4 +325,6 @@ def parse_detail(html: str, source: str, event_name: str = "") -> Dict[str, Any]
     }
     details = {k: v for k, v in details.items() if v not in (None, "", [])}
     tiers = tickets_from_offers(ev.get("offers"), name, source, [str(ev.get("name") or "")])
+    if not tiers and (is_luma(url) or "__NEXT_DATA__" in html and "ticket_info" in html):
+        tiers = luma_tickets(html)
     return {"tickets": tiers, "details": details}

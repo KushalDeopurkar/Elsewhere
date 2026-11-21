@@ -34,7 +34,7 @@ logger = logging.getLogger("images")
 #: How far ahead to look for events without a picture.
 HORIZON_DAYS = 30
 #: Pages fetched per host per run, and refusals before a host is skipped.
-PER_HOST = 80
+PER_HOST = 200
 REFUSALS = 5
 #: The same picture on more pages than this in one run is the site's
 #: default (a logo or banner), not this event's picture.

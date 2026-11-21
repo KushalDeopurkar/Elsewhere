@@ -19,7 +19,9 @@ from .detail_parser import parse_detail
 
 logger = logging.getLogger("enricher")
 
-SUPPORTED = {"district", "allevents", "meetup"}
+# "ics" is mostly Luma calendars: Luma's pages carry the ticket prices the
+# calendar feed leaves out.
+SUPPORTED = {"district", "allevents", "meetup", "ics"}
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/131.0 Safari/537.36"
@@ -33,7 +35,7 @@ def pick_batch(client, limit: int, sources=None, retry_failed: bool = False) -> 
     now = datetime.now(timezone.utc)
     srcs = sorted(set(sources or SUPPORTED) & SUPPORTED)
     stale = (now - timedelta(days=3)).isoformat()
-    cols = "id,title,url,source,start_time,price_min,price_max,is_free"
+    cols = "id,title,url,source,start_time,price_min,price_max,is_free,image_url"
     base = (
         client.table("events")
         .select(cols)
@@ -134,13 +136,22 @@ async def enrich(db, limit: int = 150, delay: float = 1.2, sources=None, retry_f
                     # Mark as tried so a dead page is retried in 3 days, not every run.
                     db.table("events").update({"details_fetched_at": now}).eq("id", r["id"]).execute()
                 else:
-                    parsed = parse_detail(html, r["source"], r.get("title") or "")
+                    parsed = parse_detail(html, r["source"], r.get("title") or "", r["url"])
                     update: Dict[str, Any] = {
                         "tickets": parsed["tickets"] or None,
                         "details": parsed["details"] or None,
                         "details_fetched_at": now,
                         **price_update(r, parsed["tickets"]),
                     }
+                    # The page is open anyway: take its picture if the event
+                    # has none (calendar feeds like Luma's send no images).
+                    if not r.get("image_url"):
+                        from .images import image_from_html
+
+                        img = image_from_html(html, r["url"])
+                        if img:
+                            update["image_url"] = img
+                            stats["images"] = stats.get("images", 0) + 1
                     db.table("events").update(update).eq("id", r["id"]).execute()
                     stats["enriched"] += 1
                     if parsed["tickets"]:

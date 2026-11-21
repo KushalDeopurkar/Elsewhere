@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { MapTrifold } from "@phosphor-icons/react/ssr";
 import { useEffect, useRef, useState } from "react";
 import { CalendarPlus, ShareNetwork, Check, WhatsappLogo } from "@phosphor-icons/react/ssr";
 import { whatsappUrl, eventShareText } from "@/lib/share";
@@ -129,6 +131,17 @@ export function EventLocationMap({ event }: { event: Event }) {
   return (
     <div className="detail-map" ref={ref}>
       {near ? <PlanMap stops={[{ event, why: "", travel: null }]} /> : <div className="detail-map-skel" />}
+      {/* The whole preview opens Elsewhere's map on this spot, with the
+          event's card open and everything else on nearby. */}
+      <Link
+        href={`/map?event=${event.id}&lat=${event.lat}&lng=${event.lng}`}
+        className="detail-map-open"
+        aria-label={`Open ${event.location_name || "this place"} on the map`}
+      >
+        <span className="detail-map-cta">
+          <MapTrifold size={16} weight="bold" aria-hidden="true" /> Open on the map
+        </span>
+      </Link>
     </div>
   );
 }
