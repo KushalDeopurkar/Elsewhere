@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import type { EventCategory } from "@/lib/types";
 import { getCategoryColor } from "@/lib/categoryColors";
 import CategoryIcon from "./CategoryIcon";
-import { sized } from "@/lib/imageUrl";
+import { blurred, sized } from "@/lib/imageUrl";
 
 /**
  * The one image component every event picture goes through.
@@ -55,6 +55,8 @@ export default function EventImage({
   );
 
   const hue = getCategoryColor(category);
+  // Pre-blurred by the resizer; only without one does CSS blur it.
+  const fill = useOriginal ? null : blurred(src);
 
   return (
     <div
@@ -67,7 +69,11 @@ export default function EventImage({
         </div>
       ) : (
         <>
-          <img className="eimg-backdrop" src={(useOriginal ? src : sized(src, 48))!} alt="" aria-hidden="true" loading={priority ? "eager" : "lazy"} decoding="async" />
+          {fill ? (
+            <img className="eimg-backdrop" src={fill} alt="" aria-hidden="true" loading={priority ? "eager" : "lazy"} decoding="async" />
+          ) : (
+            <img className="eimg-backdrop is-css-blur" src={src!} alt="" aria-hidden="true" loading={priority ? "eager" : "lazy"} decoding="async" />
+          )}
           <img
             ref={ref}
             className="eimg-img is-contain"

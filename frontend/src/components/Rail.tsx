@@ -22,10 +22,10 @@ export default function Rail({
   const update = useCallback(() => {
     const el = track.current;
     if (!el) return;
-    setEdge({
-      start: el.scrollLeft <= 4,
-      end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4,
-    });
+    const start = el.scrollLeft <= 4;
+    const end = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+    // Scroll fires every frame: only re-render when an arrow shows or hides.
+    setEdge((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
   }, []);
 
   // Know from the start whether there is anything to page to; a rail that

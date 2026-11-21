@@ -6,10 +6,18 @@
  * text always sits on plain background.
  *
  * Drawn once from a fixed seed: the same on the server and in the browser,
- * no layout cost. Trains run along each line (a short lit dash moving with
- * stroke-dashoffset) and a station on each line pings now and then. Pure
- * CSS, off for reduced motion, paused while the tab is hidden.
+ * no layout cost. Trains run along each line and a station on each line
+ * pings now and then.
+ *
+ * Every moving part animates transform and opacity only, so the GPU runs
+ * them without the page repainting: the still map is painted once, and a
+ * train is a small capsule translated along its line by keyframes made from
+ * the line's own corners. (They used to animate an SVG stroke-dashoffset,
+ * which repainted the whole viewport-sized layer every frame, on every page.)
+ * Pure CSS, off for reduced motion.
  */
+
+import BackdropStage from "./BackdropStage";
 
 const W = 1600;
 const H = 1000;
@@ -81,6 +89,39 @@ const TRAINS = LINES.map((_, i) => {
   return { dur: 26 + Math.round(r() * 22), delay: -Math.round(r() * 40), reverse: i % 3 === 1 };
 });
 
+/** A point on the stage, in map units: the stage is a 1600x1000px box, scaled to cover the viewport. */
+const at = (x: number, y: number) => `${x}px, ${y}px`;
+
+/**
+ * One @keyframes per train: a stop at each corner, placed by distance along
+ * the line so the speed is even, and the capsule turned to the segment it
+ * is on. Straight segments make linear interpolation between corners exact.
+ */
+const KEYFRAMES = LINES.map((l, i) => {
+  const pts = l.points;
+  const lens = pts.slice(1).map((p, j) => Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]));
+  const total = lens.reduce((a, b) => a + b, 0) || 1;
+  const angle = (j: number) => (Math.atan2(pts[j + 1][1] - pts[j][1], pts[j + 1][0] - pts[j][0]) * 180) / Math.PI;
+  const frames: string[] = [];
+  let run = 0;
+  pts.forEach((p, j) => {
+    const pct = (run / total) * 100;
+    const before = j > 0 ? angle(j - 1) : angle(0);
+    const after = j < lens.length ? angle(j) : before;
+    const tf = (a: number) => `transform: translate(${at(p[0], p[1])}) rotate(${a.toFixed(1)}deg) translate(-36px, -3.5px)`;
+    frames.push(`${pct.toFixed(3)}% { ${tf(before)} }`);
+    if (after !== before && j > 0 && j < lens.length) frames.push(`${Math.min(100, pct + 0.4).toFixed(3)}% { ${tf(after)} }`);
+    if (j < lens.length) run += lens[j];
+  });
+  return `@keyframes netbg-run-${i} { ${frames.join(" ")} }`;
+}).join("\n");
+
+/** One station per line that pings now and then. */
+const PINGS = LINES.flatMap((l, i) => {
+  const p = l.points[1 + (i % Math.max(1, l.points.length - 2))];
+  return p ? [{ x: p[0], y: p[1], hue: l.hue }] : [];
+});
+
 export default function NetworkBackdrop() {
   const STATIONS = (
     <>
@@ -121,41 +162,32 @@ export default function NetworkBackdrop() {
     {/* Moving parts in their own layer: they may show a little more behind
         the content than the still map does, so the motion reads. */}
     <div className="netbg is-moving" aria-hidden="true">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" focusable="false">
-        <g className="netbg-trains">
-          {LINES.map((l, i) => {
-            const pts = l.points.map((p) => p.join(",")).join(" ");
-            const t = TRAINS[i];
-            const style = {
-              "--trip": `${t.dur}s`,
-              "--start": `${t.delay}s`,
-              animationDirection: t.reverse ? "reverse" : "normal",
-              stroke: `oklch(calc(var(--cat-l) + var(--train-shift, 0.12)) calc(var(--cat-c) + 0.04) ${l.hue})`,
-            } as React.CSSProperties;
-            return (
-              <g key={i}>
-                {/* A soft halo and a bright core, moving together. */}
-                <polyline className="netbg-train is-halo" points={pts} pathLength={1000} style={style} />
-                <polyline className="netbg-train" points={pts} pathLength={1000} style={style} />
-              </g>
-            );
-          })}
-        </g>
+      <style>{KEYFRAMES}</style>
+      <BackdropStage>
         {LINES.map((l, i) => {
-          const p = l.points[1 + (i % Math.max(1, l.points.length - 2))];
-          if (!p) return null;
+          const t = TRAINS[i];
           return (
-            <circle
-              key={`ping-${i}`}
-              className="netbg-ping"
-              cx={p[0]}
-              cy={p[1]}
-              r={7}
-              style={{ stroke: `oklch(var(--cat-l) var(--cat-c) ${l.hue})`, animationDelay: `${-i * 1.7}s`, transformOrigin: `${p[0]}px ${p[1]}px` }}
+            <span
+              key={i}
+              className="netbg-train"
+              style={{
+                "--hue": l.hue,
+                animationName: `netbg-run-${i}`,
+                animationDuration: `${t.dur}s`,
+                animationDelay: `${t.delay}s`,
+                animationDirection: t.reverse ? "reverse" : "normal",
+              } as React.CSSProperties}
             />
           );
         })}
-      </svg>
+        {PINGS.map((p, i) => (
+          // Placed by the outer span, pulsed by the inner: the keyframes stay
+          // plain numbers, which the compositor can run on its own.
+          <span key={`ping-${i}`} className="netbg-ping-at" style={{ transform: `translate(${p.x}px, ${p.y}px)` }}>
+            <span className="netbg-ping" style={{ "--hue": p.hue, animationDelay: `${-i * 1.7}s` } as React.CSSProperties} />
+          </span>
+        ))}
+      </BackdropStage>
     </div>
     </>
   );
