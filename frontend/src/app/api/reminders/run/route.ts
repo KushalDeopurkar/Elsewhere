@@ -18,7 +18,13 @@ async function handle() {
   try {
     return NextResponse.json(await runReminders());
   } catch (err) {
-    console.error("[reminders/run]", (err as Error).message);
+    const e = err as Error;
+    // A starved or waking database: not a bug. Due reminders stay unsent and
+    // go out on the next run, so report a skip instead of an error.
+    if (/timeout|aborted|PGRST002|schema cache|57014|503|fetch failed/i.test(`${e.name} ${e.message}`)) {
+      return NextResponse.json({ skipped: "database busy" }, { status: 503 });
+    }
+    console.error("[reminders/run]", e.message);
     return NextResponse.json({ error: (err as Error).message.slice(0, 300) }, { status: 500 });
   }
 }

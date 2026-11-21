@@ -28,4 +28,6 @@ jobs:
           echo "$OUT"
           # Not set up yet (no VAPID keys) is not a failure.
           echo "$OUT" | grep -q 'not configured' && exit 0
+          # Database starved or asleep: skip this round, the next one catches up.
+          if echo "$OUT" | grep -q '"skipped"'; then echo "::warning::Reminders skipped: database busy."; exit 0; fi
           echo "$OUT" | grep -q '"error"' && exit 1 || exit 0

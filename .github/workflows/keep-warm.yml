@@ -16,7 +16,7 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Ping the API
         env:
@@ -27,7 +27,7 @@ jobs:
             exit 0
           fi
           for i in 1 2 3; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BACKEND_URL/api/events/search?limit=1&lat=19.076&lng=72.878&radius_km=40")
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 40 "$BACKEND_URL/api/events/search?limit=1&lat=19.076&lng=72.878&radius_km=40")
             echo "Attempt $i: HTTP $code"
             [ "$code" = "200" ] && exit 0
             sleep 10

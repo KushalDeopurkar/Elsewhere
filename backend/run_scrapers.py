@@ -230,10 +230,14 @@ async def main():
         upserted = event_service.upsert_events(all_events)
     except DatabaseUnavailable as e:
         logger.error(f"Database unavailable, stopped saving: {e}")
-        print("::error::The database didn't answer (Supabase 503 / PGRST002) even after waiting, so this run "
-              "stopped saving. Nothing is lost: the next run brings the same listings. Check the Supabase "
+        print("::warning::The database didn't answer (Supabase 503 / PGRST002) even after waiting, so this run "
+              "skipped saving. Nothing is lost: the next run brings the same listings. Check the Supabase "
               "project's health and Disk IO budget.")
-        sys.exit(1)
+        out = os.environ.get("GITHUB_OUTPUT")
+        if out:
+            with open(out, "a") as f:
+                f.write("db_down=true\n")
+        sys.exit(0)
     logger.info(f"Upserted {upserted} events to Supabase")
 
     # Print summary for GitHub Actions

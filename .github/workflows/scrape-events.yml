@@ -108,7 +108,7 @@ jobs:
 
       - name: Keep the events for the save job
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: events-${{ matrix.source }}
           path: backend/out/*.jsonl
@@ -137,12 +137,13 @@ jobs:
           pip install -r requirements.txt
 
       - name: Collect scraped events
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: events-*
           path: backend/in
 
       - name: De-duplicate and save
+        id: save
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
@@ -157,7 +158,7 @@ jobs:
           fi
 
       - name: Re-decide categories of saved events
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ github.event.inputs.dry_run != 'true' && steps.save.outputs.db_down != 'true' }}
         continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -173,7 +174,7 @@ jobs:
       # so District pages are enriched from a home connection instead:
       # double-click enrich-events.command on the Mac.
       - name: Enrich event pages
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ github.event.inputs.dry_run != 'true' && steps.save.outputs.db_down != 'true' }}
         continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -189,7 +190,7 @@ jobs:
       # Pictures for events whose source sends none (iCal calendars such as
       # Luma, SeatGeek, football): the picture each event's own page shares.
       - name: Find event pictures
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ github.event.inputs.dry_run != 'true' && steps.save.outputs.db_down != 'true' }}
         continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -203,7 +204,7 @@ jobs:
       # this", the planner), then Telegram alerts go out for what is new.
       # Both endpoints are idempotent, so a retry or an extra run is harmless.
       - name: Embed new events
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ github.event.inputs.dry_run != 'true' && steps.save.outputs.db_down != 'true' }}
         continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://elsewhere-in.vercel.app' }}
@@ -216,7 +217,7 @@ jobs:
           done
 
       - name: Send Telegram alerts
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ github.event.inputs.dry_run != 'true' && steps.save.outputs.db_down != 'true' }}
         continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://elsewhere-in.vercel.app' }}
