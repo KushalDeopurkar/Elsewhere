@@ -1340,3 +1340,25 @@
 .tl-label span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.3rem; }
 .tl-close { flex: none; margin-left: auto; white-space: nowrap; }
 .tl-skip { margin-left: 0; white-space: nowrap; }
+
+
+/* Peek card: poster and title open the event page. */
+.map-peek-media-link {
+  display: block;
+  height: 100%;
+  cursor: pointer;
+}
+.map-peek-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.map-peek-title-link:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--signal);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.map-peek-title-link:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}

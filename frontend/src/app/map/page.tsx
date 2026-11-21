@@ -462,7 +462,10 @@ export default function MapPage() {
         {selected && (
           <article className="map-peek">
             <div className="map-peek-media">
+              {/* The poster and the title open the event too, like Full details. */}
+              <Link href={`/events/${selected.id}`} className="map-peek-media-link" tabIndex={-1} aria-hidden="true">
                 <EventImage src={selected.image_url} category={selected.category} ratio="16 / 9" width={380} />
+              </Link>
               <button
                 type="button"
                 className="map-peek-close"
@@ -482,7 +485,11 @@ export default function MapPage() {
               >
                 {priceBadge(selected)}
               </p>
-              <h3 className="card-title">{selected.title}</h3>
+              <h3 className="card-title">
+                <Link href={`/events/${selected.id}`} className="map-peek-title-link">
+                  {selected.title}
+                </Link>
+              </h3>
               <p className="card-time mono">{whenOf(selected)}</p>
               <p className="card-foot">
                 <span>
