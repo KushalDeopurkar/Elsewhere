@@ -3025,6 +3025,10 @@ p {
   width: 72px;
   height: 7px;
   border-radius: 999px;
+  /* The keyframes place the capsule's corner and centre it themselves, so
+     rotation has to pivot on that corner, not the default middle; otherwise
+     every angled train sits off its line. */
+  transform-origin: 0 0;
   opacity: 0;
   background: oklch(calc(var(--cat-l) + var(--train-shift, 0.12)) calc(var(--cat-c) + 0.04) var(--hue));
   /* The halo is painted once into the train's own layer. */
