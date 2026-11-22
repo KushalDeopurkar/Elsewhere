@@ -65,13 +65,13 @@ export async function rpc<T>(fn: string, args: Record<string, unknown>, timeoutM
 /** Table access, e.g. rest("alerts?select=id&active=eq.true"). */
 export async function rest<T>(
   path: string,
-  init: { method?: string; body?: unknown; prefer?: string } = {},
+  init: { method?: string; body?: unknown; prefer?: string; timeoutMs?: number } = {},
 ): Promise<T> {
   const res = await fetch(`${supabaseUrl()}/rest/v1/${path}`, {
     method: init.method ?? "GET",
     headers: headers(init.prefer ? { Prefer: init.prefer } : {}),
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(init.timeoutMs ?? 15_000),
     cache: "no-store",
   });
   await check(res, `${init.method ?? "GET"} ${path.split("?")[0]}`);

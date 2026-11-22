@@ -1,6 +1,44 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { unstable_cache } from "next/cache";
 import { rpc, supabaseConfigured } from "@/lib/supabaseServer";
-import { CATEGORIES, EDGE_CACHE, bad, fromBackend, minuteIso, num, withDetails, type Row } from "@/lib/eventRoutes";
+import { CATEGORIES, EDGE_CACHE, bad, fromBackend, num, withDetails, type Row } from "@/lib/eventRoutes";
+
+type SearchArgs = {
+  query: string | null;
+  category_filter: string | null;
+  p_lat: number | null;
+  p_lng: number | null;
+  radius_km: number;
+  from_time: string;
+  to_time: string | null;
+  page_limit: number;
+  page_offset: number;
+};
+
+async function runSearch(args: SearchArgs): Promise<Row[]> {
+  const rows = await rpc<Row[]>("search_events", args, 6_000);
+  return withDetails(rows, true);
+}
+
+/**
+ * Answers kept on the server and refreshed in the background every two
+ * minutes (stale-while-revalidate). A visitor gets the stored copy at once;
+ * if the database is slow or down, the refresh fails quietly and the last
+ * good copy keeps being served instead of a spinner.
+ */
+const cachedSearch = unstable_cache(runSearch, ["search-events-v2"], { revalidate: 120 });
+
+/**
+ * Times rounded to 10 minutes, so nearby visits share one stored answer:
+ * the start down and the end up, so the window only ever grows.
+ */
+const BUCKET = 10 * 60_000;
+function bucket(iso: string | null, up = false): string | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return iso;
+  return new Date((up ? Math.ceil(t / BUCKET) : Math.floor(t / BUCKET)) * BUCKET).toISOString();
+}
 
 /**
  * Event search, answered here instead of by the API on Render.
@@ -27,32 +65,29 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return fromBackend(req, "/api/events/search");
 
   try {
-    const rows = await rpc<Row[]>(
-      "search_events",
-      {
-        query: p.get("q") || null,
-        category_filter: category || null,
-        p_lat: num(p.get("lat")),
-        p_lng: num(p.get("lng")),
-        radius_km: radius,
-        from_time: p.get("from_time") || minuteIso(),
-        to_time: p.get("to_time") || null,
-        page_limit: limit,
-        page_offset: offset,
-      },
-      8_000,
+    const data = await cachedSearch({
+      query: p.get("q") || null,
+      category_filter: category || null,
+      p_lat: num(p.get("lat")),
+      p_lng: num(p.get("lng")),
+      radius_km: radius,
+      from_time: bucket(p.get("from_time")) ?? bucket(new Date().toISOString())!,
+      to_time: bucket(p.get("to_time"), true),
+      page_limit: limit,
+      page_offset: offset,
+    });
+    // Copies: the stored answer is shared between requests.
+    const out = data.map((r) =>
+      descChars != null && typeof r.description === "string" && r.description.length > descChars
+        ? { ...r, description: `${r.description.slice(0, descChars).trimEnd()}…` }
+        : r,
     );
-    const data = await withDetails(rows, true);
-    if (descChars != null) {
-      for (const r of data) {
-        if (r.description && r.description.length > descChars) {
-          r.description = `${r.description.slice(0, descChars).trimEnd()}…`;
-        }
-      }
-    }
-    return NextResponse.json({ data, error: null, meta: { limit, offset } }, { headers: { "Cache-Control": EDGE_CACHE } });
+    return NextResponse.json({ data: out, error: null, meta: { limit, offset } }, { headers: { "Cache-Control": EDGE_CACHE } });
   } catch (err) {
-    console.warn("[search] database search failed, asking the API:", (err as Error).message);
-    return fromBackend(req, "/api/events/search");
+    console.warn("[search] database search failed:", (err as Error).message);
+    return NextResponse.json(
+      { data: null, error: "Listings are slow to answer right now", meta: { limit, offset } },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "10" } },
+    );
   }
 }

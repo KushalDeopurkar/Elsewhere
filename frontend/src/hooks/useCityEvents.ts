@@ -5,7 +5,7 @@ import { searchEvents } from "@/lib/api";
 import type { Event, EventCategory } from "@/lib/types";
 import type { CityPoint } from "@/lib/cities";
 
-const RETRY_DELAYS = [2500, 6000, 12000];
+const RETRY_DELAYS = [3000, 8000];
 
 interface Result {
   key: string;
@@ -24,6 +24,37 @@ interface Result {
  */
 const recent = new Map<string, { at: number; result: Result }>();
 const FRESH_MS = 2 * 60_000;
+
+/**
+ * The last answer per search is also kept on the device, so a return visit
+ * shows its listings at once, and a slow or failing database shows the last
+ * good ones instead of a spinner. Refreshed whenever a live answer arrives.
+ */
+const STORE = "elsewhere:events:v1:";
+const STORE_MAX_AGE = 12 * 60 * 60_000;
+
+function readStored(key: string): Result | null {
+  try {
+    const raw = window.localStorage.getItem(STORE + key);
+    if (!raw) return null;
+    const { at, result } = JSON.parse(raw) as { at: number; result: Result };
+    if (Date.now() - at > STORE_MAX_AGE || !result?.events?.length) return null;
+    // Only what hasn't finished yet.
+    const now = Date.now();
+    const events = result.events.filter((e) => Date.parse(e.end_time ?? e.start_time) > now - 60 * 60_000);
+    return events.length ? { ...result, key, events, error: null } : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, result: Result) {
+  try {
+    window.localStorage.setItem(STORE + key, JSON.stringify({ at: Date.now(), result }));
+  } catch {
+    // Storage full or blocked: memory still holds it for this tab.
+  }
+}
 
 /**
  * Upcoming events around a city from the existing search API, refetched when
@@ -63,16 +94,30 @@ export function useCityEvents(
       // Fresh enough: no request at all.
       return;
     }
+    // Nothing in this tab yet: show what this device saw last, right away,
+    // while the live answer loads.
+    const stored = !cached && attempt === 0 ? readStored(key) : null;
+    if (stored) {
+      queueMicrotask(() => {
+        if (live && latest.current === key) setResult((prev) => (prev?.key === key ? prev : stored));
+      });
+    }
     searchEvents(params)
       .then((r) => {
         if (!live || latest.current !== key) return;
         const res: Result = { key, events: r.events, isSample: r.isSample, error: null, more: Boolean(r.more), offset: limit };
-        if (!r.isSample) recent.set(key, { at: Date.now(), result: res });
+        if (!r.isSample) {
+          recent.set(key, { at: Date.now(), result: res });
+          writeStored(key, res);
+        }
         setResult(res);
       })
       .catch((e: unknown) => {
-        if (live && latest.current === key)
-          setResult({ key, events: [], isSample: false, error: e instanceof Error ? e.message : "Something went wrong", more: false, offset: 0 });
+        if (!live || latest.current !== key) return;
+        const fallback = recent.get(key)?.result ?? stored ?? readStored(key);
+        // Keep showing the last good listings rather than an error.
+        if (fallback?.events.length) setResult({ ...fallback, key, error: null });
+        else setResult({ key, events: [], isSample: false, error: e instanceof Error ? e.message : "Something went wrong", more: false, offset: 0 });
       });
     return () => {
       live = false;

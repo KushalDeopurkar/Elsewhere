@@ -33,12 +33,16 @@ export interface EventsResult {
  */
 const DEMO_ALLOWED = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEMO_DATA === "1";
 
-/** Fetch with two quick retries on a server error or a dropped connection (a waking backend). */
-async function fetchRetry(url: string, init?: RequestInit, delays = [600, 1800]): Promise<Response> {
+/**
+ * Fetch with quick retries on a server error or a dropped connection (a
+ * waking backend). Each try gives up after `timeoutMs`, so a stuck request
+ * can't hold a page on its loading state.
+ */
+async function fetchRetry(url: string, init?: RequestInit, delays = [600, 1800], timeoutMs = 12_000): Promise<Response> {
   let last: unknown;
   for (let i = 0; i <= delays.length; i++) {
     try {
-      const res = await fetch(url, init);
+      const res = await fetch(url, init?.signal ? init : { ...init, signal: AbortSignal.timeout(timeoutMs) });
       if (res.status < 500) return res;
       last = new Error(`HTTP ${res.status}`);
     } catch (e) {
@@ -102,7 +106,8 @@ export async function searchEvents(params: SearchParams): Promise<EventsResult> 
 
   const limit = params.limit ?? 100;
   try {
-    const res = await fetchRetry(`${API_BASE}/events/search?${qs}`);
+    // One retry: the page's own retries (useCityEvents) take it from there.
+    const res = await fetchRetry(`${API_BASE}/events/search?${qs}`, undefined, [1500]);
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     const json: ApiResponse<Event[]> = await res.json();
     const raw = json.data || [];

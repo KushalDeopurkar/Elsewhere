@@ -44,10 +44,10 @@ export async function withDetails(rows: Row[], tickets: boolean): Promise<Row[]>
   let merged = rows;
   if (rows.length) {
     const ids = rows.map((r) => r.id).join(",");
-    const plain = () => rest<Row[]>(`events?select=${DETAIL_COLUMNS}&id=in.(${ids})`).catch(() => [] as Row[]);
-    const extra = tickets
-      ? await rest<Row[]>(`events?select=${DETAIL_COLUMNS},tickets&id=in.(${ids})`).catch(plain)
-      : await plain();
+    // Extras only (pictures' details, tickets): never worth a long wait. One
+    // short try; without them the list still has everything it needs.
+    const cols = tickets ? `${DETAIL_COLUMNS},tickets` : DETAIL_COLUMNS;
+    const extra = await rest<Row[]>(`events?select=${cols}&id=in.(${ids})`, { timeoutMs: 4_000 }).catch(() => [] as Row[]);
     const byId = new Map(extra.map((e) => [e.id, e]));
     merged = rows.map((r) => {
       const out: Row = { ...r };
