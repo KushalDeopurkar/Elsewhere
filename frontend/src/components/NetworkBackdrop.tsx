@@ -92,26 +92,54 @@ const TRAINS = LINES.map((_, i) => {
 /** A point on the stage, in map units: the stage is a 1600x1000px box, scaled to cover the viewport. */
 const at = (x: number, y: number) => `${x}px, ${y}px`;
 
+/** Half the capsule's length (72px, see .netbg-train): how far ahead of a corner it starts to turn. */
+const EASE_IN = 36;
+
 /**
- * One @keyframes per train: a stop at each corner, placed by distance along
- * the line so the speed is even, and the capsule turned to the segment it
- * is on. Straight segments make linear interpolation between corners exact.
+ * One @keyframes per train, placed by distance along the line so the speed
+ * is even. Straight runs need only their two ends: linear interpolation
+ * between them is exact. At each corner the capsule turns while it keeps
+ * moving: it starts turning half a length before the corner, is halfway
+ * round on it, and is straight on the next segment half a length after, so
+ * it never stops, never pivots off the line, and always takes the short
+ * way round (a capsule looks the same both ways, so no turn is over 90°).
  */
 const KEYFRAMES = LINES.map((l, i) => {
   const pts = l.points;
   const lens = pts.slice(1).map((p, j) => Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]));
   const total = lens.reduce((a, b) => a + b, 0) || 1;
-  const angle = (j: number) => (Math.atan2(pts[j + 1][1] - pts[j][1], pts[j + 1][0] - pts[j][0]) * 180) / Math.PI;
-  const frames: string[] = [];
+  const raw = lens.map((_, j) => (Math.atan2(pts[j + 1][1] - pts[j][1], pts[j + 1][0] - pts[j][0]) * 180) / Math.PI);
+  // Unwrap: each segment's angle within ±90° of the one before.
+  const ang: number[] = [];
+  raw.forEach((r, j) => {
+    if (j === 0) return ang.push(r);
+    let d = r - ang[j - 1];
+    d = ((((d + 90) % 180) + 180) % 180) - 90;
+    ang.push(ang[j - 1] + d);
+  });
+  // A point `dist` along the line, and the stop for it.
+  const along = (dist: number): [number, number] => {
+    let left = Math.max(0, Math.min(total, dist));
+    for (let j = 0; j < lens.length; j++) {
+      if (left <= lens[j] || j === lens.length - 1) {
+        const t = lens[j] ? left / lens[j] : 0;
+        return [pts[j][0] + (pts[j + 1][0] - pts[j][0]) * t, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * t];
+      }
+      left -= lens[j];
+    }
+    return pts[pts.length - 1];
+  };
+  const stops: { d: number; a: number }[] = [{ d: 0, a: ang[0] }];
   let run = 0;
-  pts.forEach((p, j) => {
-    const pct = (run / total) * 100;
-    const before = j > 0 ? angle(j - 1) : angle(0);
-    const after = j < lens.length ? angle(j) : before;
-    const tf = (a: number) => `transform: translate(${at(p[0], p[1])}) rotate(${a.toFixed(1)}deg) translate(-36px, -3.5px)`;
-    frames.push(`${pct.toFixed(3)}% { ${tf(before)} }`);
-    if (after !== before && j > 0 && j < lens.length) frames.push(`${Math.min(100, pct + 0.4).toFixed(3)}% { ${tf(after)} }`);
-    if (j < lens.length) run += lens[j];
+  for (let j = 0; j < lens.length - 1; j++) {
+    run += lens[j];
+    const e = Math.min(EASE_IN, lens[j] / 2, lens[j + 1] / 2);
+    stops.push({ d: run - e, a: ang[j] }, { d: run, a: (ang[j] + ang[j + 1]) / 2 }, { d: run + e, a: ang[j + 1] });
+  }
+  stops.push({ d: total, a: ang[ang.length - 1] });
+  const frames = stops.map(({ d, a }) => {
+    const [x, y] = along(d);
+    return `${((d / total) * 100).toFixed(3)}% { transform: translate(${at(x, y)}) rotate(${a.toFixed(1)}deg) translate(-36px, -3.5px) }`;
   });
   return `@keyframes netbg-run-${i} { ${frames.join(" ")} }`;
 }).join("\n");
