@@ -15,8 +15,9 @@ import "./passport.css";
 import "./motion.css";
 import "./colour.css";
 import "./vivid.css";
+import "./hero.css";
 import Nav from "@/components/Nav";
-import NetworkBackdrop from "@/components/NetworkBackdrop";
+import ContourBackdrop from "@/components/ContourBackdrop";
 import RouteSignal from "@/components/RouteSignal";
 import SocialRoot from "@/components/SocialRoot";
 import CityGuess from "@/components/CityGuess";
@@ -63,7 +64,7 @@ export default function RootLayout({
       </head>
       <body>
         {IMAGE_PROXY_ORIGIN && <link rel="preconnect" href={IMAGE_PROXY_ORIGIN} />}
-        <NetworkBackdrop />
+        <ContourBackdrop />
         <RouteSignal />
         <Nav />
         <main id="main">{children}</main>

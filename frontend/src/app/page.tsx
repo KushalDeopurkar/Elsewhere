@@ -146,6 +146,7 @@ export default function Home() {
 
   return (
     <>
+      <div className="hero-band">
       <div className="shell home-top">
         <Timetable
           events={all}
@@ -188,6 +189,7 @@ export default function Home() {
             </>
           }
         />
+      </div>
       </div>
 
       {pool.isSample && (

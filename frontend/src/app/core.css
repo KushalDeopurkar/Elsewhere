@@ -2957,103 +2957,76 @@ p {
 }
 
 
-/* ---- The network backdrop (NetworkBackdrop.tsx) --------------------------
-   A schematic transit map behind the page. It frames the left and right
-   edges and fades to nothing behind the content column, so text always
-   sits on plain background. Stronger in Vivid, faintest by day. */
-.netbg {
+/* ---- The contour backdrop (ContourBackdrop.tsx) -------------------------
+   A contour map behind every page: ink-coloured height lines, the index
+   lines in the category colours. Static SVG masks over a fill, so the
+   colours follow the theme. Full strength in the margins, a faint trace
+   behind the content column. */
+.cbg {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  /* Only in the margins outside the content column, whatever the width. */
-  --netbg-edge: calc(50% - var(--shell) / 2);
-  /* Full strength in the margins; a faint trace behind the content. */
-  --netbg-trace: rgb(0 0 0 / 0.12);
-  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--netbg-edge) - 3rem), var(--netbg-trace) calc(var(--netbg-edge) + 2rem), var(--netbg-trace) calc(100% - var(--netbg-edge) - 2rem), #000 calc(100% - var(--netbg-edge) + 3rem), #000 100%);
-  mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--netbg-edge) - 3rem), var(--netbg-trace) calc(var(--netbg-edge) + 2rem), var(--netbg-trace) calc(100% - var(--netbg-edge) - 2rem), #000 calc(100% - var(--netbg-edge) + 3rem), #000 100%);
+  overflow: hidden;
+  contain: strict;
+  --cbg-edge: calc(50% - var(--shell) / 2);
+  --cbg-trace: rgb(0 0 0 / 0.35);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--cbg-edge) - 4rem), var(--cbg-trace) calc(var(--cbg-edge) + 3rem), var(--cbg-trace) calc(100% - var(--cbg-edge) - 3rem), #000 calc(100% - var(--cbg-edge) + 4rem), #000 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--cbg-edge) - 4rem), var(--cbg-trace) calc(var(--cbg-edge) + 3rem), var(--cbg-trace) calc(100% - var(--cbg-edge) - 3rem), #000 calc(100% - var(--cbg-edge) + 4rem), #000 100%);
 }
-.netbg-static {
-  opacity: var(--netbg-opacity, 0.2);
+/* A little larger than the screen, so the drift never shows an edge. */
+.cbg-drift {
+  position: absolute;
+  inset: -6%;
 }
-.netbg.is-moving {
-  --netbg-trace: rgb(0 0 0 / 0.32);
+.cbg-lines,
+.cbg-index {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: var(--cbg-mask) center / cover no-repeat;
+  mask: var(--cbg-mask) center / cover no-repeat;
 }
-.netbg svg {
-  width: 100%;
-  height: 100%;
-  display: block;
+.cbg-lines {
+  --cbg-mask: url("/bg/contours.svg");
+  background: var(--cbg-ink, oklch(0.215 0.045 263 / 0.1));
 }
-:root[data-theme="day"] { --netbg-opacity: 0.3; --train-shift: -0.1; --train-opacity: 0.6; }
-:root[data-theme="night"] { --netbg-opacity: 0.3; }
-:root[data-palette="vivid"] { --netbg-opacity: 0.45; }
-/* Phones: the content is the whole width, so only a hint at the very edges. */
+.cbg-index {
+  --cbg-mask: url("/bg/contours-index.svg");
+  background: linear-gradient(
+    115deg,
+    oklch(var(--cat-l) var(--cat-c) 350),
+    oklch(var(--cat-l) var(--cat-c) 62) 30%,
+    oklch(var(--cat-l) var(--cat-c) 150) 55%,
+    oklch(var(--cat-l) var(--cat-c) 235) 78%,
+    oklch(var(--cat-l) var(--cat-c) 300)
+  );
+  opacity: var(--cbg-index, 0.5);
+}
+:root[data-theme="night"] {
+  --cbg-ink: oklch(0.955 0.012 90 / 0.1);
+  --cbg-index: 0.4;
+}
+:root[data-palette="vivid"] {
+  --cbg-index: 0.55;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cbg-drift {
+    animation: cbg-drift 140s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+@keyframes cbg-drift {
+  from { transform: translate3d(-1.5%, -1%, 0) rotate(-0.6deg); }
+  to { transform: translate3d(1.5%, 1.2%, 0) rotate(0.6deg); }
+}
+/* Phones: the content is the whole width, so only a hint at the edges. */
 @media (max-width: 767px) {
-  .netbg {
-    --netbg-trace: rgb(0 0 0 / 0.2);
+  .cbg {
+    --cbg-trace: rgb(0 0 0 / 0.45);
   }
 }
 @media print {
-  .netbg { display: none; }
-}
-
-/* Trains on the backdrop: a chain of lit cars per line, running end to end.
-   Only transform and opacity animate, so the compositor runs them and the
-   page never repaints for them (NetworkBackdrop.tsx). */
-.netbg {
-  contain: strict;
-}
-/* The map's 1600x1000 box; BackdropStage scales it to cover the viewport. */
-.netbg-stage {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1600px;
-  height: 1000px;
-  transform: translate(-50%, -50%) scale(1.2);
-  transform-origin: 50% 50%;
-  opacity: var(--train-opacity, 0.85);
-}
-.netbg-train,
-.netbg-ping-at {
-  position: absolute;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-}
-.netbg-train {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  opacity: 0;
-  background: oklch(calc(var(--cat-l) + var(--train-shift, 0.12)) calc(var(--cat-c) + 0.04) var(--hue));
-  will-change: transform;
-}
-.netbg-ping {
-  display: block;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
-  border-radius: 50%;
-  border: 3px solid oklch(var(--cat-l) var(--cat-c) var(--hue));
-  opacity: 0;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .netbg-train {
-    opacity: 1;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    /* A car that starts a moment late waits at the start, not in a corner of the stage. */
-    animation-fill-mode: backwards;
-  }
-  .netbg-ping {
-    animation: netbg-ping 7s ease-out infinite;
-    will-change: transform, opacity;
-  }
-}
-@keyframes netbg-ping {
-  0% { transform: scale(1); opacity: 0.9; }
-  30%, 100% { transform: scale(3.2); opacity: 0; }
+  .cbg { display: none; }
 }
 
 /* ---- Today's network in the masthead (TodayNetwork.tsx) ------------------ */
