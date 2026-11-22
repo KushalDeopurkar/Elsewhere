@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 from typing import Optional, List, Dict, Set
 
 import html
@@ -67,6 +68,11 @@ def split_by_image(rows: List[Dict]) -> List[List[Dict]]:
 
 
 def _same(a, b) -> bool:
+    # Enums (the category) by value: str() of a str-Enum member is
+    # "EventCategory.MUSIC", never the stored "music", which made every row
+    # look changed and rewrote all ~10,000 of them on every run.
+    a = a.value if isinstance(a, Enum) else a
+    b = b.value if isinstance(b, Enum) else b
     if a is None or b is None:
         return a is None and b is None
     if isinstance(a, (int, float)) or isinstance(b, (int, float)):

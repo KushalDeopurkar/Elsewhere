@@ -75,3 +75,23 @@ def test_a_moved_pin_is_written_even_when_nothing_else_changed():
     svc = EventService(Client(stored))
     assert svc._changed_only(rows) == []
     assert svc._changed_only(rows, {("ics", "1")}) == rows
+
+
+def test_an_unchanged_event_from_a_scraper_is_skipped():
+    # Through the real path: EventCreate -> to_db_row, category an Enum.
+    from datetime import datetime, timezone
+    from app.models.event import EventCategory, EventCreate
+    from app.services.event_service import _unescape_row
+
+    e = EventCreate(title="Gig", category=EventCategory.MUSIC, source="ics", source_id="9",
+                    start_time=datetime(2026, 11, 25, 14, 0, tzinfo=timezone.utc), city="Mumbai",
+                    url="https://example.com/gig", is_free=True)
+    r = _unescape_row(e.to_db_row())
+    stored = [{"source_id": "9", "title": "Gig", "category": "music", "start_time": "2026-11-25T14:00:00+00:00",
+               "city": "Mumbai", "url": "https://example.com/gig", "is_free": True,
+               "description": None, "end_time": None, "location_name": None, "address": None,
+               "country": "US", "image_url": None, "price_min": None, "price_max": None}]
+    svc = EventService(Client(stored))
+    assert svc._changed_only([r]) == []
+    stored[0]["category"] = "sports"
+    assert svc._changed_only([r]) == [r]
