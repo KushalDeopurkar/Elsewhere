@@ -2,8 +2,10 @@ name: Scrape Events
 
 on:
   schedule:
-    # Run every 6 hours (free tier friendly)
-    - cron: '0 */6 * * *'
+    # Once a day, 02:07 IST. Each run writes ~20k rows for ~30 minutes; the
+    # free (Nano) database needs the rest of the day to recover its disk IO
+    # budget. Every 6 hours froze it and emptied the site.
+    - cron: '37 20 * * *'
   workflow_dispatch:
     inputs:
       source:
