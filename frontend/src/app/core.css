@@ -2977,7 +2977,7 @@ p {
 /* A little larger than the screen, so the drift never shows an edge. */
 .cbg-drift {
   position: absolute;
-  inset: -6%;
+  inset: -10%;
 }
 .cbg-lines,
 .cbg-index {
@@ -3009,15 +3009,48 @@ p {
 :root[data-palette="vivid"] {
   --cbg-index: 0.55;
 }
+/* A band of light that sweeps across the map, lighting up the index lines
+   as it passes. The lines are the parent's mask; only the light moves, by
+   transform, so the GPU runs it and the page never repaints. */
+.cbg-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask: url("/bg/contours-index.svg") center / cover no-repeat;
+  mask: url("/bg/contours-index.svg") center / cover no-repeat;
+}
+.cbg-shine::before {
+  content: "";
+  position: absolute;
+  top: -25%;
+  bottom: -25%;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, var(--cbg-light, oklch(0.215 0.045 263 / 0.55)) 50%, transparent);
+  transform: translate3d(-110%, 0, 0) rotate(14deg);
+  opacity: 0;
+}
+:root[data-theme="night"] .cbg-shine::before {
+  --cbg-light: oklch(0.97 0.03 90 / 0.75);
+}
 @media (prefers-reduced-motion: no-preference) {
   .cbg-drift {
-    animation: cbg-drift 140s ease-in-out infinite alternate;
+    animation: cbg-drift 48s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  .cbg-shine::before {
+    opacity: 1;
+    animation: cbg-sweep 16s cubic-bezier(0.45, 0, 0.35, 1) infinite;
     will-change: transform;
   }
 }
 @keyframes cbg-drift {
-  from { transform: translate3d(-1.5%, -1%, 0) rotate(-0.6deg); }
-  to { transform: translate3d(1.5%, 1.2%, 0) rotate(0.6deg); }
+  from { transform: translate3d(-4%, -3%, 0) rotate(-1.5deg) scale(1.02); }
+  to { transform: translate3d(4%, 3%, 0) rotate(1.5deg) scale(1.06); }
+}
+@keyframes cbg-sweep {
+  from { transform: translate3d(-110%, 0, 0) rotate(14deg); }
+  to { transform: translate3d(330%, 0, 0) rotate(14deg); }
 }
 /* Phones: the content is the whole width, so only a hint at the edges. */
 @media (max-width: 767px) {

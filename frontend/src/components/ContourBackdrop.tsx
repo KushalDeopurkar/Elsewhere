@@ -16,6 +16,7 @@ export default function ContourBackdrop() {
       <div className="cbg-drift">
         <div className="cbg-lines" />
         <div className="cbg-index" />
+        <div className="cbg-shine" />
       </div>
     </div>
   );

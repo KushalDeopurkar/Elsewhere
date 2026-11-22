@@ -9,12 +9,12 @@
   isolation: isolate;
   border-bottom: 1px solid var(--rule);
   /* Two quiet glows: the signal behind the board, a category hue low left.
-     The page colour underneath is slightly see-through, so the contour
+     The page colour underneath is partly see-through, so the moving contour
      lines show faintly through the hero. */
   background:
     radial-gradient(ellipse 48% 62% at 82% 38%, color-mix(in oklch, var(--signal) 14%, transparent), transparent 72%),
     radial-gradient(ellipse 42% 58% at 6% 92%, oklch(var(--cat-l) var(--cat-c) 300 / 0.13), transparent 70%),
-    color-mix(in oklch, var(--bg) 82%, transparent);
+    color-mix(in oklch, var(--bg) 58%, transparent);
 }
 
 .hero-band .home-top {
@@ -211,8 +211,11 @@
 }
 
 .dep-panel {
-  /* Five rows tall whatever is on the page, so paging never jumps. */
-  min-height: calc(5 * 4.25rem);
+  /* One fixed height, whatever the tab or page holds: five rows plus the
+     NOW line and a "Tomorrow" rule. Switching Today / Tomorrow / Weekend
+     or paging never resizes the card or moves the hero. */
+  height: calc(5 * 4.25rem + 28px + 2.5rem);
+  overflow: hidden;
 }
 
 .dep-rows {
@@ -590,5 +593,6 @@
   .dep-what { grid-area: what; }
   .dep-status { grid-area: status; justify-self: start; }
   .dep-flap .flap-t { font-size: 0.9rem; }
-  .dep-panel { min-height: 0; }
+  /* Phone rows are two lines tall */
+  .dep-panel { height: calc(5 * 5.6rem + 28px + 2.5rem); }
 }
