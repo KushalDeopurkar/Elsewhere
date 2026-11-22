@@ -90,56 +90,31 @@ const TRAINS = LINES.map((_, i) => {
 });
 
 /** A point on the stage, in map units: the stage is a 1600x1000px box, scaled to cover the viewport. */
-const at = (x: number, y: number) => `${x}px, ${y}px`;
-
-/** Half the capsule's length (72px, see .netbg-train): how far ahead of a corner it starts to turn. */
-const EASE_IN = 36;
+const at = (x: number, y: number) => `${+x.toFixed(2)}px, ${+y.toFixed(2)}px`;
 
 /**
- * One @keyframes per train, placed by distance along the line so the speed
- * is even. Straight runs need only their two ends: linear interpolation
- * between them is exact. At each corner the capsule turns while it keeps
- * moving: it starts turning half a length before the corner, is halfway
- * round on it, and is straight on the next segment half a length after, so
- * it never stops, never pivots off the line, and always takes the short
- * way round (a capsule looks the same both ways, so no turn is over 90°).
+ * A train is a short chain of round cars. Each car follows the line exactly
+ * (its keyframes are the line's own corners, translate only), a fixed
+ * distance behind the one in front, so the train bends round every corner
+ * and never leaves the track. Round cars look the same at any angle, so
+ * nothing ever rotates.
  */
+const CARS = 12;
+/** Distance between car centres, in map units; cars are 11px across, so they overlap into one body. */
+const CAR_GAP = 5.5;
+
+/** Length of each line, for spacing the cars in time. */
+const LENGTHS = LINES.map((l) =>
+  l.points.slice(1).reduce((sum, p, j) => sum + Math.hypot(p[0] - l.points[j][0], p[1] - l.points[j][1]), 0) || 1,
+);
+
+/** One @keyframes per line: a stop at each corner, placed by distance so the speed is even. */
 const KEYFRAMES = LINES.map((l, i) => {
   const pts = l.points;
-  const lens = pts.slice(1).map((p, j) => Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]));
-  const total = lens.reduce((a, b) => a + b, 0) || 1;
-  const raw = lens.map((_, j) => (Math.atan2(pts[j + 1][1] - pts[j][1], pts[j + 1][0] - pts[j][0]) * 180) / Math.PI);
-  // Unwrap: each segment's angle within ±90° of the one before.
-  const ang: number[] = [];
-  raw.forEach((r, j) => {
-    if (j === 0) return ang.push(r);
-    let d = r - ang[j - 1];
-    d = ((((d + 90) % 180) + 180) % 180) - 90;
-    ang.push(ang[j - 1] + d);
-  });
-  // A point `dist` along the line, and the stop for it.
-  const along = (dist: number): [number, number] => {
-    let left = Math.max(0, Math.min(total, dist));
-    for (let j = 0; j < lens.length; j++) {
-      if (left <= lens[j] || j === lens.length - 1) {
-        const t = lens[j] ? left / lens[j] : 0;
-        return [pts[j][0] + (pts[j + 1][0] - pts[j][0]) * t, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * t];
-      }
-      left -= lens[j];
-    }
-    return pts[pts.length - 1];
-  };
-  const stops: { d: number; a: number }[] = [{ d: 0, a: ang[0] }];
   let run = 0;
-  for (let j = 0; j < lens.length - 1; j++) {
-    run += lens[j];
-    const e = Math.min(EASE_IN, lens[j] / 2, lens[j + 1] / 2);
-    stops.push({ d: run - e, a: ang[j] }, { d: run, a: (ang[j] + ang[j + 1]) / 2 }, { d: run + e, a: ang[j + 1] });
-  }
-  stops.push({ d: total, a: ang[ang.length - 1] });
-  const frames = stops.map(({ d, a }) => {
-    const [x, y] = along(d);
-    return `${((d / total) * 100).toFixed(3)}% { transform: translate(${at(x, y)}) rotate(${a.toFixed(1)}deg) translate(-36px, -3.5px) }`;
+  const frames = pts.map((p, j) => {
+    if (j > 0) run += Math.hypot(p[0] - pts[j - 1][0], p[1] - pts[j - 1][1]);
+    return `${((run / LENGTHS[i]) * 100).toFixed(3)}% { transform: translate(${at(p[0], p[1])}) translate(-5.5px, -5.5px) }`;
   });
   return `@keyframes netbg-run-${i} { ${frames.join(" ")} }`;
 }).join("\n");
@@ -194,19 +169,21 @@ export default function NetworkBackdrop() {
       <BackdropStage>
         {LINES.map((l, i) => {
           const t = TRAINS[i];
-          return (
+          // Each car runs the same trip a little later: CAR_GAP behind, at the train's speed.
+          const lag = (CAR_GAP / LENGTHS[i]) * t.dur;
+          return Array.from({ length: CARS }, (_, k) => (
             <span
-              key={i}
-              className="netbg-train"
+              key={`${i}-${k}`}
+              className={k === 0 ? "netbg-train is-head" : "netbg-train"}
               style={{
                 "--hue": l.hue,
                 animationName: `netbg-run-${i}`,
                 animationDuration: `${t.dur}s`,
-                animationDelay: `${t.delay}s`,
+                animationDelay: `${(t.delay + k * lag).toFixed(3)}s`,
                 animationDirection: t.reverse ? "reverse" : "normal",
               } as React.CSSProperties}
             />
-          );
+          ));
         })}
         {PINGS.map((p, i) => (
           // Placed by the outer span, pulsed by the inner: the keyframes stay

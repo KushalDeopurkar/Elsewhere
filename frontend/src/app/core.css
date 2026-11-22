@@ -2997,7 +2997,7 @@ p {
   .netbg { display: none; }
 }
 
-/* Trains on the backdrop: a lit capsule per line, running end to end.
+/* Trains on the backdrop: a chain of lit cars per line, running end to end.
    Only transform and opacity animate, so the compositor runs them and the
    page never repaints for them (NetworkBackdrop.tsx). */
 .netbg {
@@ -3022,17 +3022,11 @@ p {
   pointer-events: none;
 }
 .netbg-train {
-  width: 72px;
-  height: 7px;
-  border-radius: 999px;
-  /* The keyframes place the capsule's corner and centre it themselves, so
-     rotation has to pivot on that corner, not the default middle; otherwise
-     every angled train sits off its line. */
-  transform-origin: 0 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
   opacity: 0;
   background: oklch(calc(var(--cat-l) + var(--train-shift, 0.12)) calc(var(--cat-c) + 0.04) var(--hue));
-  /* The halo is painted once into the train's own layer. */
-  box-shadow: 0 0 0 6px oklch(calc(var(--cat-l) + var(--train-shift, 0.12)) calc(var(--cat-c) + 0.04) var(--hue) / 0.3);
   will-change: transform;
 }
 .netbg-ping {
@@ -3049,6 +3043,8 @@ p {
     opacity: 1;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
+    /* A car that starts a moment late waits at the start, not in a corner of the stage. */
+    animation-fill-mode: backwards;
   }
   .netbg-ping {
     animation: netbg-ping 7s ease-out infinite;
