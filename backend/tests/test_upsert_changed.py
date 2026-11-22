@@ -67,3 +67,11 @@ def test_empty_price_and_picture_do_not_wipe_page_values():
     no_info = next(k for k in keys if "price_min" not in k)
     assert "image_url" not in no_info and "is_free" not in no_info
     assert any("price_min" in k and "image_url" in k for k in keys)
+
+
+def test_a_moved_pin_is_written_even_when_nothing_else_changed():
+    rows = [row(1)]
+    stored = [{k: v for k, v in rows[0].items() if k != "raw_data"}]
+    svc = EventService(Client(stored))
+    assert svc._changed_only(rows) == []
+    assert svc._changed_only(rows, {("ics", "1")}) == rows

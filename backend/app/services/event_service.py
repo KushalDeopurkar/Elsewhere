@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Set
 
 import html
 import logging
@@ -143,8 +143,12 @@ class EventService:
             time.sleep(1)
             return self._upsert_chunk(rows[:mid]) + self._upsert_chunk(rows[mid:])
 
-    def upsert_events(self, events: List[EventCreate]) -> int:
-        """Insert or update events. Returns count of upserted rows."""
+    def upsert_events(self, events: List[EventCreate], force: Optional[Set[tuple]] = None) -> int:
+        """Insert or update events. Returns count of upserted rows.
+
+        force: (source, source_id) pairs to write even when the compared
+        fields are unchanged, e.g. a pin moved by the coordinate check
+        (coordinates aren't among the compared fields)."""
         events = [e for e in events if not is_junk_title(e.title)]
         if not events:
             return 0
@@ -165,7 +169,7 @@ class EventService:
         for batch in split_by_image(rows):
             for i in range(0, len(batch), UPSERT_BATCH):
                 part = batch[i : i + UPSERT_BATCH]
-                chunk = self._changed_only(part)
+                chunk = self._changed_only(part, force or set())
                 skipped += len(part) - len(chunk)
                 if chunk:
                     count += self._upsert_chunk(chunk)
@@ -173,7 +177,7 @@ class EventService:
         logger.info(f"Upserted {count} events, {skipped} unchanged and skipped")
         return count
 
-    def _changed_only(self, rows: List[Dict]) -> List[Dict]:
+    def _changed_only(self, rows: List[Dict], force: Optional[Set[tuple]] = None) -> List[Dict]:
         """Rows that are new or differ from what's stored, in one read per source."""
         by_source: Dict[str, List[Dict]] = {}
         for r in rows:
@@ -202,7 +206,11 @@ class EventService:
             have = {s["source_id"]: s for s in stored}
             for r in group:
                 old = have.get(r["source_id"])
-                if old is None or any(not _same(r.get(c), old.get(c)) for c in cols if c != "source_id"):
+                if (
+                    old is None
+                    or (source, r["source_id"]) in (force or ())
+                    or any(not _same(r.get(c), old.get(c)) for c in cols if c != "source_id")
+                ):
                     keep.append(r)
         return keep
 

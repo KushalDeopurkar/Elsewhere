@@ -144,6 +144,13 @@ jobs:
           pattern: events-*
           path: backend/in
 
+      - name: Restore checked venue places
+        uses: actions/cache@v4
+        with:
+          path: backend/.geocache.json
+          key: geocache-${{ github.run_id }}
+          restore-keys: geocache-
+
       - name: De-duplicate and save
         id: save
         env:

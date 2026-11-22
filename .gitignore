@@ -14,3 +14,5 @@ seed_events.json
 *.envbackend
 .env*
 !.env.example
+# Venue places checked against OpenStreetMap (kept by the Actions cache)
+backend/.geocache.json

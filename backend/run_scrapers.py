@@ -83,6 +83,10 @@ async def main():
                         help="Skip scraping; read every *.jsonl file in this folder, de-duplicate and save")
     parser.add_argument("--budget-min", type=float, default=None,
                         help="Stop a scraper after this many minutes (keeps the run inside its time limit)")
+    parser.add_argument("--geocheck-budget", type=int, default=150,
+                        help="Check up to this many venue names against OpenStreetMap when saving (0 = off)")
+    parser.add_argument("--geocheck-cache", default=".geocache.json",
+                        help="Where checked venue places are kept between runs")
     parser.add_argument("--retry-failed", action="store_true",
                         help="Enrich: also retry events tried before that got no details")
     args = parser.parse_args()
@@ -206,6 +210,22 @@ async def main():
     if before != len(all_events):
         logger.info(f"Dropped {before - len(all_events)} duplicates listed by more than one source")
     logger.info(f"Total scraped: {len(all_events)} events")
+
+    # Some sources send wrong coordinates (a Malad concert 8.6 km out at sea):
+    # check venues against OpenStreetMap and move pins that are clearly off.
+    moved_pins: set = set()
+    if args.geocheck_budget > 0:
+        import httpx
+        from app.enrich.geocheck import check_pins, load_cache, photon_fetch, save_cache, USER_AGENT
+        from app.scrapers.allevents import _CITY_COORDS
+
+        centres = {k.replace("-", " "): v for k, v in _CITY_COORDS.items()}
+        cache = load_cache(args.geocheck_cache)
+        with httpx.Client(headers={"User-Agent": USER_AGENT}) as client:
+            stats = check_pins(all_events, centres, cache, photon_fetch(client), budget=args.geocheck_budget)
+        save_cache(args.geocheck_cache, cache)
+        moved_pins = stats.pop("changed")
+        logger.info(f"Pin check: {stats}")
     logger.info(f"Per-scraper: {results}")
 
     if args.dry_run:
@@ -227,7 +247,7 @@ async def main():
 
     event_service = EventService(get_supabase_service())
     try:
-        upserted = event_service.upsert_events(all_events)
+        upserted = event_service.upsert_events(all_events, force=moved_pins)
     except DatabaseUnavailable as e:
         logger.error(f"Database unavailable, stopped saving: {e}")
         print("::warning::The database didn't answer (Supabase 503 / PGRST002) even after waiting, so this run "
