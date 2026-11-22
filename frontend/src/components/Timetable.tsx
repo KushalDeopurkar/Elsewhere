@@ -48,9 +48,18 @@ export default function Timetable({
 }) {
   const now = useNow(15_000);
   const cityPoint = cityByName(city);
-  const [tab, setTab] = useState<BoardTab>("today");
+  // Until someone picks a tab, the board shows the first one with
+  // something on it: today, else tomorrow, else the weekend. After
+  // midnight, or late on a quiet night, it never opens on an empty board.
+  const [chosen, setChosen] = useState<BoardTab | null>(null);
   const [page, setPage] = useState(0);
   const [held, setHeld] = useState(false);
+
+  const auto = useMemo<BoardTab>(() => {
+    if (!now) return "today";
+    return (["today", "tomorrow", "weekend"] as BoardTab[]).find((t) => boardRows(events, t, now).length > 0) ?? "today";
+  }, [events, now]);
+  const tab = chosen ?? auto;
 
   const rows = useMemo(() => (now ? boardRows(events, tab, now) : []), [events, tab, now]);
   const book = useMemo(() => pages(rows, PAGE), [rows]);
@@ -65,7 +74,7 @@ export default function Timetable({
   }, [held, pageCount]);
 
   const choose = (t: BoardTab) => {
-    setTab(t);
+    setChosen(t);
     setPage(0);
   };
 
