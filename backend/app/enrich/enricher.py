@@ -30,24 +30,39 @@ UA = (
 
 def pick_batch(client, limit: int, sources=None, retry_failed: bool = False) -> List[Dict[str, Any]]:
     """Upcoming events never enriched, then the stalest, soonest first.
-    retry_failed: also take events that were tried but got nothing (e.g. a
-    site that blocks cloud servers, retried from a home connection)."""
+    retry_failed: first take events that were tried but got nothing (e.g. a
+    site that blocks cloud servers, retried from a home connection), up to
+    half the batch; the rest still goes to new and stale events, so ticket
+    status keeps being re-checked. (It used to take only the failed ones,
+    so District's sold-out and new tiers were never refreshed.)"""
     now = datetime.now(timezone.utc)
     srcs = sorted(set(sources or SUPPORTED) & SUPPORTED)
     stale = (now - timedelta(days=3)).isoformat()
     cols = "id,title,url,source,start_time,price_min,price_max,is_free,image_url"
-    base = (
-        client.table("events")
-        .select(cols)
-        .gte("start_time", (now - timedelta(hours=6)).isoformat())
-        .in_("source", srcs)
-        .not_.is_("url", "null")
-    )
+
+    def base():
+        # A new query each time: the client's builder changes in place.
+        return (
+            client.table("events")
+            .select(cols)
+            .gte("start_time", (now - timedelta(hours=6)).isoformat())
+            .in_("source", srcs)
+            .not_.is_("url", "null")
+        )
+
+    picked: List[Dict[str, Any]] = []
     if retry_failed:
-        return base.is_("details", "null").order("start_time").limit(limit).execute().data or []
-    fresh = base.is_("details_fetched_at", "null").order("start_time").limit(limit).execute().data or []
+        picked = (
+            base().is_("details", "null").not_.is_("details_fetched_at", "null")
+            .order("start_time").limit(max(1, limit // 2)).execute().data or []
+        )
+    seen = {r["id"] for r in picked}
+    fresh = picked + [
+        r for r in (base().is_("details_fetched_at", "null").order("start_time").limit(limit - len(picked)).execute().data or [])
+        if r["id"] not in seen
+    ]
     if len(fresh) >= limit:
-        return fresh
+        return fresh[:limit]
     # Tickets sell out: events in the next three days are re-checked when
     # their details are more than 8 hours old, so a sold-out show stops
     # being offered within a run or two.
@@ -79,7 +94,8 @@ def pick_batch(client, limit: int, sources=None, retry_failed: bool = False) -> 
         .data
         or []
     )
-    return fresh + older
+    seen = {f["id"] for f in fresh}
+    return fresh + [r for r in older if r["id"] not in seen]
 
 
 def price_update(row: Dict[str, Any], tickets: List[Dict[str, Any]]) -> Dict[str, Any]:
