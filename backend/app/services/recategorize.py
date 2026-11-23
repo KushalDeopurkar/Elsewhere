@@ -12,6 +12,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Dict
 
+from postgrest.types import CountMethod, ReturnMethod
 from supabase import Client
 
 from app.services.categorize import categorize
@@ -52,8 +53,19 @@ def recategorize(client: Client, dry_run: bool = False, max_rows: int = 50_000) 
     logger.info(f"Recategorize: {total} of {seen} upcoming events change category")
     for move, n in moves.most_common(15):
         logger.info(f"  {move}: {n}")
+    applied = 0
     if not dry_run:
         for cat, ids in changed.items():
-            for i in range(0, len(ids), 200):
-                client.table("events").update({"category": cat}).in_("id", ids[i:i + 200]).execute()
-    return {"seen": seen, "changed": total}
+            for i in range(0, len(ids), 100):
+                res = (
+                    client.table("events")
+                    .update({"category": cat}, count=CountMethod.exact, returning=ReturnMethod.minimal)
+                    .in_("id", ids[i:i + 100])
+                    .execute()
+                )
+                applied += res.count or 0
+        # A write the database silently refuses (row level security with the
+        # wrong key) still "succeeds": say so instead of reporting a fix.
+        if applied < total:
+            logger.error(f"Recategorize: only {applied} of {total} category changes were saved")
+    return {"seen": seen, "changed": total, "applied": applied}

@@ -110,7 +110,10 @@ async def main():
         from app.database import get_supabase_service
         from app.services.recategorize import recategorize
         stats = recategorize(get_supabase_service(), dry_run=args.dry_run)
-        print(f"::notice::Recategorized {stats['changed']} of {stats['seen']} upcoming events")
+        print(f"::notice::Recategorized {stats['changed']} of {stats['seen']} upcoming events "
+              f"({stats.get('applied', 0)} saved)")
+        if not args.dry_run and stats.get("applied", 0) < stats["changed"]:
+            print(f"::warning::Only {stats.get('applied', 0)} of {stats['changed']} category changes were saved")
         return
 
     if args.enrich_only:

@@ -45,3 +45,24 @@ def test_each_event_gets_its_category(title, desc, hint, want):
 def test_structured_source_label_wins_a_close_call():
     # Ticketmaster says sports; the title alone looks like a party.
     assert categorize("Fan Party Night", None, "sports", "ticketmaster") == "sports"
+
+
+# Meetup's label is the category *page* an event was found on, and Meetup's
+# search fills those pages with whatever is nearby: founders' networking on
+# the music page, speed dating on the tech page. So it never decides alone.
+MEETUP_CASES = [
+    ("Primewise Founders Club Networking Event- Mumbai (Online)", None, "music", "business"),
+    ("Primewise Founders Club Networking Event- Chennai (Online)", None, "food", "business"),
+    ("Virtual Meet Up - Monthly Catch up", "Let's meet, chat and get to know each other.", "music", "community"),
+    ("JAIPUR TOASTMASTERS CLUB", None, "music", "community"),
+    ("Tuesday Night Dungeons and Dragons!", None, "music", "community"),
+    ("Fayetteville Speed Dating, Matched by Age", None, "tech", "community"),
+    # Real words still win, whatever page it was on.
+    ("Workshop: Become a Senior AI Engineer", None, "music", "tech"),
+    ("Saturday Group Run", None, "music", "sports"),
+]
+
+
+@pytest.mark.parametrize("title,description,hint,expected", MEETUP_CASES)
+def test_meetup_page_label_never_decides_alone(title, description, hint, expected):
+    assert categorize(title, description, hint, "meetup") == expected

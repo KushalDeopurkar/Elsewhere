@@ -149,8 +149,15 @@ RANK = ("family", "tech", "business", "music", "arts", "sports", "food", "health
         "nightlife", "education", "community", "other")
 
 # How much a source's own label counts. Structured feeds know their events.
-HINT_WEIGHT = {"ticketmaster": 5, "seatgeek": 5, "football": 9, "eventfinda": 3, "meetup": 2}
+HINT_WEIGHT = {"ticketmaster": 5, "seatgeek": 5, "football": 9, "eventfinda": 3, "meetup": 0}
 DEFAULT_HINT_WEIGHT = 2
+
+# Sources whose label says nothing about the event: Meetup's is the category
+# page the event turned up on, and its search fills every page with whatever
+# is nearby (founders' networking under music, speed dating under tech).
+# With no words to go on, such an event is a meetup: community.
+UNTRUSTED_HINT = {"meetup": "community"}
+UNTRUSTED_BASE = 2
 
 
 # Every phrase once, longest first, so "rock climbing" is read before "rock"
@@ -205,8 +212,14 @@ def scores(title: str, description: Optional[str] = None, hint: Optional[str] = 
                 family_in_title = True
     if family_in_title:
         out["family"] += FAMILY_BOOST
-    if hint and hint not in ("other", "community"):
-        out[hint] = out.get(hint, 0) + HINT_WEIGHT.get((source or "").lower(), DEFAULT_HINT_WEIGHT)
+    # An untrusted source's events are meetups first: a stray weak word
+    # ("club", "night") alone doesn't outweigh that; a real topic does.
+    base = UNTRUSTED_HINT.get((source or "").lower())
+    if base:
+        out[base] = out.get(base, 0) + UNTRUSTED_BASE
+    weight = HINT_WEIGHT.get((source or "").lower(), DEFAULT_HINT_WEIGHT)
+    if hint and hint not in ("other", "community") and weight:
+        out[hint] = out.get(hint, 0) + weight
     return out
 
 
@@ -215,6 +228,9 @@ def categorize(title: str, description: Optional[str] = None, hint: Optional[str
     """The single category for an event."""
     pts = scores(title, description, hint, source)
     if not pts:
+        fallback = UNTRUSTED_HINT.get((source or "").lower())
+        if fallback:
+            return fallback
         return hint if hint in WORDS else "other"
     best = max(pts.values())
     for cat in RANK:
