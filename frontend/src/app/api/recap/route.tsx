@@ -18,7 +18,8 @@ const num = (v: string | null) => Math.max(0, Math.min(9999, Number.parseInt(v ?
  */
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
-  const month = clip(q.get("month") ?? "This month", 12);
+  // No month given: use the current one (India time), so the heading never reads "My This month".
+  const month = clip(q.get("month")?.trim() || new Intl.DateTimeFormat("en-IN", { month: "long", timeZone: "Asia/Kolkata" }).format(new Date()), 12);
   const persona = clip(q.get("persona") ?? "Curious Wanderer", 26);
   const line = clip(q.get("line") ?? "", 60);
   const top = clip(q.get("top") ?? "", 24);
