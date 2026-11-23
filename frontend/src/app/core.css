@@ -771,6 +771,9 @@ p {
 .topnav-city {
   min-width: 0;
   flex: 0 1 auto;
+  /* If the city ever is squeezed, its name is cut here, never drawn under
+     the buttons beside it. */
+  overflow: hidden;
 }
 .topnav-end > :not(.topnav-city) {
   flex: none;
@@ -3361,4 +3364,17 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .prail-link { transition: none; }
   .prail-link:hover, .prail-link:focus-visible { transform: none; }
+}
+
+/* Phones: the city, display switch, search and account button need the
+   room, so the header carries the mark alone. The link keeps its
+   "Elsewhere home" label for screen readers. */
+@media (max-width: 479px) {
+  .brand-word {
+    display: none;
+  }
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+  }
 }
