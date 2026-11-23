@@ -1,10 +1,10 @@
 import { CITY_LIST, type CityPoint } from "./cities";
 
-/** The nearest picker city within `maxKm`, or null. */
-export function nearestCity(lat: number, lng: number, maxKm = 150): CityPoint | null {
+/** The nearest city in `pool` (every picker city by default), within `maxKm` if given. */
+export function nearestCity(lat: number, lng: number, maxKm = Infinity, pool: CityPoint[] = CITY_LIST): CityPoint | null {
   let best: CityPoint | null = null;
   let bestKm = Infinity;
-  for (const c of CITY_LIST) {
+  for (const c of pool) {
     const dLat = ((c.lat - lat) * Math.PI) / 180;
     const dLng = ((c.lng - lng) * Math.PI) / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat * Math.PI) / 180) * Math.cos((c.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;

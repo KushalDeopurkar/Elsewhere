@@ -11,9 +11,10 @@ const TRIED = "ee.city.guessed";
 
 /**
  * First visit only: start in the visitor's own city instead of Mumbai.
- * Tries Vercel's city-level IP lookup, then the browser's time zone; picks
- * the nearest city we cover (skipping ones abroad with nothing on), says so
- * in a small note, and never runs again once a city is set.
+ * Tries Vercel's city-level IP lookup, then the browser's time zone, and
+ * picks the nearest city that has events on right now, however far (someone
+ * in Nagpur starts in Indore, not Mumbai). Says so in a small note, and never
+ * runs again once a city is set.
  */
 export default function CityGuess() {
   const [note, setNote] = useState<string | null>(null);
@@ -29,25 +30,29 @@ export default function CityGuess() {
     if (stored) return;
     let live = true;
     (async () => {
-      let name: string | null = null;
-      try {
-        const r = await fetch("/api/whereami", { signal: AbortSignal.timeout(2500) });
-        const at = r.ok ? ((await r.json()) as { lat: number; lng: number } | null) : null;
-        if (at) name = nearestCity(at.lat, at.lng)?.name ?? null;
-      } catch {
-        /* fall back to the time zone */
+      // Where the visitor is (IP lookup, city level) and which cities have
+      // events right now, side by side.
+      const [at, active] = await Promise.all([
+        fetch("/api/whereami", { signal: AbortSignal.timeout(2500) })
+          .then((r) => (r.ok ? (r.json() as Promise<{ lat: number; lng: number } | null>) : null))
+          .catch(() => null),
+        fetch("/api/cities", { signal: AbortSignal.timeout(4000) })
+          .then((r) => (r.ok ? (r.json() as Promise<{ active: string[] | null }>) : null))
+          .then((d) => d?.active ?? null)
+          .catch(() => null),
+      ]);
+      // Only cities that would open with something on (all of them if unknown).
+      const pool = active ? CITY_LIST.filter((c) => active.includes(c.name)) : CITY_LIST;
+      let from: { lat: number; lng: number } | null = at;
+      if (!from) {
+        // No IP location: the browser's time zone, when it names a city.
+        const zoned = CITY_LIST.find((c) => c.name === cityFromZone(Intl.DateTimeFormat().resolvedOptions().timeZone));
+        if (zoned) from = zoned;
       }
-      name ??= cityFromZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-      if (!name || name === "Mumbai" || !live) return;
-      // Abroad, only switch if that city has events right now.
-      try {
-        const r = await fetch("/api/cities");
-        const d = r.ok ? ((await r.json()) as { active: string[] | null }) : { active: null };
-        const abroad = Boolean(CITY_LIST.find((c) => c.name === name)?.country);
-        if (abroad && d.active && !d.active.includes(name)) return;
-      } catch {
-        /* unknown: switch anyway */
-      }
+      if (!from || !pool.length) return;
+      // The visitor's own city if we cover it, else the nearest one that does.
+      const name = nearestCity(from.lat, from.lng, Infinity, pool)?.name ?? null;
+      if (!name || name === "Mumbai") return;
       if (!live) return;
       setCity(name, { quiet: true });
       setNote(name);
