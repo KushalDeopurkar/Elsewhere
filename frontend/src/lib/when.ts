@@ -407,7 +407,23 @@ export function inDays(e: Event, range: DayRange): boolean {
   const first = localDay(start, zone);
   const end = e.end_time ? Date.parse(e.end_time) : NaN;
   const last = Number.isNaN(end) ? first : localDay(end - 1, zone);
-  return first <= range.to && last >= range.from;
+  if (first > range.to || last < range.from) return false;
+  // A weekly series listed as one row ("Friday Karaoke", this Friday to the
+  // last one in January) only happens on its weekday, not on every day of
+  // the run: it matches a range only if that weekday falls inside it.
+  const day = first === last ? null : seriesWeekday(e.title);
+  if (day == null) return true;
+  const from = first > range.from ? first : range.from;
+  const to = last < range.to ? last : range.to;
+  for (let d = from, i = 0; d <= to && i < 7; d = addDays(d, 1), i++) if (weekday(d) === day) return true;
+  return false;
+}
+
+/** The one weekday a series is named for ("Friday Karaoke", "Mehfil Monday"), or null. */
+function seriesWeekday(title: string): number | null {
+  const words = title.toLowerCase().match(/[a-z]+/g) ?? [];
+  const named = new Set(words.map((w) => DAY_NAMES.findIndex((d) => d.toLowerCase() === w.replace(/s$/, ""))).filter((i) => i >= 0));
+  return named.size === 1 ? [...named][0] : null;
 }
 
 /** Does it start in that part of the day? Date-only listings (midnight) are left in. */

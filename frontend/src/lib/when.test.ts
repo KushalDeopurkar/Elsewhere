@@ -99,6 +99,23 @@ describe("matching events", () => {
     expect(inDays(ev("2026-11-21T10:00:00Z"), r)).toBe(false);
     expect(inDays(ev("2026-11-20T04:00:00Z", { end_time: "2026-11-25T12:00:00Z" }), r)).toBe(true);
   });
+  it("a weekly series only on its own weekday", () => {
+    // District lists "Friday Karaoke" once, from this Friday to the last
+    // Friday of the run: one row, months long. It is on Fridays, not on the
+    // weekend in between.
+    const weekend = { from: "2026-11-28", to: "2026-11-29", label: "", source: "" };
+    const friday = { from: "2026-12-04", to: "2026-12-04", label: "", source: "" };
+    const series = ev("2026-11-27T15:30:00Z", { title: "Friday Karaoke at Roxanne's", end_time: "2027-01-29T17:30:00Z" });
+    expect(inDays(series, weekend)).toBe(false);
+    expect(inDays(series, friday)).toBe(true);
+    const sunday = ev("2026-11-29T15:30:00Z", { title: "Karaoke Sunday ft. Mumbai Karaoke", end_time: "2026-12-27T17:30:00Z" });
+    expect(inDays(sunday, weekend)).toBe(true);
+    // A run with no weekday in its name (an exhibition) is on every day.
+    const show = ev("2026-11-20T04:30:00Z", { title: "Monsoon Prints: an exhibition", end_time: "2026-12-20T12:30:00Z" });
+    expect(inDays(show, weekend)).toBe(true);
+    // A one-night event named for its day is unaffected.
+    expect(inDays(ev("2026-11-27T15:30:00Z", { title: "Friday Night Live", end_time: "2026-11-27T19:30:00Z" }), weekend)).toBe(false);
+  });
   it("by time of day and by price", () => {
     expect(inHours(ev("2026-11-22T14:00:00Z"), { from: 19, to: 28, label: "", source: "" })).toBe(true); // 19:30
     expect(inHours(ev("2026-11-22T04:00:00Z"), { from: 19, to: 28, label: "", source: "" })).toBe(false);
