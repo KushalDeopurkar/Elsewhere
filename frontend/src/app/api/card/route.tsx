@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { OG, OG_FONTS } from "@/lib/ogTheme";
+import { OG, OG_FONTS, brandMark } from "@/lib/ogTheme";
 import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
 import { whenOf } from "@/lib/formatDate";
@@ -100,7 +100,7 @@ export async function GET(req: Request) {
         <div style={{ position: "absolute", inset: 0, display: "flex", background: "transparent" }} />
         <div style={{ display: "flex", flexDirection: "column", padding: story ? "110px 80px 90px" : "70px 70px 60px", flex: 1, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: story ? 40 : 32, fontWeight: 700, fontFamily: D }}>
-            <div style={{ width: story ? 22 : 18, height: story ? 22 : 18, borderRadius: 99, background: OG.lamp }} />
+            <img src={brandMark()} width={story ? 46 : 36} height={story ? 46 : 36} alt="" />
             Elsewhere
           </div>
           <div style={{ display: "flex", marginTop: story ? 80 : 44, fontSize: story ? 34 : 26, color: OG.lamp, textTransform: "uppercase", letterSpacing: 4 }}>{kicker}</div>

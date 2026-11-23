@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
+import BrandMark from "@/components/BrandMark";
 
 /**
  * The last resort, when the site's own layout fails: no stylesheets or
@@ -15,7 +16,10 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     <html lang="en">
       <body style={{ margin: 0, minHeight: "100vh", display: "grid", placeItems: "center", background: "#0a152a", color: "#f3f0e7", fontFamily: "system-ui, sans-serif" }}>
         <main style={{ maxWidth: 520, padding: 24 }}>
-          <p style={{ color: "#fcd726", letterSpacing: "0.2em", fontSize: 12, fontWeight: 700, margin: 0 }}>ELSEWHERE</p>
+          <p style={{ display: "flex", alignItems: "center", gap: 10, color: "#f3f0e7", letterSpacing: "0.2em", fontSize: 12, fontWeight: 700, margin: 0 }}>
+            <BrandMark style={{ width: 24, height: 24, color: "#f3f0e7" }} />
+            ELSEWHERE
+          </p>
           <h1 style={{ fontSize: 40, lineHeight: 1.05, margin: "12px 0" }}>Signal failure</h1>
           <p style={{ color: "#a7b2c1", lineHeight: 1.5 }}>The site hit a problem loading. It has been reported, and trying again usually works.</p>
           <p style={{ display: "flex", gap: 12, marginTop: 24 }}>

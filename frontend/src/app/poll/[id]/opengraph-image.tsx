@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { OG, OG_FONTS } from "@/lib/ogTheme";
+import { OG, OG_FONTS, brandMark } from "@/lib/ogTheme";
 import { ImageResponse } from "next/og";
 import { pollPreview } from "@/lib/pollServer";
 import { clip, posterData } from "@/lib/ogImage";
@@ -47,7 +47,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
       <div style={{ width: 1200, height: 630, display: "flex", flexDirection: "column", background: OG.board, color: OG.boardFg, fontFamily: "Geist", padding: "48px 64px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 26, color: OG.boardFg2 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: D, fontWeight: 700, color: OG.boardFg, fontSize: 30 }}>
-            <div style={{ width: 16, height: 16, borderRadius: 99, background: OG.lamp }} />
+            <img src={brandMark()} width={34} height={34} alt="" />
             Elsewhere
           </div>
           <div style={{ display: "flex" }}>{poll ? `${clip(poll.who, 28)} asks` : "Group vote"}</div>

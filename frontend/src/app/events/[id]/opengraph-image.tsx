@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import { loadEvent } from "@/lib/eventServer";
 import { eventZone } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
-import { OG, OG_FONTS } from "@/lib/ogTheme";
+import { OG, OG_FONTS, brandMark } from "@/lib/ogTheme";
 import { CATEGORIES } from "@/lib/types";
 
 /**
@@ -64,7 +64,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
       <div style={{ width: 1200, height: 630, display: "flex", background: OG.board, color: OG.boardFg, fontFamily: "Geist", padding: 64, gap: 48 }}>
         <div style={{ display: "flex", flexDirection: "column", width: textW, justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontFamily: "ArchivoBold", fontSize: 30, letterSpacing: 1 }}>
-            <div style={{ width: 16, height: 16, background: OG.lamp }} />
+            <img src={brandMark()} width={34} height={34} alt="" />
             ELSEWHERE
             {line ? <span style={{ marginLeft: 12, fontFamily: "Geist", fontSize: 22, color: OG.boardFg2, letterSpacing: 3 }}>{line.toUpperCase()}</span> : null}
           </div>

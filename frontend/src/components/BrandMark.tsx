@@ -1,12 +1,14 @@
+import type React from "react";
+
 /**
  * The Elsewhere mark: a letter E on a split-flap departures tile, split at
  * the hinge, its top corner peeling up as the next destination flips in.
  * Frame and letter take the text colour; the peeled corner takes the
  * signal accent (--brand-accent, set in core.css).
  */
-export default function BrandMark({ className }: { className?: string }) {
+export default function BrandMark({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg className={className} viewBox="0 0 64 64" aria-hidden="true">
+    <svg className={className} style={style} viewBox="0 0 64 64" aria-hidden="true">
       <path
         d="M43 4.5H12.5a8 8 0 0 0-8 8v39a8 8 0 0 0 8 8h39a8 8 0 0 0 8-8V21.5"
         fill="none"

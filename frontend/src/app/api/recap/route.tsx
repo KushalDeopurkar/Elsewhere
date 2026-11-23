@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
+import { brandMark } from "@/lib/ogTheme";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,7 @@ export async function GET(req: Request) {
       <div style={{ width: 1080, height: 1920, display: "flex", flexDirection: "column", padding: "120px 90px 100px", background: "#0e1015", color: "#f2f3f7", fontFamily: "Geist", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, display: "flex", background: "linear-gradient(160deg, rgba(255,107,87,0.32) 0%, rgba(14,16,21,0) 42%, rgba(14,16,21,0) 62%, rgba(169,155,255,0.22) 100%)" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 40, fontWeight: 700, fontFamily: D, position: "relative" }}>
-          <div style={{ width: 22, height: 22, borderRadius: 99, background: "#ff6b57" }} />
+          <img src={brandMark("#f2f3f7", "#ff6b57")} width={46} height={46} alt="" />
           Elsewhere
         </div>
         <div style={{ display: "flex", marginTop: 120, fontSize: 40, letterSpacing: 6, color: "#ff8a7a", textTransform: "uppercase", position: "relative" }}>My {month}</div>
