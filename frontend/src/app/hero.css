@@ -593,6 +593,128 @@
   .dep-what { grid-area: what; }
   .dep-status { grid-area: status; justify-self: start; }
   .dep-flap .flap-t { font-size: 0.9rem; }
-  /* Phone rows are two lines tall */
-  .dep-panel { height: calc(5 * 5.6rem + 28px + 2.5rem); }
+  /* Phone rows are two lines tall and vary: grow to fit rather than clip a
+     row in half, from a floor of five rows so switching tabs barely moves. */
+  .dep-panel { height: auto; min-height: calc(5 * 5.6rem); }
+}
+
+/* ---- Touch: small text links get a finger-sized hit area -------------- */
+/* "See all", "Browse everything", breadcrumbs: the text stays small, the
+   tappable area grows to about 44px tall without moving anything. */
+@media (pointer: coarse) {
+  .sec-link,
+  .link-arrow,
+  .crumbs a {
+    position: relative;
+  }
+  .sec-link::after,
+  .link-arrow::after,
+  .crumbs a::after {
+    content: "";
+    position: absolute;
+    inset: -12px -8px;
+  }
+}
+
+/* ---- Full-page notices: 404 and errors (StopNotice.tsx) --------------- */
+
+.stop-band {
+  min-height: calc(100dvh - 4.5rem);
+  display: grid;
+  align-items: center;
+}
+
+.stop {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(var(--s-6), 6vw, 5rem);
+  padding-block: var(--s-8);
+}
+
+.stop-board {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-3);
+  padding: var(--s-5) var(--s-6);
+  background: color-mix(in oklch, var(--bg-2) 92%, transparent);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift-3);
+}
+
+.stop-code {
+  gap: 6px;
+}
+
+.stop-code .flap-t {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.05em;
+  height: 1.3em;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(3.5rem, 9vw, 6rem);
+  line-height: 1;
+  background: var(--board);
+  color: var(--lamp);
+  border-radius: 4px;
+}
+
+:root[data-theme="night"] .stop-code .flap-t {
+  background: var(--bg-4);
+}
+
+.stop-code .flap-t::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 2px;
+  background: oklch(0 0 0 / 0.5);
+}
+
+.stop-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--live, var(--signal));
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.stop-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 80%;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.stop-body {
+  max-width: 52ch;
+  margin-top: var(--s-4);
+  font-size: var(--t-lg);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+
+.stop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+
+@media (max-width: 767px) {
+  .stop {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stop-body {
+    font-size: var(--t-base);
+  }
 }
