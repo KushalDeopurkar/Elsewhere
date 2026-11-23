@@ -10,13 +10,14 @@ import { googleCalendarLink, planToIcs } from "@/lib/plan";
 import type { PlanResult } from "@/lib/plan";
 import type { Event } from "@/lib/types";
 import SaveButton from "./SaveButton";
+import RemindButton from "./RemindButton";
 
 const PlanMap = dynamic(() => import("@/components/PlanMap"), {
   ssr: false,
   loading: () => <div className="detail-map-skel" />,
 });
 
-/** Save, add to calendar and share: the client-side actions on an event page. */
+/** Save, remind, add to calendar and share: the client-side actions on an event page. */
 export function EventActions({ event }: { event: Event }) {
   // What just happened, said on screen and to screen readers.
   const [status, setStatus] = useState("");
@@ -64,6 +65,7 @@ export function EventActions({ event }: { event: Event }) {
   return (
     <div className="detail-actions">
       <SaveButton event={event} variant="button" />
+      <RemindButton event={event} />
       <div className="cal-menu">
         <button type="button" className="btn btn-ghost" aria-expanded={calOpen} onClick={() => setCalOpen((o) => !o)}>
           <CalendarPlus size={17} weight="bold" /> Add to calendar

@@ -645,7 +645,8 @@
     border-color: var(--live);
     color: var(--bg);
   }
-  .actionbar-share {
+  .actionbar-share,
+  .actionbar .remind-icon-btn {
     border: 1.5px solid var(--rule-strong);
   }
   .detail {
@@ -837,4 +838,37 @@
 .detail-map-open:focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 2px;
+}
+
+/* Remind me (RemindButton): lit like the board's lamp once set. */
+.remind-btn.is-on,
+.remind-icon-btn.is-on {
+  color: var(--signal-text);
+  border-color: currentColor;
+}
+
+/* What the reminder button just did, floated above the phone's action bar
+   (or the bottom of the screen on wide ones), never shifting the layout. */
+.remind-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-h, 0px) + 84px);
+  z-index: var(--z-overlay);
+  width: min(92vw, 420px);
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--bg);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 0.25);
+}
+.remind-toast[hidden] {
+  display: none;
+}
+@media (min-width: 900px) {
+  .remind-toast {
+    bottom: var(--s-6);
+  }
 }

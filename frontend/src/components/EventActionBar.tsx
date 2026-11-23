@@ -7,6 +7,7 @@ import { isRealEvent } from "@/lib/supabase";
 import { useMyStatus } from "@/lib/going";
 import { recordSignal } from "@/lib/taste";
 import SaveButton from "./SaveButton";
+import RemindButton from "./RemindButton";
 
 /**
  * Phones: the event's main actions pinned above the tab bar from the first
@@ -48,6 +49,7 @@ export default function EventActionBar({ event, ctaLabel, price }: { event: Even
       ) : (
         <SaveButton event={event} variant="icon" />
       )}
+      <RemindButton event={event} variant="icon" />
       <button type="button" className="icon-btn actionbar-share" aria-label="Share this event" onClick={share}>
         <ShareNetwork size={18} weight="bold" />
       </button>
