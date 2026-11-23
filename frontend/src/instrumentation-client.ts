@@ -21,8 +21,19 @@ if (dsn) {
         // (reader mode, YouTube quality): they call window.__firefox__,
         // which isn't there yet. Not our code.
         /__firefox__/,
+        // Brave's built-in crypto wallet does the same with window.ethereum.
+        /window\.(ethereum|solana|web3)\b/,
       ],
       denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
+      // Anything else such an app injects runs as a one-line script with no
+      // file of its own: a single "global code" frame on line 1 of the page.
+      // The site's own code always comes from /_next/ files, so drop those.
+      beforeSend(event) {
+        const frames = event.exception?.values?.[0]?.stacktrace?.frames;
+        const only = frames?.length === 1 ? frames[0] : null;
+        if (only && only.function === "global code" && only.lineno === 1 && !only.filename?.includes("/_next/")) return null;
+        return event;
+      },
     });
   });
 }
