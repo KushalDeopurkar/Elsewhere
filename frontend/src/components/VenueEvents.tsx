@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import EventCard from "./EventCard";
 import { SectionHeader } from "./Section";
 import { clean } from "@/lib/api";
@@ -20,6 +21,21 @@ function sinceIso(): string {
  * first, so one visit to a venue's page shows its whole calendar. Renders
  * nothing when the venue is unknown or this is its only listing.
  */
+/**
+ * Upcoming shows at a venue, kept for ten minutes on the server: every
+ * event page at a busy venue reads one stored list, not the database.
+ */
+const venueShows = unstable_cache(
+  async (venue: string, city: string | null) => {
+    const c = city ? `&city=eq.${encodeURIComponent(city)}` : "";
+    return rest<Event[]>(
+      `events?select=${COLS}&location_name=eq.${encodeURIComponent(venue)}${c}&start_time=gte.${sinceIso()}&order=start_time.asc&limit=41`,
+    );
+  },
+  ["venue-shows-v1"],
+  { revalidate: 600 },
+);
+
 export default async function VenueEvents({ event }: { event: Event }) {
   const venue = event.location_name?.trim();
   if (!venue || !supabaseConfigured()) return null;
@@ -27,11 +43,7 @@ export default async function VenueEvents({ event }: { event: Event }) {
 
   let rows: Event[] = [];
   try {
-    const since = sinceIso();
-    const city = event.city ? `&city=eq.${encodeURIComponent(event.city)}` : "";
-    rows = await rest<Event[]>(
-      `events?select=${COLS}&location_name=eq.${encodeURIComponent(venue)}${city}&start_time=gte.${since}&id=neq.${event.id}&order=start_time.asc&limit=40`,
-    );
+    rows = await venueShows(venue, event.city ?? null);
   } catch (err) {
     console.warn("[venue]", (err as Error).message);
     return null;
