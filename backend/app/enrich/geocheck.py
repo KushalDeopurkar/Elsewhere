@@ -15,7 +15,7 @@ result only counts when its own name matches the venue's words. Then:
 - the event only had the city centre: it gets the venue's place.
 
 Answers are cached in a JSON file (kept between runs by the workflow), and
-each run looks up at most `budget` new names, soonest events first, at one
+each run looks up at most `budget` (400) new names, soonest events first, at one
 request a second as Photon asks.
 """
 
@@ -131,7 +131,7 @@ def check_pins(
     city_centres: dict[str, tuple[float, float]],
     cache: dict,
     fetch: Fetch,
-    budget: int = 150,
+    budget: int = 400,
     sources: tuple[str, ...] = CHECKED_SOURCES,
 ) -> dict:
     """

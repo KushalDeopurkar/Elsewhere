@@ -83,7 +83,7 @@ async def main():
                         help="Skip scraping; read every *.jsonl file in this folder, de-duplicate and save")
     parser.add_argument("--budget-min", type=float, default=None,
                         help="Stop a scraper after this many minutes (keeps the run inside its time limit)")
-    parser.add_argument("--geocheck-budget", type=int, default=150,
+    parser.add_argument("--geocheck-budget", type=int, default=400,
                         help="Check up to this many venue names against OpenStreetMap when saving (0 = off)")
     parser.add_argument("--geocheck-cache", default=".geocache.json",
                         help="Where checked venue places are kept between runs")
