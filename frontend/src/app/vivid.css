@@ -14,7 +14,7 @@
   }
 
   & .brand-mark {
-    color: var(--signal);
+    --brand-accent: var(--signal);
   }
 
   & .btn-primary {

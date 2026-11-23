@@ -19,6 +19,11 @@ const load = (u: URL) =>
     .then((b) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer)
     .catch(() => null);
 
+/** The brand mark (components/BrandMark.tsx), as an image satori can draw. */
+const MARK = `data:image/svg+xml;base64,${Buffer.from(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M43 4.5H12.5a8 8 0 0 0-8 8v39a8 8 0 0 0 8 8h39a8 8 0 0 0 8-8V21.5" fill="none" stroke="${OG.boardFg}" stroke-width="3.4" stroke-linejoin="round"/><path d="M45.4 1.8h6.1a10.7 10.7 0 0 1 10.7 10.7v6.1l-5.4-5.4v-.7a5.3 5.3 0 0 0-5.3-5.3h-.7z" fill="${OG.signal}"/><g fill="${OG.boardFg}"><rect x="6.2" y="27" width="3.6" height="8" rx="1.6"/><rect x="54.2" y="27" width="3.6" height="8" rx="1.6"/><rect x="8" y="30.2" width="48" height="1.6"/><path d="M17 14h27v6.5H24.5V25H41v4.4H17z"/><path d="M17 32.6h24v1.8H24.5v8.1h20v7H17z"/></g></svg>`,
+).toString("base64")}`;
+
 /** A contour SVG from /public/bg, recoloured, as a data URI satori can draw. */
 const contours = (file: string, stroke: string) =>
   readFile(new URL(`../../public/bg/${file}`, import.meta.url), "utf8")
@@ -88,8 +93,8 @@ export default async function SiteOg() {
         />
 
         <div style={{ display: "flex", flexDirection: "column", width: 640, padding: "56px 0 52px 64px", position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: "ArchivoBold", fontSize: 28, letterSpacing: 1 }}>
-            <div style={{ width: 16, height: 16, background: OG.signal }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 16, fontFamily: "ArchivoBold", fontSize: 28, letterSpacing: 4 }}>
+            <img src={MARK} width={44} height={44} alt="" />
             ELSEWHERE
           </div>
           <div style={{ display: "flex", marginTop: 40 }}>

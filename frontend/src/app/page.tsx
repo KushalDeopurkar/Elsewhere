@@ -220,7 +220,7 @@ export default function Home() {
         ) : featured.length === 0 ? (
           <EmptyState
             title={`Nothing listed in ${city.name} yet`}
-            body="New listings arrive every six hours."
+            body="New listings arrive every day."
           >
             <Link href="/explore" className="btn btn-primary">Browse every listing</Link>
             <TryElsewhere city={city} />
@@ -293,7 +293,7 @@ export default function Home() {
             <p>
               {saved.length === 0
                 ? "Tap the bookmark on any ticket. This line fills with more of the same kind, in your city."
-                : "New listings arrive every six hours; this line updates with them."}
+                : "New listings arrive every day; this line updates with them."}
             </p>
             <Link href="/explore" className="link-arrow">
               Browse every listing

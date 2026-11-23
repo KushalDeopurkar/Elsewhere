@@ -551,18 +551,21 @@ p {
   gap: var(--s-2);
   color: var(--board-fg);
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-stretch: 112%;
-  font-size: 1.2rem;
-  letter-spacing: -0.01em;
+  font-size: 1.15rem;
+  /* Wide and level, like the name on a station sign. */
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .brand-mark {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   flex: none;
-  color: var(--lamp);
+  /* Frame and letter in the text colour; the peeled corner in the signal. */
+  color: inherit;
+  --brand-accent: var(--lamp);
 }
 
 .topnav-links {
@@ -1035,18 +1038,19 @@ p {
   gap: var(--s-3);
   color: var(--board-fg);
   font-family: var(--font-display);
-  font-weight: 900;
-  font-stretch: 100%;
-  font-size: clamp(2.6rem, 6vw, 4.5rem);
+  font-weight: 700;
+  font-stretch: 112%;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
   line-height: 0.9;
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.1em;
 }
 
 .foot-mark {
-  width: 0.8em;
-  height: 0.8em;
-  color: var(--lamp);
+  width: 1.15em;
+  height: 1.15em;
+  color: inherit;
+  --brand-accent: var(--lamp);
 }
 
 .foot-note {
