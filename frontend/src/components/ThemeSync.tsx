@@ -66,7 +66,7 @@ export default function ThemeSync() {
     };
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const start = (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } })
+    const start = (document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void>; updateCallbackDone: Promise<void>; finished: Promise<void> } })
       .startViewTransition;
     // Hidden tabs can't run a transition; neither can reduced motion want one.
     if (!start || reduce || document.visibilityState !== "visible") {
@@ -85,6 +85,10 @@ export default function ThemeSync() {
     };
     try {
       const vt = start.call(document, apply);
+      // A cancelled fade (tab hidden, a quick second switch) rejects these;
+      // the theme is still applied, so that is not an error.
+      vt.ready.catch(() => {});
+      vt.updateCallbackDone.catch(() => {});
       vt.finished.catch(() => {}).finally(done);
     } catch {
       apply();

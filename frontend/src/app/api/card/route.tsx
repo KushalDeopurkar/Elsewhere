@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { OG, OG_FONTS, brandMark } from "@/lib/ogTheme";
+import { inlineImage } from "@/lib/ogImage";
 import { ImageResponse } from "next/og";
 import { getEvent } from "@/lib/api";
 import { whenOf } from "@/lib/formatDate";
@@ -27,21 +28,6 @@ const SIZES = { story: [1080, 1920], square: [1080, 1080] } as const;
 const MAX = { story: 5, square: 3 } as const;
 
 /** Fetch a poster as a data URL so one bad image can't break the card. */
-async function inlineImage(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  try {
-    const ctrl = AbortSignal.timeout(2500);
-    const r = await fetch(url, { signal: ctrl, headers: { "user-agent": "Mozilla/5.0 Elsewhere-card" } });
-    const type = r.headers.get("content-type") ?? "";
-    if (!r.ok || !/^image\/(jpeg|png|webp|gif)/.test(type)) return null;
-    const buf = Buffer.from(await r.arrayBuffer());
-    if (buf.length > 4_000_000) return null;
-    return `data:${type.split(";")[0]};base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
-
 /** satori has no oklch(): convert the category colour to sRGB hex. */
 function oklchHex(css: string): string {
   const m = /oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(css);
@@ -84,7 +70,7 @@ export async function GET(req: Request) {
   const kicker = clip(q.get("kicker")?.trim() || "Found on Elsewhere", 40);
 
   const events = (await Promise.all(ids.map((id) => getEvent(id)))).filter((e): e is Event => Boolean(e));
-  const images = await Promise.all(events.map((e) => inlineImage(e.image_url)));
+  const images = await Promise.all(events.map((e) => inlineImage(e.image_url, "Elsewhere-card")));
   const hero = images.find(Boolean) ?? null;
   const story = format === "story";
   const thumb = story ? 190 : 150;

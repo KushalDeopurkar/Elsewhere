@@ -17,6 +17,10 @@ if (dsn) {
         "AbortError",
         // View transitions the browser cancels (tab hidden, a second click).
         /Transition was (aborted|skipped)/,
+        // Scripts the iOS Brave and Firefox apps inject into every page
+        // (reader mode, YouTube quality): they call window.__firefox__,
+        // which isn't there yet. Not our code.
+        /__firefox__/,
       ],
       denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
     });

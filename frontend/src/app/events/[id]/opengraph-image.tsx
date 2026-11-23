@@ -4,6 +4,7 @@ import { loadEvent } from "@/lib/eventServer";
 import { eventZone } from "@/lib/formatDate";
 import { priceBadge } from "@/lib/money";
 import { OG, OG_FONTS, brandMark } from "@/lib/ogTheme";
+import { inlineImage } from "@/lib/ogImage";
 import { CATEGORIES } from "@/lib/types";
 
 /**
@@ -22,20 +23,6 @@ const load = (u: URL) =>
     .then((b) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer)
     .catch(() => null);
 
-async function poster(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(2500), headers: { "user-agent": "Mozilla/5.0 Elsewhere-og" } });
-    const type = r.headers.get("content-type") ?? "";
-    if (!r.ok || !/^image\/(jpeg|png|webp|gif)/.test(type)) return null;
-    const buf = Buffer.from(await r.arrayBuffer());
-    if (buf.length > 4_000_000) return null;
-    return `data:${type.split(";")[0]};base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
-
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
@@ -46,7 +33,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
     load(OG_FONTS.bold),
     load(OG_FONTS.text),
   ]);
-  const img = await poster(event?.image_url ?? null);
+  const img = await inlineImage(event?.image_url);
   const fonts = black && bold && text;
   const title = event ? clip(event.title, 72) : "Every kind of event in your city";
   const zone = event ? eventZone(event) : "Asia/Kolkata";
