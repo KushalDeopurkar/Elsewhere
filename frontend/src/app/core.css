@@ -37,10 +37,12 @@ body {
 }
 
 /* The sun sets: everything crossfades once, then motion stops. */
+/* A theme switch without View Transitions happens in one step: no element
+   runs its own colour transition, so nothing lags behind the rest. */
 :root[data-theme-switching] *,
 :root[data-theme-switching] *::before,
 :root[data-theme-switching] *::after {
-  transition: background-color 240ms var(--ease-in-out), color 240ms var(--ease-in-out), border-color 240ms var(--ease-in-out) !important;
+  transition: none !important;
 }
 
 a {

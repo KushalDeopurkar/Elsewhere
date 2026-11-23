@@ -66,3 +66,26 @@ html[data-vt="event"]::view-transition-new(root) { animation: vt-in-soft 280ms v
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+/* ---- Theme switch: one smooth crossfade of the whole page -------------- */
+/* ThemeSync wraps the switch in a View Transition with data-vt="theme".
+   The new look is drawn above the old, so it fades in over it while the old
+   stays put underneath; named parts (the nav bars, an event picture) do the
+   same instead of their page-change animations. */
+html[data-vt="theme"]::view-transition-group(*) {
+  animation-duration: 0s;
+}
+html[data-vt="theme"]::view-transition-old(*),
+html[data-vt="theme"]::view-transition-new(*) {
+  display: block;
+  mix-blend-mode: normal;
+}
+html[data-vt="theme"]::view-transition-old(*) {
+  animation: none;
+}
+html[data-vt="theme"]::view-transition-new(*) {
+  animation: theme-fade-in 420ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+}
