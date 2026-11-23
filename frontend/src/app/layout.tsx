@@ -29,10 +29,16 @@ import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Elsewhere - somewhere better to be",
+  title: "Elsewhere: where to be in your city",
   description:
-    "Somewhere better to be. Workshops, matches, talks, gigs, meetups and exhibitions in your city, gathered from across the web and mapped.",
-  openGraph: { siteName: "Elsewhere", type: "website" },
+    "Every kind of event in your city on one live board: workshops, gigs, matches, talks, meetups and exhibitions, gathered from across the web and mapped.",
+  openGraph: {
+    siteName: "Elsewhere",
+    type: "website",
+    title: "Elsewhere: where to be in your city",
+    description: "Workshops, gigs, matches, meetups and exhibitions, gathered from across the web onto one live board and map.",
+  },
+  twitter: { card: "summary_large_image" },
   applicationName: "Elsewhere",
   appleWebApp: { capable: true, title: "Elsewhere", statusBarStyle: "black" },
   // Google Search Console ownership check (the "HTML tag" method): set
