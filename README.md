@@ -36,10 +36,13 @@
 <br />
 
 <p align="center">
-  <img src="docs/readme/home-night.jpg" alt="The ELSEWHERE home page: a plain-words search on the left and a live departures board of today's events in Mumbai on the right" width="100%" />
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="docs/readme/home-day.jpg" />
+    <img src="docs/readme/home-night.jpg" alt="The ELSEWHERE home page: a plain-words search on the left and a live departures board of today's events in Mumbai on the right" width="100%" />
+  </picture>
 </p>
 
-<p align="center"><sub>The home page at night: ask in plain words, or take the next departure.</sub></p>
+<p align="center"><sub>The home page, in day or night to match your GitHub theme: ask in plain words, or take the next departure.</sub></p>
 
 ---
 
